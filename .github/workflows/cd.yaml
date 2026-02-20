@@ -6,6 +6,9 @@ on:
     types:
       - completed
 
+permissions:
+  contents: read
+
 jobs:
   deploy:
     if: >
@@ -22,6 +25,8 @@ jobs:
           ref: ${{ github.event.workflow_run.head_branch }}
 
       - name: Dummy Deploy
+        env:
+          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
         run: |
-          echo "Branch: ${{ github.event.workflow_run.head_branch }}"
+          echo "Branch: $HEAD_BRANCH"
           echo "Deploying backend..."
