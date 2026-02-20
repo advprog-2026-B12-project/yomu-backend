@@ -87,7 +87,7 @@ jacocoTestCoverageVerification {
 
 sonar {
     properties {
-        property "sonar.projectKey", "advprog-2026-B12-project_yomu-project"
+        property "sonar.projectKey", "advprog-2026-B12-project_yomu-backend"
         property "sonar.organization", "advprog-2026-b12-project"
     }
 }
