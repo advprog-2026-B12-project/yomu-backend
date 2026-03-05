@@ -4,12 +4,16 @@ import id.ac.ui.cs.advprog.yomubackend.quiz.dto.ReadingRequest;
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.ReadingResponse;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Reading;
 import id.ac.ui.cs.advprog.yomubackend.quiz.service.ReadingService;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/admin/readings")
+@PreAuthorize("hasRole('ADMIN')")
 public class AdminReadingController {
 
     private final ReadingService readingService;
@@ -19,6 +23,7 @@ public class AdminReadingController {
     }
 
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     public ReadingResponse create(@RequestBody ReadingRequest request) {
         Reading reading = new Reading();
         reading.setTitle(request.getTitle());
@@ -42,5 +47,11 @@ public class AdminReadingController {
                         .content(r.getContent())
                         .build())
                 .toList();
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable UUID id) {
+        readingService.delete(id);
     }
 }
