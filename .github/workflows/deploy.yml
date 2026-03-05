@@ -1,0 +1,48 @@
+name: Deploy Spring Boot Service Yomu
+on:
+  push:
+    branches:
+      - main
+      - chore/ci-cd
+
+env:
+  SERVICE_NAME: yomu-backend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/${{ github.repository }}:latest
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            IMAGE_URL=$(echo "ghcr.io/${{ github.repository }}:latest" | tr '[:upper:]' '[:lower:]')
+            docker pull $IMAGE_URL
+            
+            # Jalanin docker-compose
+            docker compose -f /home/ubuntu/docker-compose.yml up -d --no-deps ${{ env.SERVICE_NAME }}
+            docker image prune -f
