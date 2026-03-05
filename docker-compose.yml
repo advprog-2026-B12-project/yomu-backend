@@ -1,4 +1,13 @@
 services:
+  yomu-backend:
+    image: ghcr.io/advprog-2026-b12-project/yomu-backend:latest
+    container_name: yomu-backend
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    restart: always
+
   db:
     image: postgres:16-alpine
     container_name: yomu-db
