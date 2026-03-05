@@ -3,7 +3,6 @@ package id.ac.ui.cs.advprog.yomubackend.quiz.service;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Reading;
 import id.ac.ui.cs.advprog.yomubackend.quiz.repository.ReadingRepository;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 
 import java.util.List;
 import java.util.UUID;

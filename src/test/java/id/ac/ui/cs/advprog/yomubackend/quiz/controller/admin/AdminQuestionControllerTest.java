@@ -33,7 +33,7 @@ class AdminQuestionControllerTest {
     void testDeleteQuestion() throws Exception {
 
         mvc.perform(delete("/api/admin/questions/" + UUID.randomUUID()))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         verify(service).delete(any());
     }

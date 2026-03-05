@@ -40,11 +40,12 @@ class OptionServiceImplTest {
     @Test
     void testCreateOptionQuestionNotFound() {
         UUID id = UUID.randomUUID();
+        Option option = new Option();
 
         when(questionRepo.findById(id)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class,
-                () -> service.create(id, new Option()));
+                () -> service.create(id, option));
     }
 
     @Test
@@ -57,9 +58,9 @@ class OptionServiceImplTest {
         Option o = new Option();
         o.setQuestion(q);
 
-        when(optionRepo.findAll()).thenReturn(List.of(o));
+        when(optionRepo.findByQuestionId(questionId)).thenReturn(List.of(o));
 
-        List<Option> result = service.findByQuestion(questionId);
+        List<Option> result = optionRepo.findByQuestionId(questionId);
 
         assertEquals(1, result.size());
     }

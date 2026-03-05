@@ -59,7 +59,7 @@ class QuestionServiceImplTest {
         Question q = new Question();
         q.setReading(reading);
 
-        when(questionRepo.findAll()).thenReturn(List.of(q));
+        when(questionRepo.findByReadingId(readingId)).thenReturn(List.of(q));
 
         List<Question> result = service.findByReading(readingId);
 

@@ -30,9 +30,9 @@ class AdminReadingControllerTest {
         mvc.perform(post("/api/admin/readings")
                         .contentType("application/json")
                         .content("""
-                        {"title":"Title","content":"Content"}
-                        """))
-                .andExpect(status().isOk())
+                    {"title":"Title","content":"Content"}
+                    """))
+                .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.title").value("Title"));
     }
 

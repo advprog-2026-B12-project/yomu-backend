@@ -20,7 +20,7 @@ class AdminOptionControllerTest {
     void testDeleteOption() throws Exception {
 
         mvc.perform(delete("/api/admin/options/" + UUID.randomUUID()))
-                .andExpect(status().isOk());
+                .andExpect(status().isNoContent());
 
         verify(service).delete(any());
     }

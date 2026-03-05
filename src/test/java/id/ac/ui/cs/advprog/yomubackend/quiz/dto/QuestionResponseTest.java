@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class QuestionResponseTest {
+class QuestionResponseTest {
     @Test
     void testBuilder() {
         UUID id = UUID.randomUUID();
