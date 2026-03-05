@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.yomubackend.entity;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -9,23 +10,35 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class CommentReactionTest {
 
-    @Test
-    void givenBlankReaction_whenFieldsAreSet_thenFieldsAreCorrect() {
-        UUID id = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
-        LocalDateTime now = LocalDateTime.now();
+    private UUID reactionId;
+    private UUID userId;
+    private LocalDateTime now;
+    private Comment comment;
 
-        Comment comment = new Comment();
+    @BeforeEach
+    void setUp() {
+        reactionId = UUID.randomUUID();
+        userId = UUID.randomUUID();
+        now = LocalDateTime.now();
+        comment = new Comment();
         comment.setId(UUID.randomUUID());
+    }
 
+    private CommentReaction buildReaction(UUID id, ReactionType type) {
         CommentReaction reaction = new CommentReaction();
         reaction.setId(id);
         reaction.setComment(comment);
         reaction.setUserId(userId);
-        reaction.setReactionType(ReactionType.UPVOTE);
+        reaction.setReactionType(type);
         reaction.setCreatedAt(now);
+        return reaction;
+    }
 
-        assertEquals(id, reaction.getId());
+    @Test
+    void givenBlankReaction_whenFieldsAreSet_thenFieldsAreCorrect() {
+        CommentReaction reaction = buildReaction(reactionId, ReactionType.UPVOTE);
+
+        assertEquals(reactionId, reaction.getId());
         assertEquals(comment, reaction.getComment());
         assertEquals(userId, reaction.getUserId());
         assertEquals(ReactionType.UPVOTE, reaction.getReactionType());
@@ -34,10 +47,8 @@ class CommentReactionTest {
 
     @Test
     void givenAllReactionTypes_whenSet_thenAllValuesAreValid() {
-        ReactionType[] types = ReactionType.values();
-
         assertArrayEquals(
-                new ReactionType[]{
+                new ReactionType[] {
                         ReactionType.UPVOTE,
                         ReactionType.DOWNVOTE,
                         ReactionType.FIRE,
@@ -46,36 +57,16 @@ class CommentReactionTest {
                         ReactionType.SURPRISED,
                         ReactionType.LOVE
                 },
-                types
-        );
+                ReactionType.values());
     }
 
     @Test
     void givenTwoReactionsWithSameFields_whenEqualsIsChecked_thenTheyAreEqual() {
-        UUID id = UUID.randomUUID();
-        UUID userId = UUID.randomUUID();
-        LocalDateTime now = LocalDateTime.now();
-
-        Comment comment = new Comment();
-        comment.setId(UUID.randomUUID());
-
-        CommentReaction r1 = new CommentReaction();
-        r1.setId(id);
-        r1.setComment(comment);
-        r1.setUserId(userId);
-        r1.setReactionType(ReactionType.LOVE);
-        r1.setCreatedAt(now);
-
-        CommentReaction r2 = new CommentReaction();
-        r2.setId(id);
-        r2.setComment(comment);
-        r2.setUserId(userId);
-        r2.setReactionType(ReactionType.LOVE);
-        r2.setCreatedAt(now);
+        CommentReaction r1 = buildReaction(reactionId, ReactionType.LOVE);
+        CommentReaction r2 = buildReaction(reactionId, ReactionType.LOVE);
 
         assertEquals(r1, r2);
         assertEquals(r1.hashCode(), r2.hashCode());
         assertTrue(r1.toString().contains("LOVE"));
     }
 }
-
