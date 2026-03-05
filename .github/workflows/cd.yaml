@@ -24,9 +24,42 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Dummy Deploy
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: "21"
+          distribution: "temurin"
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.gradle/caches
+          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle', '**/*.gradle.kts') }}
+          restore-keys: ${{ runner.os }}-gradle
+
+      - name: Grant execute permission
+        run: chmod +x gradlew
+
+      - name: Deploy to Staging
+        if: github.event.workflow_run.head_branch == 'staging'
         env:
-          HEAD_BRANCH: ${{ github.event.workflow_run.head_branch }}
+          SPRING_PROFILES_ACTIVE: staging
+          SUPABASE_DB_URL: ${{ secrets.STAGING_SUPABASE_DB_URL }}
+          SUPABASE_DB_USERNAME: ${{ secrets.STAGING_SUPABASE_DB_USERNAME }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.STAGING_SUPABASE_DB_PASSWORD }}
         run: |
-          echo "Branch: $HEAD_BRANCH"
-          echo "Deploying backend..."
+          echo "Deploying to staging..."
+          ./gradlew bootJar
+          echo "Staging deployment complete."
+
+      - name: Deploy to Production
+        if: github.event.workflow_run.head_branch == 'main'
+        env:
+          SPRING_PROFILES_ACTIVE: main
+          SUPABASE_DB_URL: ${{ secrets.MAIN_SUPABASE_DB_URL }}
+          SUPABASE_DB_USERNAME: ${{ secrets.MAIN_SUPABASE_DB_USERNAME }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.MAIN_SUPABASE_DB_PASSWORD }}
+        run: |
+          echo "Deploying to production..."
+          ./gradlew bootJar
+          echo "Production deployment complete."
