@@ -25,17 +25,13 @@ public class QuestionServiceImpl implements QuestionService {
     public Question create(UUID readingId, Question question) {
         Reading reading = readingRepository.findById(readingId)
                 .orElseThrow(() -> new IllegalArgumentException("Reading not found"));
-
         question.setReading(reading);
         return questionRepository.save(question);
     }
 
     @Override
     public List<Question> findByReading(UUID readingId) {
-        return questionRepository.findAll()
-                .stream()
-                .filter(q -> q.getReading().getId().equals(readingId))
-                .toList();
+        return questionRepository.findByReadingId(readingId);
     }
 
     @Override

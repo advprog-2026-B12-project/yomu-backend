@@ -25,17 +25,13 @@ public class OptionServiceImpl implements OptionService {
     public Option create(UUID questionId, Option option) {
         Question question = questionRepository.findById(questionId)
                 .orElseThrow(() -> new IllegalArgumentException("Question not found"));
-
         option.setQuestion(question);
         return optionRepository.save(option);
     }
 
     @Override
     public List<Option> findByQuestion(UUID questionId) {
-        return optionRepository.findAll()
-                .stream()
-                .filter(o -> o.getQuestion().getId().equals(questionId))
-                .toList();
+        return optionRepository.findByQuestionId(questionId);
     }
 
     @Override
