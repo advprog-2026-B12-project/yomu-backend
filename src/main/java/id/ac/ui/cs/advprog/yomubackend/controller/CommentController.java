@@ -20,7 +20,7 @@ public class CommentController {
     }
 
     @GetMapping("/readings/{readingId}/comments")
-    public ResponseEntity<List<?>> getCommentsByReadingId(@PathVariable UUID readingId) {
+    public ResponseEntity<List<Comment>> getCommentsByReadingId(@PathVariable UUID readingId) {
         List<Comment> comments = commentRepository.findByReadingIdAndParentIsNull(readingId);
         return ResponseEntity.ok(comments);
     }
