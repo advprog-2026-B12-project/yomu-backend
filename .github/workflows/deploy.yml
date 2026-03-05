@@ -41,6 +41,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            docker pull ghcr.io/advprog-2026-b12-project/yomu-backend:latest
-            docker compose -f /home/ubuntu/docker-compose.yml up -d --no-deps ${{ env.SERVICE_NAME }}
+            docker-compose pull
+            docker-compose up -d --no-deps ${{ env.SERVICE_NAME }}
             docker image prune -f
