@@ -146,7 +146,11 @@ class DailyMissionServiceTest {
         UUID randomId = UUID.randomUUID();
         when(dailyMissionRepository.findById(randomId)).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> dailyMissionService.updateDailyMission(randomId, new DailyMission()));
+        DailyMission missionToUpdate = new DailyMission();
+
+        assertThrows(RuntimeException.class, () ->
+                dailyMissionService.updateDailyMission(randomId, missionToUpdate)
+        );
     }
 
     @Test
