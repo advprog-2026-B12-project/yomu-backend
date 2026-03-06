@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.yomubackend.achievements.service;
 
+import id.ac.ui.cs.advprog.yomubackend.achievements.constant.AchievementEvent;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.DailyMission;
 import id.ac.ui.cs.advprog.yomubackend.achievements.repository.DailyMissionRepository;
 import id.ac.ui.cs.advprog.yomubackend.achievements.repository.UserDailyMissionRepository;
@@ -44,20 +45,20 @@ public class DailyMissionServiceTest {
         dummyMission.setId(UUID.randomUUID());
         dummyMission.setName("Membaca Berita");
         dummyMission.setMilestone(3);
-        dummyMission.setEventType("READING_COMPLETED");
+        dummyMission.setEventType(AchievementEvent.READING_COMPLETED);
         dummyMission.setIsActive(true);
     }
 
     @Test
     void testProcessDailyEvent_ShouldCreateNewProgress_WhenFirstTimeToday() {
-        when(dailyMissionRepository.findByEventTypeAndIsActiveTrue("READING_COMPLETED"))
+        when(dailyMissionRepository.findByEventTypeAndIsActiveTrue(AchievementEvent.READING_COMPLETED))
                 .thenReturn(List.of(dummyMission));
 
         when(userDailyMissionRepository.findByUserIdAndDailyMissionIdAndDateAssigned(
                 eq(dummyUserId), eq(dummyMission.getId()), any(LocalDate.class)))
                 .thenReturn(Optional.empty());
 
-        dailyMissionService.processDailyEvent(dummyUserId, "READING_COMPLETED");
+        dailyMissionService.processDailyEvent(dummyUserId, AchievementEvent.READING_COMPLETED);
 
         verify(userDailyMissionRepository, times(1)).save(argThat(progress -> {
             assertEquals(dummyUserId, progress.getUserId());

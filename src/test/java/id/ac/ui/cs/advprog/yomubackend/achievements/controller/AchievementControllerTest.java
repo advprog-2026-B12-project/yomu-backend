@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.yomubackend.achievements.controller;
 
+import id.ac.ui.cs.advprog.yomubackend.achievements.constant.AchievementEvent;
 import id.ac.ui.cs.advprog.yomubackend.achievements.service.DailyMissionService;
 import tools.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.Achievement;
@@ -55,7 +56,7 @@ public class AchievementControllerTest {
         dummyAchievement.setId(UUID.randomUUID());
         dummyAchievement.setName("Kutu Buku");
         dummyAchievement.setMilestone(10);
-        dummyAchievement.setEventType("READING_COMPLETED");
+        dummyAchievement.setEventType(AchievementEvent.READING_COMPLETED);
 
         dummyUserAchievement = new UserAchievement();
         dummyUserAchievement.setId(UUID.randomUUID());

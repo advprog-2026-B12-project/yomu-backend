@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.yomubackend.achievements.controller;
 
+import id.ac.ui.cs.advprog.yomubackend.achievements.constant.AchievementEvent;
 import tools.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.DailyMission;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserDailyMission;
@@ -56,7 +57,7 @@ public class DailyMissionControllerTest {
         dummyMission.setId(UUID.randomUUID());
         dummyMission.setName("Membaca 3 Artikel");
         dummyMission.setMilestone(3);
-        dummyMission.setEventType("READING_COMPLETED");
+        dummyMission.setEventType(AchievementEvent.READING_COMPLETED);
         dummyMission.setIsActive(true);
 
         dummyUserMission = new UserDailyMission();

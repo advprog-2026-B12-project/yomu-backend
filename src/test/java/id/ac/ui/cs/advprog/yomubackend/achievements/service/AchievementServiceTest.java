@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.yomubackend.achievements.service;
 
+import id.ac.ui.cs.advprog.yomubackend.achievements.constant.AchievementEvent;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.Achievement;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserAchievement;
 import id.ac.ui.cs.advprog.yomubackend.achievements.repository.AchievementRepository;
@@ -43,18 +44,18 @@ public class AchievementServiceTest {
         dummyAchievement.setId(UUID.randomUUID());
         dummyAchievement.setName("Kutu Buku Pemula");
         dummyAchievement.setMilestone(1);
-        dummyAchievement.setEventType("READING_COMPLETED");
+        dummyAchievement.setEventType(AchievementEvent.READING_COMPLETED);
     }
 
     @Test
     void testProcessEvent_ShouldIncrementProgressAndUnlock_WhenMilestoneReached() {
-        when(achievementRepository.findByEventType("READING_COMPLETED"))
+        when(achievementRepository.findByEventType(AchievementEvent.READING_COMPLETED))
                 .thenReturn(List.of(dummyAchievement));
 
         when(userAchievementRepository.findByUserIdAndAchievementId(dummyUserId, dummyAchievement.getId()))
                 .thenReturn(Optional.empty());
 
-        achievementService.processEvent(dummyUserId, "READING_COMPLETED");
+        achievementService.processEvent(dummyUserId, AchievementEvent.READING_COMPLETED);
 
         verify(userAchievementRepository, times(1)).save(any(UserAchievement.class));
 
