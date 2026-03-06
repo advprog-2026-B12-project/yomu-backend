@@ -59,4 +59,19 @@ public class AchievementServiceImpl implements AchievementService {
             userAchievementRepository.save(userProgress);
         }
     }
+
+    @Override
+    public Achievement createAchievement(Achievement achievement) {
+        return achievementRepository.save(achievement);
+    }
+
+    @Override
+    public List<Achievement> getAllAchievements() {
+        return achievementRepository.findAll();
+    }
+
+    @Override
+    public List<UserAchievement> getUserAchievements(UUID userId) {
+        return userAchievementRepository.findByUserId(userId);
+    }
 }
