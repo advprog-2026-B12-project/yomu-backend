@@ -17,15 +17,19 @@ class CorsConfigTest {
         CorsRegistration registration = mock(CorsRegistration.class);
 
         when(registry.addMapping(anyString())).thenReturn(registration);
-        when(registration.allowedOrigins(any(String[].class))).thenReturn(registration);
-        when(registration.allowedMethods(any(String[].class))).thenReturn(registration);
+
+        when(registration.allowedOrigins(anyString(), anyString())).thenReturn(registration);
+
+        when(registration.allowedMethods(anyString(), anyString(), anyString(), anyString(), anyString())).thenReturn(registration);
         when(registration.allowedHeaders(anyString())).thenReturn(registration);
         when(registration.allowCredentials(anyBoolean())).thenReturn(registration);
 
         config.addCorsMappings(registry);
 
         verify(registry).addMapping("/**");
+
         verify(registration).allowedOrigins("http://localhost:3000", "https://yomu-frontend-neon.vercel.app");
+
         verify(registration).allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS");
         verify(registration).allowedHeaders("*");
         verify(registration).allowCredentials(true);
