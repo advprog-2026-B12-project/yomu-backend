@@ -82,4 +82,48 @@ public class AchievementServiceTest {
         assertTrue(result.getIsDisplayed());
         verify(userAchievementRepository, times(1)).save(ua);
     }
+
+    @Test
+    void testCreateAchievement_ShouldReturnSavedAchievement() {
+        when(achievementRepository.save(any(Achievement.class))).thenReturn(dummyAchievement);
+        Achievement result = achievementService.createAchievement(new Achievement());
+        assertNotNull(result);
+        assertEquals(dummyAchievement.getName(), result.getName());
+    }
+
+    @Test
+    void testGetAllAchievements_ShouldReturnList() {
+        when(achievementRepository.findAll()).thenReturn(List.of(dummyAchievement));
+        List<Achievement> result = achievementService.getAllAchievements();
+        assertFalse(result.isEmpty());
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void testGetUserAchievements_ShouldReturnList() {
+        UserAchievement ua = new UserAchievement();
+        ua.setUserId(dummyUserId);
+        when(userAchievementRepository.findByUserId(dummyUserId)).thenReturn(List.of(ua));
+
+        List<UserAchievement> result = achievementService.getUserAchievements(dummyUserId);
+        assertEquals(1, result.size());
+        assertEquals(dummyUserId, result.get(0).getUserId());
+    }
+
+    @Test
+    void testToggleDisplayAchievement_ShouldThrowException_WhenNotFound() {
+        UUID randomId = UUID.randomUUID();
+        when(userAchievementRepository.findById(randomId)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> achievementService.toggleDisplayAchievement(randomId));
+    }
+
+    @Test
+    void testProcessEvent_ShouldDoNothing_WhenNoAchievementFound() {
+        when(achievementRepository.findByEventType("UNKNOWN_EVENT")).thenReturn(List.of());
+
+        achievementService.processEvent(dummyUserId, "UNKNOWN_EVENT");
+
+        verify(userAchievementRepository, never()).save(any());
+    }
 }

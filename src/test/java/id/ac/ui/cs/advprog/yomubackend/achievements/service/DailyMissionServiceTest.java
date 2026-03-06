@@ -118,4 +118,43 @@ public class DailyMissionServiceTest {
 
         verify(dailyMissionRepository, times(1)).deleteById(id);
     }
+
+    @Test
+    void testCreateDailyMission_ShouldReturnSavedMission() {
+        when(dailyMissionRepository.save(any(DailyMission.class))).thenReturn(dummyMission);
+        DailyMission result = dailyMissionService.createDailyMission(new DailyMission());
+        assertNotNull(result);
+    }
+
+    @Test
+    void testGetActiveDailyMissions_ShouldReturnList() {
+        when(dailyMissionRepository.findByIsActiveTrue()).thenReturn(List.of(dummyMission));
+        List<DailyMission> result = dailyMissionService.getActiveDailyMissions();
+        assertFalse(result.isEmpty());
+    }
+
+    @Test
+    void testGetUserDailyMissions_ShouldReturnList() {
+        when(userDailyMissionRepository.findByUserId(dummyUserId)).thenReturn(List.of());
+        List<id.ac.ui.cs.advprog.yomubackend.achievements.model.UserDailyMission> result =
+                dailyMissionService.getUserDailyMissions(dummyUserId);
+        assertNotNull(result);
+    }
+
+    @Test
+    void testUpdateDailyMission_ShouldThrowException_WhenNotFound() {
+        UUID randomId = UUID.randomUUID();
+        when(dailyMissionRepository.findById(randomId)).thenReturn(Optional.empty());
+
+        assertThrows(RuntimeException.class, () -> dailyMissionService.updateDailyMission(randomId, new DailyMission()));
+    }
+
+    @Test
+    void testProcessDailyEvent_ShouldDoNothing_WhenNoActiveMissionFound() {
+        when(dailyMissionRepository.findByEventTypeAndIsActiveTrue("UNKNOWN")).thenReturn(List.of());
+
+        dailyMissionService.processDailyEvent(dummyUserId, "UNKNOWN");
+
+        verify(userDailyMissionRepository, never()).save(any());
+    }
 }
