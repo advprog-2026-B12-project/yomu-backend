@@ -1,4 +1,4 @@
-services:
+  services:
   yomu-backend:
     image: ghcr.io/advprog-2026-b12-project/yomu-backend:latest
     container_name: yomu-backend
