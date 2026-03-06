@@ -11,4 +11,5 @@ public interface AchievementService {
     Achievement createAchievement(Achievement achievement);
     List<Achievement> getAllAchievements();
     List<UserAchievement> getUserAchievements(UUID userId);
+    UserAchievement toggleDisplayAchievement(UUID userAchievementId);
 }

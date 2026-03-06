@@ -74,4 +74,14 @@ public class AchievementServiceImpl implements AchievementService {
     public List<UserAchievement> getUserAchievements(UUID userId) {
         return userAchievementRepository.findByUserId(userId);
     }
+
+    @Override
+    public UserAchievement toggleDisplayAchievement(UUID userAchievementId) {
+        UserAchievement userAchievement = userAchievementRepository.findById(userAchievementId)
+                .orElseThrow(() -> new IllegalArgumentException("User Achievement tidak ditemukan"));
+
+        userAchievement.setIsDisplayed(!userAchievement.getIsDisplayed());
+
+        return userAchievementRepository.save(userAchievement);
+    }
 }

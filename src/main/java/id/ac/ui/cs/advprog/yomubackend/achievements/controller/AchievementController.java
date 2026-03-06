@@ -39,4 +39,10 @@ public class AchievementController {
         List<UserAchievement> userAchievements = achievementService.getUserAchievements(userId);
         return ResponseEntity.ok(userAchievements);
     }
+
+    @PutMapping("/display/{userAchievementId}")
+    public ResponseEntity<UserAchievement> toggleDisplayAchievement(@PathVariable UUID userAchievementId) {
+        UserAchievement updatedAchievement = achievementService.toggleDisplayAchievement(userAchievementId);
+        return ResponseEntity.ok(updatedAchievement);
+    }
 }
