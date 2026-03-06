@@ -11,4 +11,5 @@ public interface DailyMissionService {
     DailyMission createDailyMission(DailyMission mission);
     List<DailyMission> getActiveDailyMissions();
     List<UserDailyMission> getUserDailyMissions(UUID userId);
+    void rotateDailyMissions();
 }

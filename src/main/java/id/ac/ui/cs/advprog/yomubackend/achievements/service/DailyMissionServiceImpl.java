@@ -6,11 +6,13 @@ import id.ac.ui.cs.advprog.yomubackend.achievements.repository.DailyMissionRepos
 import id.ac.ui.cs.advprog.yomubackend.achievements.repository.UserDailyMissionRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -75,5 +77,28 @@ public class DailyMissionServiceImpl implements DailyMissionService {
     @Override
     public List<UserDailyMission> getUserDailyMissions(UUID userId) {
         return userDailyMissionRepository.findByUserId(userId);
+    }
+
+    @Transactional
+    @Scheduled(cron = "0 0 0 * * ?")
+    public void rotateDailyMissions() {
+        List<DailyMission> allMissions = dailyMissionRepository.findAll();
+
+        if (allMissions.isEmpty()) {
+            return;
+        }
+
+        for (DailyMission mission : allMissions) {
+            mission.setIsActive(false);
+        }
+
+        Collections.shuffle(allMissions);
+
+        int missionsToActivate = Math.min(3, allMissions.size());
+        for (int i = 0; i < missionsToActivate; i++) {
+            allMissions.get(i).setIsActive(true);
+        }
+
+        dailyMissionRepository.saveAll(allMissions);
     }
 }
