@@ -62,7 +62,7 @@ public class DailyMissionController {
         mission.setDescription(request.getDescription());
         mission.setMilestone(request.getMilestone() != null ? request.getMilestone() : 1);
         mission.setEventType(request.getEventType());
-        mission.setIsActive(request.getIsActive() != null ? request.getIsActive() : false);
+        mission.setIsActive(request.getIsActive());
         return mission;
     }
 
