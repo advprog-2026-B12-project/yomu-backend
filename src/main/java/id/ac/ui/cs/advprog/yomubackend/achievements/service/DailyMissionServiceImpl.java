@@ -79,6 +79,7 @@ public class DailyMissionServiceImpl implements DailyMissionService {
         return userDailyMissionRepository.findByUserId(userId);
     }
 
+    @Override
     @Transactional
     @Scheduled(cron = "0 0 0 * * ?")
     public void rotateDailyMissions() {
@@ -94,10 +95,7 @@ public class DailyMissionServiceImpl implements DailyMissionService {
 
         Collections.shuffle(allMissions);
 
-        int missionsToActivate = Math.min(3, allMissions.size());
-        for (int i = 0; i < missionsToActivate; i++) {
-            allMissions.get(i).setIsActive(true);
-        }
+        allMissions.getFirst().setIsActive(true);
 
         dailyMissionRepository.saveAll(allMissions);
     }

@@ -69,7 +69,7 @@ public class DailyMissionServiceTest {
     }
 
     @Test
-    void testRotateDailyMissions_ShouldActivateExactlyThreeMissions() {
+    void testRotateDailyMissions_ShouldActivateExactlyOneMission() {
         DailyMission m1 = new DailyMission(); m1.setId(UUID.randomUUID()); m1.setIsActive(true);
         DailyMission m2 = new DailyMission(); m2.setId(UUID.randomUUID()); m2.setIsActive(true);
         DailyMission m3 = new DailyMission(); m3.setId(UUID.randomUUID()); m3.setIsActive(false);
@@ -77,7 +77,6 @@ public class DailyMissionServiceTest {
         DailyMission m5 = new DailyMission(); m5.setId(UUID.randomUUID()); m5.setIsActive(false);
 
         List<DailyMission> allMissions = new java.util.ArrayList<>(List.of(m1, m2, m3, m4, m5));
-
         when(dailyMissionRepository.findAll()).thenReturn(allMissions);
 
         dailyMissionService.rotateDailyMissions();
@@ -86,7 +85,7 @@ public class DailyMissionServiceTest {
             long activeCount = ((List<DailyMission>) missions).stream()
                     .filter(DailyMission::getIsActive)
                     .count();
-            return activeCount == 3;
+            return activeCount == 1;
         }));
     }
 }
