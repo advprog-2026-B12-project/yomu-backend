@@ -19,8 +19,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -88,5 +87,15 @@ public class AchievementControllerTest {
         mockMvc.perform(get("/api/achievements/user/" + dummyUserId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].currentProgress").value(5));
+    }
+
+    @Test
+    void testToggleDisplayAchievement_ShouldReturn200() throws Exception {
+        dummyUserAchievement.setIsDisplayed(true);
+        when(achievementService.toggleDisplayAchievement(dummyUserAchievement.getId())).thenReturn(dummyUserAchievement);
+
+        mockMvc.perform(put("/api/achievements/display/" + dummyUserAchievement.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.isDisplayed").value(true));
     }
 }

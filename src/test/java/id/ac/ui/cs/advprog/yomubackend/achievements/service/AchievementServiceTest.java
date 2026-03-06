@@ -66,4 +66,19 @@ public class AchievementServiceTest {
             return true;
         }));
     }
+
+    @Test
+    void testToggleDisplayAchievement_ShouldToggleIsDisplayed() {
+        UserAchievement ua = new UserAchievement();
+        ua.setId(UUID.randomUUID());
+        ua.setIsDisplayed(false);
+
+        when(userAchievementRepository.findById(ua.getId())).thenReturn(java.util.Optional.of(ua));
+        when(userAchievementRepository.save(any(UserAchievement.class))).thenReturn(ua);
+
+        UserAchievement result = achievementService.toggleDisplayAchievement(ua.getId());
+
+        assertTrue(result.getIsDisplayed());
+        verify(userAchievementRepository, times(1)).save(ua);
+    }
 }
