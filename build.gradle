@@ -56,9 +56,6 @@ tasks.named('test') {
 
 def excludedFiles = [
         '**/*Application.class',
-        '**/id/ac/ui/cs/advprog/yomubackend/auth/model/**',
-        '**/id/ac/ui/cs/advprog/yomubackend/auth/dto/**',
-        '**/id/ac/ui/cs/advprog/yomubackend/config/**'
 ]
 
 jacocoTestReport {
