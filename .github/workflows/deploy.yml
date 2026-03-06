@@ -1,0 +1,46 @@
+name: Deploy Spring Boot Service Yomu
+on:
+  push:
+    branches:
+      - main
+      - chore/ci-cd
+
+env:
+  SERVICE_NAME: yomu-backend
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 
+
+      - name: Log in to GHCR
+        uses: docker/login-action@e92390c5fb421da1463c202d546fed0ec5c39f20 
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and Push Docker Image
+        uses: docker/build-push-action@3b5e8027fcad23fda98b2e3ac259d8d67585f671 
+        with:
+          context: .
+          push: true
+          tags: ghcr.io/advprog-2026-b12-project/yomu-backend:latest
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            docker-compose pull
+            docker-compose up -d --no-deps ${{ env.SERVICE_NAME }}
+            docker image prune -f
