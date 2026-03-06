@@ -7,4 +7,5 @@ public final class AchievementEvent {
     public static final String QUIZ_FINISHED = "QUIZ_FINISHED";
     public static final String PERFECT_QUIZ_SCORE = "PERFECT_QUIZ_SCORE";
     public static final String CLAN_PROMOTION = "CLAN_PROMOTION";
+    public static final String LOGIN_STREAK = "LOGIN_STREAK";
 }
