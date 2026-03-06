@@ -1,8 +1,11 @@
 package id.ac.ui.cs.advprog.yomubackend.achievements.controller;
 
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.EventTriggerRequest;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.Achievement;
+import id.ac.ui.cs.advprog.yomubackend.achievements.model.DailyMission;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserAchievement;
 import id.ac.ui.cs.advprog.yomubackend.achievements.service.AchievementService;
+import id.ac.ui.cs.advprog.yomubackend.achievements.service.DailyMissionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,10 +19,12 @@ import java.util.UUID;
 public class AchievementController {
 
     private final AchievementService achievementService;
+    private final DailyMissionService dailyMissionService;
 
     @Autowired
-    public AchievementController(AchievementService achievementService) {
+    public AchievementController(AchievementService achievementService, DailyMissionService dailyMissionService) {
         this.achievementService = achievementService;
+        this.dailyMissionService = dailyMissionService;
     }
 
     @PostMapping
@@ -44,5 +49,14 @@ public class AchievementController {
     public ResponseEntity<UserAchievement> toggleDisplayAchievement(@PathVariable UUID userAchievementId) {
         UserAchievement updatedAchievement = achievementService.toggleDisplayAchievement(userAchievementId);
         return ResponseEntity.ok(updatedAchievement);
+    }
+
+    @PostMapping("/trigger")
+    public ResponseEntity<Void> triggerEvent(@RequestBody EventTriggerRequest request) {
+        achievementService.processEvent(request.getUserId(), request.getEventType());
+
+        dailyMissionService.processDailyEvent(request.getUserId(), request.getEventType());
+
+        return ResponseEntity.ok().build();
     }
 }
