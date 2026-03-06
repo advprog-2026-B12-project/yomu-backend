@@ -22,6 +22,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -92,5 +94,21 @@ public class DailyMissionControllerTest {
         mockMvc.perform(get("/api/daily-missions/user/" + dummyUserId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].currentProgress").value(1));
+    }
+
+    @Test
+    void testUpdateDailyMission_ShouldReturn200() throws Exception {
+        when(dailyMissionService.updateDailyMission(any(UUID.class), any(DailyMission.class))).thenReturn(dummyMission);
+
+        mockMvc.perform(put("/api/daily-missions/" + dummyMission.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dummyMission)))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testDeleteDailyMission_ShouldReturn204() throws Exception {
+        mockMvc.perform(delete("/api/daily-missions/" + dummyMission.getId()))
+                .andExpect(status().isNoContent());
     }
 }

@@ -88,4 +88,33 @@ public class DailyMissionServiceTest {
             return activeCount == 1;
         }));
     }
+
+    @Test
+    void testUpdateDailyMission_ShouldUpdateExistingMission() {
+        DailyMission existing = new DailyMission();
+        existing.setId(UUID.randomUUID());
+        existing.setName("Lama");
+
+        DailyMission updatedData = new DailyMission();
+        updatedData.setName("Baru");
+        updatedData.setMilestone(5);
+
+        when(dailyMissionRepository.findById(existing.getId())).thenReturn(java.util.Optional.of(existing));
+        when(dailyMissionRepository.save(any(DailyMission.class))).thenReturn(existing);
+
+        DailyMission result = dailyMissionService.updateDailyMission(existing.getId(), updatedData);
+
+        assertEquals("Baru", result.getName());
+        assertEquals(5, result.getMilestone());
+    }
+
+    @Test
+    void testDeleteDailyMission_ShouldCallDelete() {
+        UUID id = UUID.randomUUID();
+        doNothing().when(dailyMissionRepository).deleteById(id);
+
+        dailyMissionService.deleteDailyMission(id);
+
+        verify(dailyMissionRepository, times(1)).deleteById(id);
+    }
 }
