@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.yomubackend.achievements.controller;
 
+import id.ac.ui.cs.advprog.yomubackend.achievements.service.DailyMissionService;
 import tools.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.Achievement;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserAchievement;
@@ -30,6 +31,9 @@ public class AchievementControllerTest {
 
     @Mock
     private AchievementService achievementService;
+
+    @Mock
+    private DailyMissionService dailyMissionService;
 
     @InjectMocks
     private AchievementController achievementController;
@@ -97,5 +101,15 @@ public class AchievementControllerTest {
         mockMvc.perform(put("/api/achievements/display/" + dummyUserAchievement.getId()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isDisplayed").value(true));
+    }
+
+    @Test
+    void testTriggerEvent_ShouldReturn200() throws Exception {
+        String jsonRequest = "{\"userId\":\"" + dummyUserId + "\", \"eventType\":\"READING_COMPLETED\"}";
+
+        mockMvc.perform(post("/api/achievements/trigger")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonRequest))
+                .andExpect(status().isOk());
     }
 }
