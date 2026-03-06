@@ -61,4 +61,19 @@ public class DailyMissionServiceImpl implements DailyMissionService {
             userDailyMissionRepository.save(userProgress);
         }
     }
+
+    @Override
+    public DailyMission createDailyMission(DailyMission mission) {
+        return dailyMissionRepository.save(mission);
+    }
+
+    @Override
+    public List<DailyMission> getActiveDailyMissions() {
+        return dailyMissionRepository.findByIsActiveTrue();
+    }
+
+    @Override
+    public List<UserDailyMission> getUserDailyMissions(UUID userId) {
+        return userDailyMissionRepository.findByUserId(userId);
+    }
 }

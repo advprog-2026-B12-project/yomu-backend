@@ -14,4 +14,6 @@ public interface UserDailyMissionRepository extends JpaRepository<UserDailyMissi
     List<UserDailyMission> findByUserIdAndDateAssigned(UUID userId, LocalDate dateAssigned);
 
     Optional<UserDailyMission> findByUserIdAndDailyMissionIdAndDateAssigned(UUID userId, UUID missionId, LocalDate dateAssigned);
+
+    List<UserDailyMission> findByUserId(UUID userId);
 }
