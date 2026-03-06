@@ -99,4 +99,21 @@ public class DailyMissionServiceImpl implements DailyMissionService {
 
         dailyMissionRepository.saveAll(allMissions);
     }
+
+    @Override
+    public DailyMission updateDailyMission(UUID id, DailyMission updatedMission) {
+        DailyMission mission = dailyMissionRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Mission not found"));
+
+        mission.setName(updatedMission.getName());
+        mission.setMilestone(updatedMission.getMilestone());
+        mission.setEventType(updatedMission.getEventType());
+
+        return dailyMissionRepository.save(mission);
+    }
+
+    @Override
+    public void deleteDailyMission(UUID id) {
+        dailyMissionRepository.deleteById(id);
+    }
 }

@@ -39,4 +39,16 @@ public class DailyMissionController {
         List<UserDailyMission> userMissions = dailyMissionService.getUserDailyMissions(userId);
         return ResponseEntity.ok(userMissions);
     }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<DailyMission> updateDailyMission(@PathVariable UUID id, @RequestBody DailyMission mission) {
+        DailyMission updated = dailyMissionService.updateDailyMission(id, mission);
+        return ResponseEntity.ok(updated);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteDailyMission(@PathVariable UUID id) {
+        dailyMissionService.deleteDailyMission(id);
+        return ResponseEntity.noContent().build();
+    }
 }
