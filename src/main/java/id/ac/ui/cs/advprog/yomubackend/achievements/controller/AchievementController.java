@@ -35,7 +35,7 @@ public class AchievementController {
     public ResponseEntity<List<AchievementResponse>> getAllAchievements() {
         List<AchievementResponse> responses = achievementService.getAllAchievements().stream()
                 .map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(responses);
     }
 

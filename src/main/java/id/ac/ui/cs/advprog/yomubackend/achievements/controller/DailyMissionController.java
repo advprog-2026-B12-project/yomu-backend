@@ -41,7 +41,7 @@ public class DailyMissionController {
     public ResponseEntity<List<DailyMissionResponse>> getActiveDailyMissions() {
         List<DailyMissionResponse> responses = dailyMissionService.getActiveDailyMissions().stream()
                 .map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .toList();
         return ResponseEntity.ok(responses);
     }
 
