@@ -58,18 +58,18 @@ class AuthControllerTest {
         @BeforeEach
         void setUp() {
                 registerRequest = new RegisterRequest();
-                registerRequest.setUsername("ahmad.faiq41");
+                registerRequest.setUsername("ahmadFaiq41");
                 registerRequest.setEmail("faiq@kampus.id");
                 registerRequest.setDisplayName("Faiq");
                 registerRequest.setPassword("rahasia");
 
                 loginRequest = new LoginRequest();
-                loginRequest.setUsername("ahmad.faiq41");
+                loginRequest.setUsername("ahmadFaiq41");
                 loginRequest.setPassword("rahasia");
 
                 user = new User();
                 user.setId(UUID.randomUUID());
-                user.setUsername("ahmad.faiq41");
+                user.setUsername("ahmadFaiq41");
         }
 
         @Test
@@ -107,7 +107,7 @@ class AuthControllerTest {
                                 .content(jsonMapper.writeValueAsString(loginRequest)))
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.message").value("Login berhasil"))
-                                .andExpect(jsonPath("$.username").value("ahmad.faiq41"))
+                                .andExpect(jsonPath("$.username").value("ahmadFaiq41"))
                                 .andExpect(jsonPath("$.token").value("dummy-jwt-token"));
         }
 
