@@ -1,11 +1,5 @@
-package id.ac.ui.cs.advprog.yomubackend.controller;
+package id.ac.ui.cs.advprog.yomubackend.clan.controller;
 
-import id.ac.ui.cs.advprog.yomubackend.dto.CreateClanRequest;
-import id.ac.ui.cs.advprog.yomubackend.dto.JoinClanRequest;
-import id.ac.ui.cs.advprog.yomubackend.entity.Clan;
-import id.ac.ui.cs.advprog.yomubackend.entity.ClanMember;
-import id.ac.ui.cs.advprog.yomubackend.repository.ClanRepository;
-import id.ac.ui.cs.advprog.yomubackend.service.ClanService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,6 +9,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import id.ac.ui.cs.advprog.yomubackend.clan.dto.CreateClanRequest;
+import id.ac.ui.cs.advprog.yomubackend.clan.dto.JoinClanRequest;
+import id.ac.ui.cs.advprog.yomubackend.clan.entity.Clan;
+import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
+import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanRepository;
+import id.ac.ui.cs.advprog.yomubackend.clan.service.ClanService;
 
 import java.util.List;
 

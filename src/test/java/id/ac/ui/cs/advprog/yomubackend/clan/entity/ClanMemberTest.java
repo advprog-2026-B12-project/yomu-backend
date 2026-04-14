@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.yomubackend.entity;
+package id.ac.ui.cs.advprog.yomubackend.clan.entity;
 
 import org.junit.jupiter.api.Test;
 
