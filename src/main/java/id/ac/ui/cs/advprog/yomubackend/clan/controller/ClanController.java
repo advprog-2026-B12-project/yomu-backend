@@ -1,11 +1,12 @@
-package id.ac.ui.cs.advprog.yomubackend.controller;
+package id.ac.ui.cs.advprog.yomubackend.clan.controller;
 
-import id.ac.ui.cs.advprog.yomubackend.dto.CreateClanRequest;
-import id.ac.ui.cs.advprog.yomubackend.dto.JoinClanRequest;
-import id.ac.ui.cs.advprog.yomubackend.entity.Clan;
-import id.ac.ui.cs.advprog.yomubackend.entity.ClanMember;
-import id.ac.ui.cs.advprog.yomubackend.repository.ClanRepository;
-import id.ac.ui.cs.advprog.yomubackend.service.ClanService;
+import id.ac.ui.cs.advprog.yomubackend.clan.dto.CreateClanRequest;
+import id.ac.ui.cs.advprog.yomubackend.clan.dto.JoinClanRequest;
+import id.ac.ui.cs.advprog.yomubackend.clan.entity.Clan;
+import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
+import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanRepository;
+import id.ac.ui.cs.advprog.yomubackend.clan.service.ClanService;
+
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;

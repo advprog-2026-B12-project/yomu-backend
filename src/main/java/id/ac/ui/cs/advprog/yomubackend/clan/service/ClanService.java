@@ -1,11 +1,12 @@
-package id.ac.ui.cs.advprog.yomubackend.service;
+package id.ac.ui.cs.advprog.yomubackend.clan.service;
 
-import id.ac.ui.cs.advprog.yomubackend.entity.Clan;
-import id.ac.ui.cs.advprog.yomubackend.entity.ClanMember;
-import id.ac.ui.cs.advprog.yomubackend.repository.ClanMemberRepository;
-import id.ac.ui.cs.advprog.yomubackend.repository.ClanRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import id.ac.ui.cs.advprog.yomubackend.clan.entity.Clan;
+import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
+import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberRepository;
+import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanRepository;
 
 @Service
 public class ClanService {

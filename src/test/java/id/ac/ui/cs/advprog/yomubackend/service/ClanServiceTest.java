@@ -1,9 +1,10 @@
 package id.ac.ui.cs.advprog.yomubackend.service;
 
-import id.ac.ui.cs.advprog.yomubackend.entity.Clan;
-import id.ac.ui.cs.advprog.yomubackend.entity.ClanMember;
-import id.ac.ui.cs.advprog.yomubackend.repository.ClanMemberRepository;
-import id.ac.ui.cs.advprog.yomubackend.repository.ClanRepository;
+import id.ac.ui.cs.advprog.yomubackend.clan.entity.Clan;
+import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
+import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberRepository;
+import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanRepository;
+import id.ac.ui.cs.advprog.yomubackend.clan.service.ClanService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

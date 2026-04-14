@@ -1,6 +1,7 @@
 package id.ac.ui.cs.advprog.yomubackend.repository;
 
-import id.ac.ui.cs.advprog.yomubackend.entity.Clan;
+import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanRepository;
+import id.ac.ui.cs.advprog.yomubackend.clan.entity.Clan;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
