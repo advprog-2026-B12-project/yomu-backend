@@ -2,7 +2,9 @@ package id.ac.ui.cs.advprog.yomubackend.auth.service;
 
 import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import id.ac.ui.cs.advprog.yomubackend.auth.dto.RegisterRequest;
+import id.ac.ui.cs.advprog.yomubackend.auth.dto.LoginResponse;
 import id.ac.ui.cs.advprog.yomubackend.auth.repository.UserRepository;
+import id.ac.ui.cs.advprog.yomubackend.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,6 +28,9 @@ class AuthServiceImplTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private JwtService jwtService;
 
     @InjectMocks
     private AuthServiceImpl authService;
@@ -78,11 +83,14 @@ class AuthServiceImplTest {
     void login_Success() {
         when(userRepository.findByUsername("ahmad.faiq41")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("rahasia", "hashed_rahasia")).thenReturn(true);
+        when(jwtService.generateToken("ahmad.faiq41")).thenReturn("dummy_token");
 
-        User result = authService.login("ahmad.faiq41", "rahasia");
+        LoginResponse result = authService.login("ahmad.faiq41", "rahasia");
 
         assertNotNull(result);
-        assertEquals("ahmad.faiq41", result.getUsername());
+        assertNotNull(result.getUser());
+        assertEquals("dummy_token", result.getToken());
+        assertEquals("ahmad.faiq41", result.getUser().getUsername());
     }
 
     @Test
@@ -94,7 +102,7 @@ class AuthServiceImplTest {
             authService.login("ahmad.faiq41", "salah_password");
         });
 
-        assertEquals("Username atau password salah!", exception.getMessage());
+        assertEquals("Username/email atau password salah!", exception.getMessage());
     }
 
     @Test
@@ -105,6 +113,45 @@ class AuthServiceImplTest {
             authService.login("hantu", "rahasia");
         });
 
-        assertEquals("Username atau password salah!", exception.getMessage());
+        assertEquals("Username/email atau password salah!", exception.getMessage());
+    }
+
+    @Test
+    void login_WithEmail_Success() {
+        when(userRepository.findByEmail("faiq@kampus.id")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("rahasia", "hashed_rahasia")).thenReturn(true);
+        when(jwtService.generateToken("ahmad.faiq41")).thenReturn("dummy_token");
+
+        LoginResponse result = authService.login("faiq@kampus.id", "rahasia");
+
+        assertNotNull(result);
+        assertNotNull(result.getUser());
+        assertEquals("dummy_token", result.getToken());
+        assertEquals("faiq@kampus.id", result.getUser().getEmail());
+        verify(userRepository, times(1)).findByEmail("faiq@kampus.id");
+        verify(userRepository, never()).findByUsername(any());
+    }
+
+    @Test
+    void login_WithEmail_WrongPassword_ThrowsException() {
+        when(userRepository.findByEmail("faiq@kampus.id")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("salah_password", "hashed_rahasia")).thenReturn(false);
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            authService.login("faiq@kampus.id", "salah_password");
+        });
+
+        assertEquals("Username/email atau password salah!", exception.getMessage());
+    }
+
+    @Test
+    void login_WithEmail_NotFound_ThrowsException() {
+        when(userRepository.findByEmail("nobody@kampus.id")).thenReturn(Optional.empty());
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            authService.login("nobody@kampus.id", "rahasia");
+        });
+
+        assertEquals("Username/email atau password salah!", exception.getMessage());
     }
 }

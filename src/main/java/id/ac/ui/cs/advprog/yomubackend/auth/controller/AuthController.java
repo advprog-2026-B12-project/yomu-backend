@@ -2,6 +2,7 @@ package id.ac.ui.cs.advprog.yomubackend.auth.controller;
 
 import id.ac.ui.cs.advprog.yomubackend.auth.dto.LoginRequest;
 import id.ac.ui.cs.advprog.yomubackend.auth.dto.RegisterRequest;
+import id.ac.ui.cs.advprog.yomubackend.auth.dto.LoginResponse;
 import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import id.ac.ui.cs.advprog.yomubackend.auth.service.AuthService;
 import org.springframework.http.HttpStatus;
@@ -39,12 +40,14 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody LoginRequest request) {
         try {
-            User user = authService.login(request.getUsername(), request.getPassword());
+            LoginResponse loginResponse = authService.login(request.getUsername(), request.getPassword());
+            User user = loginResponse.getUser();
 
             Map<String, Object> response = new HashMap<>();
             response.put("message", "Login berhasil");
             response.put("userId", user.getId());
             response.put("username", user.getUsername());
+            response.put("token", loginResponse.getToken());
 
             return ResponseEntity.ok(response);
         } catch (IllegalArgumentException e) {

@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.yomubackend.config;
 
+import id.ac.ui.cs.advprog.yomubackend.security.JwtAuthenticationFilter;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -21,7 +22,7 @@ class SecurityConfigTest {
 
     @Test
     void testPasswordEncoder() {
-        SecurityConfig config = new SecurityConfig();
+        SecurityConfig config = new SecurityConfig(mock(JwtAuthenticationFilter.class));
         PasswordEncoder encoder = config.passwordEncoder();
 
         assertTrue(encoder instanceof BCryptPasswordEncoder);
@@ -30,7 +31,7 @@ class SecurityConfigTest {
     @Test
     @SuppressWarnings({"unchecked", "rawtypes"})
     void testFilterChainCoverage() throws Exception {
-        SecurityConfig config = new SecurityConfig();
+        SecurityConfig config = new SecurityConfig(mock(JwtAuthenticationFilter.class));
 
         HttpSecurity http = mock(HttpSecurity.class, RETURNS_DEEP_STUBS);
 
