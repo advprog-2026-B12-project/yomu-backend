@@ -1,8 +1,6 @@
-package id.ac.ui.cs.advprog.yomubackend.entity;
+package id.ac.ui.cs.advprog.yomubackend.clan.entity;
 
 import org.junit.jupiter.api.Test;
-
-import id.ac.ui.cs.advprog.yomubackend.clan.entity.Clan;
 
 import java.time.Instant;
 

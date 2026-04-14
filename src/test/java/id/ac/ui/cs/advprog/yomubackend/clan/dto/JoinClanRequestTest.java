@@ -1,6 +1,5 @@
-package id.ac.ui.cs.advprog.yomubackend.dto;
+package id.ac.ui.cs.advprog.yomubackend.clan.dto;
 
-import id.ac.ui.cs.advprog.yomubackend.clan.dto.JoinClanRequest;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
