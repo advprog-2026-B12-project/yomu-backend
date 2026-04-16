@@ -1,6 +1,7 @@
 package id.ac.ui.cs.advprog.yomubackend.achievements.controller;
 
 import id.ac.ui.cs.advprog.yomubackend.achievements.constant.AchievementEvent;
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementProgressResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.service.DailyMissionService;
 import tools.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.Achievement;
@@ -91,6 +92,22 @@ class AchievementControllerTest {
 
         mockMvc.perform(get("/api/achievements/user/" + dummyUserId))
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].currentProgress").value(5));
+    }
+
+    @Test
+    void testGetUserAchievementProgress_ShouldReturn200() throws Exception {
+        AchievementProgressResponse progressResponse = new AchievementProgressResponse();
+        progressResponse.setAchievementId(dummyAchievement.getId());
+        progressResponse.setName(dummyAchievement.getName());
+        progressResponse.setCurrentProgress(5);
+        progressResponse.setIsUnlocked(false);
+
+        when(achievementService.getUserAchievementProgress(dummyUserId)).thenReturn(List.of(progressResponse));
+
+        mockMvc.perform(get("/api/achievements/user/" + dummyUserId + "/progress"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].achievementId").value(dummyAchievement.getId().toString()))
                 .andExpect(jsonPath("$[0].currentProgress").value(5));
     }
 
