@@ -1,6 +1,7 @@
 package id.ac.ui.cs.advprog.yomubackend.achievements.controller;
 
 import id.ac.ui.cs.advprog.yomubackend.achievements.constant.AchievementEvent;
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementProgressResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementRequest;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.EventTriggerRequest;
@@ -44,6 +45,11 @@ public class AchievementController {
     @GetMapping("/user/{userId}")
     public ResponseEntity<List<UserAchievement>> getUserAchievements(@PathVariable UUID userId) {
         return ResponseEntity.ok(achievementService.getUserAchievements(userId));
+    }
+
+    @GetMapping("/user/{userId}/progress")
+    public ResponseEntity<List<AchievementProgressResponse>> getUserAchievementProgress(@PathVariable UUID userId) {
+        return ResponseEntity.ok(achievementService.getUserAchievementProgress(userId));
     }
 
     @PostMapping("/trigger")
