@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.List;
 
-@Profile("local")
+@Profile("!test")
 @Component
 public class QuizSeeder {
 
