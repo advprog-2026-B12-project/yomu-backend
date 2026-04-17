@@ -73,4 +73,13 @@ class CommentReactionTest {
         assertEquals(r1.hashCode(), r2.hashCode());
         assertTrue(r1.toString().contains("LOVE"));
     }
+
+    @Test
+    void givenCommentReactionTable_whenUniqueConstraintInspected_thenUniqueOnCommentAndUserOnly() {
+        jakarta.persistence.Table table = CommentReaction.class.getAnnotation(jakarta.persistence.Table.class);
+        assertNotNull(table);
+        assertEquals(1, table.uniqueConstraints().length);
+        jakarta.persistence.UniqueConstraint uc = table.uniqueConstraints()[0];
+        assertArrayEquals(new String[] { "comment_id", "user_id" }, uc.columnNames());
+    }
 }

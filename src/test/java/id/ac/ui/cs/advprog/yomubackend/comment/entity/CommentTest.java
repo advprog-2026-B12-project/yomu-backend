@@ -86,4 +86,20 @@ class CommentTest {
         assertEquals(c1.hashCode(), c2.hashCode());
         assertTrue(c1.toString().contains("Same"));
     }
+
+    @Test
+    void givenEditedComment_whenEditedAtIsSet_thenEditedAtIsReturned() {
+        LocalDateTime editedAt = now.plusMinutes(5);
+        Comment comment = buildComment(commentId, "Edited content");
+        comment.setEditedAt(editedAt);
+
+        assertEquals(editedAt, comment.getEditedAt());
+    }
+
+    @Test
+    void givenNewComment_whenBuilt_thenEditedAtIsNull() {
+        Comment comment = buildComment(commentId, "Freshly posted");
+
+        assertNull(comment.getEditedAt());
+    }
 }
