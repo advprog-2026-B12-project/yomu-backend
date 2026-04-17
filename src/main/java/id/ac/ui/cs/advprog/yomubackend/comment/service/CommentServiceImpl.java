@@ -11,8 +11,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -23,8 +26,8 @@ public class CommentServiceImpl implements CommentService {
     private final UserRepository userRepository;
 
     public CommentServiceImpl(CommentRepository commentRepository,
-                              ReadingRepository readingRepository,
-                              UserRepository userRepository) {
+            ReadingRepository readingRepository,
+            UserRepository userRepository) {
         this.commentRepository = commentRepository;
         this.readingRepository = readingRepository;
         this.userRepository = userRepository;
@@ -47,7 +50,7 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public CommentResponse replyToComment(String username, UUID readingId, UUID parentCommentId,
-                                          CommentRequest request) {
+            CommentRequest request) {
         validateContent(request);
         User author = resolveUser(username);
 
@@ -70,13 +73,46 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional(readOnly = true)
     public List<CommentResponse> getCommentsByReadingId(UUID readingId) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        List<Comment> all = commentRepository.findByReadingIdOrderByCreatedAtAsc(readingId);
+        return assembleTree(all);
+    }
+
+    private List<CommentResponse> assembleTree(List<Comment> all) {
+        Map<UUID, List<Comment>> childrenByParent = new HashMap<>();
+        List<Comment> topLevel = new ArrayList<>();
+        for (Comment c : all) {
+            if (c.getParent() == null) {
+                topLevel.add(c);
+            } else {
+                childrenByParent
+                        .computeIfAbsent(c.getParent().getId(), k -> new ArrayList<>())
+                        .add(c);
+            }
+        }
+        List<CommentResponse> result = new ArrayList<>();
+        for (Comment top : topLevel) {
+            if (top.isDeleted())
+                continue;
+            result.add(buildNode(top, childrenByParent));
+        }
+        return result;
+    }
+
+    private CommentResponse buildNode(Comment comment, Map<UUID, List<Comment>> childrenByParent) {
+        List<Comment> children = childrenByParent.getOrDefault(comment.getId(), Collections.emptyList());
+        List<CommentResponse> childResponses = new ArrayList<>();
+        for (Comment child : children) {
+            if (child.isDeleted())
+                continue;
+            childResponses.add(buildNode(child, childrenByParent));
+        }
+        return CommentResponse.fromEntity(comment, childResponses);
     }
 
     @Override
     @Transactional
     public CommentResponse updateComment(String username, UUID readingId, UUID commentId,
-                                         CommentRequest request) {
+            CommentRequest request) {
         throw new UnsupportedOperationException("Not implemented yet");
     }
 
