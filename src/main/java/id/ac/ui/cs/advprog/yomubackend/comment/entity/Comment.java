@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.yomubackend.entity;
+package id.ac.ui.cs.advprog.yomubackend.comment.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
@@ -10,8 +10,8 @@ import java.util.UUID;
 @Data
 @Table(name = "comments", indexes = {
         @Index(name = "IDX_comments_reading_id", columnList = "reading_id"),
-        @Index(name = "IDX_comments_author_id",  columnList = "author_id"),
-        @Index(name = "IDX_comments_parent_id",  columnList = "parent_id")
+        @Index(name = "IDX_comments_author_id", columnList = "author_id"),
+        @Index(name = "IDX_comments_parent_id", columnList = "parent_id")
 })
 public class Comment {
 
@@ -47,5 +47,7 @@ public class Comment {
 
     @Column(name = "updated_at", nullable = false)
     private LocalDateTime updatedAt;
-}
 
+    @Column(name = "edited_at")
+    private LocalDateTime editedAt;
+}

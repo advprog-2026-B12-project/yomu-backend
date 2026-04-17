@@ -1,7 +1,9 @@
-package id.ac.ui.cs.advprog.yomubackend.entity;
+package id.ac.ui.cs.advprog.yomubackend.comment.entity;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import id.ac.ui.cs.advprog.yomubackend.comment.entity.Comment;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -83,5 +85,21 @@ class CommentTest {
         assertEquals(c1, c2);
         assertEquals(c1.hashCode(), c2.hashCode());
         assertTrue(c1.toString().contains("Same"));
+    }
+
+    @Test
+    void givenEditedComment_whenEditedAtIsSet_thenEditedAtIsReturned() {
+        LocalDateTime editedAt = now.plusMinutes(5);
+        Comment comment = buildComment(commentId, "Edited content");
+        comment.setEditedAt(editedAt);
+
+        assertEquals(editedAt, comment.getEditedAt());
+    }
+
+    @Test
+    void givenNewComment_whenBuilt_thenEditedAtIsNull() {
+        Comment comment = buildComment(commentId, "Freshly posted");
+
+        assertNull(comment.getEditedAt());
     }
 }
