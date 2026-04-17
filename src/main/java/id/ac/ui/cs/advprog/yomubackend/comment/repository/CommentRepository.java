@@ -13,4 +13,3 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
     List<Comment> findByParentId(UUID parentId);
 }
-

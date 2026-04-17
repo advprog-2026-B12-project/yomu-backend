@@ -11,8 +11,8 @@ import java.util.UUID;
 @Table(
         name = "comment_reactions",
         uniqueConstraints = @UniqueConstraint(
-                name = "UQ_reaction_comment_user_type",
-                columnNames = {"comment_id", "user_id", "reaction_type"}
+                name = "UQ_reaction_comment_user",
+                columnNames = {"comment_id", "user_id"}
         ),
         indexes = {
                 @Index(name = "IDX_reactions_comment_id",   columnList = "comment_id"),
@@ -40,4 +40,3 @@ public class CommentReaction {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 }
-
