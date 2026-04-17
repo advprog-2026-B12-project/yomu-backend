@@ -7,6 +7,7 @@ import id.ac.ui.cs.advprog.yomubackend.comment.dto.CommentResponse;
 import id.ac.ui.cs.advprog.yomubackend.comment.entity.Comment;
 import id.ac.ui.cs.advprog.yomubackend.comment.repository.CommentRepository;
 import id.ac.ui.cs.advprog.yomubackend.quiz.repository.ReadingRepository;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -113,13 +114,52 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     public CommentResponse updateComment(String username, UUID readingId, UUID commentId,
             CommentRequest request) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        validateContent(request);
+        User currentUser = resolveUser(username);
+        Comment existing = loadActiveCommentForReading(commentId, readingId);
+        requireOwnership(existing, currentUser);
+
+        existing.setContent(request.getContent().trim());
+        LocalDateTime now = LocalDateTime.now();
+        existing.setUpdatedAt(now);
+        existing.setEditedAt(now);
+
+        Comment saved = commentRepository.save(existing);
+        return CommentResponse.fromEntity(saved, Collections.emptyList());
     }
 
     @Override
     @Transactional
     public void softDeleteComment(String username, UUID readingId, UUID commentId) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        User currentUser = resolveUser(username);
+        Comment existing = loadActiveCommentForReading(commentId, readingId);
+        requireOwnership(existing, currentUser);
+
+        LocalDateTime now = LocalDateTime.now();
+        existing.setDeleted(true);
+        existing.setDeletedBy(currentUser.getId());
+        existing.setDeletedAt(now);
+        existing.setUpdatedAt(now);
+
+        commentRepository.save(existing);
+    }
+
+    private Comment loadActiveCommentForReading(UUID commentId, UUID readingId) {
+        Comment existing = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("Komentar tidak ditemukan!"));
+        if (!existing.getReadingId().equals(readingId)) {
+            throw new IllegalArgumentException("Komentar bukan milik reading ini!");
+        }
+        if (existing.isDeleted()) {
+            throw new IllegalArgumentException("Komentar sudah dihapus!");
+        }
+        return existing;
+    }
+
+    private void requireOwnership(Comment comment, User user) {
+        if (!comment.getAuthorId().equals(user.getId())) {
+            throw new AccessDeniedException("Anda tidak memiliki akses untuk komentar ini!");
+        }
     }
 
     private void validateContent(CommentRequest request) {
