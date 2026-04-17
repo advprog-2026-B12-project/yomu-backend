@@ -2,10 +2,16 @@ package id.ac.ui.cs.advprog.yomubackend.auth.controller;
 
 import tools.jackson.databind.json.JsonMapper;
 
+import id.ac.ui.cs.advprog.yomubackend.auth.dto.GoogleSsoResult;
+import id.ac.ui.cs.advprog.yomubackend.auth.dto.GoogleTokenRequest;
 import id.ac.ui.cs.advprog.yomubackend.auth.dto.LoginRequest;
+import id.ac.ui.cs.advprog.yomubackend.auth.dto.LoginResponse;
 import id.ac.ui.cs.advprog.yomubackend.auth.dto.RegisterRequest;
+import id.ac.ui.cs.advprog.yomubackend.auth.dto.UserDto;
 import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
+import id.ac.ui.cs.advprog.yomubackend.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.yomubackend.auth.service.AuthService;
+import id.ac.ui.cs.advprog.yomubackend.security.JwtService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,83 +37,193 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc(addFilters = false)
 class AuthControllerTest {
 
-    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-    @Autowired
-    private MockMvc mockMvc;
+        @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+        @Autowired
+        private MockMvc mockMvc;
 
-    @MockitoBean
-    private AuthService authService;
+        @MockitoBean
+        private AuthService authService;
 
-    @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
-    @Autowired
-    private JsonMapper jsonMapper;
+        @MockitoBean
+        private JwtService jwtService;
 
-    private RegisterRequest registerRequest;
-    private LoginRequest loginRequest;
-    private User user;
+        @MockitoBean
+        private UserRepository userRepository;
 
-    @BeforeEach
-    void setUp() {
-        registerRequest = new RegisterRequest();
-        registerRequest.setUsername("ahmad.faiq41");
-        registerRequest.setEmail("faiq@kampus.id");
-        registerRequest.setDisplayName("Faiq");
-        registerRequest.setPassword("rahasia");
+        @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
+        @Autowired
+        private JsonMapper jsonMapper;
 
-        loginRequest = new LoginRequest();
-        loginRequest.setUsername("ahmad.faiq41");
-        loginRequest.setPassword("rahasia");
+        private RegisterRequest registerRequest;
+        private LoginRequest loginRequest;
+        private User user;
+        private UserDto userDto;
 
-        user = new User();
-        user.setId(UUID.randomUUID());
-        user.setUsername("ahmad.faiq41");
-    }
+        @BeforeEach
+        void setUp() {
+                registerRequest = new RegisterRequest();
+                registerRequest.setUsername("ahmadFaiq41");
+                registerRequest.setEmail("faiq@kampus.id");
+                registerRequest.setDisplayName("Faiq");
+                registerRequest.setPassword("rahasia");
 
-    @Test
-    void register_Success() throws Exception {
-        when(authService.register(any(RegisterRequest.class))).thenReturn(user);
+                loginRequest = new LoginRequest();
+                loginRequest.setUsername("ahmadFaiq41");
+                loginRequest.setPassword("rahasia");
 
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonMapper.writeValueAsString(registerRequest)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.message").value("Registrasi berhasil"))
-                .andExpect(jsonPath("$.userId").value(user.getId().toString()));
-    }
+                user = new User();
+                user.setId(UUID.randomUUID());
+                user.setUsername("ahmadFaiq41");
+                user.setDisplayName("Faiq");
+                user.setEmail("faiq@kampus.id");
 
-    @Test
-    void register_Failure() throws Exception {
-        when(authService.register(any(RegisterRequest.class)))
-                .thenThrow(new IllegalArgumentException("Username sudah terpakai!"));
+                userDto = UserDto.builder()
+                                .userId(user.getId())
+                                .username("ahmadFaiq41")
+                                .displayName("Faiq")
+                                .email("faiq@kampus.id")
+                                .build();
+        }
 
-        mockMvc.perform(post("/api/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonMapper.writeValueAsString(registerRequest)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("Username sudah terpakai!"));
-    }
+        @Test
+        void register_Success() throws Exception {
+                when(authService.register(any(RegisterRequest.class))).thenReturn(user);
 
-    @Test
-    void login_Success() throws Exception {
-        when(authService.login(anyString(), anyString())).thenReturn(user);
+                mockMvc.perform(post("/api/auth/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonMapper.writeValueAsString(registerRequest)))
+                                .andExpect(status().isCreated())
+                                .andExpect(jsonPath("$.message").value("Registrasi berhasil"))
+                                .andExpect(jsonPath("$.userId").value(user.getId().toString()));
+        }
 
-        mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Login berhasil"))
-                .andExpect(jsonPath("$.username").value("ahmad.faiq41"));
-    }
+        @Test
+        void register_Failure() throws Exception {
+                when(authService.register(any(RegisterRequest.class)))
+                                .thenThrow(new IllegalArgumentException("Username sudah terpakai!"));
 
-    @Test
-    void login_Failure() throws Exception {
-        when(authService.login(anyString(), anyString()))
-                .thenThrow(new IllegalArgumentException("Username atau password salah!"));
+                mockMvc.perform(post("/api/auth/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonMapper.writeValueAsString(registerRequest)))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.error").value("Username sudah terpakai!"));
+        }
 
-        mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonMapper.writeValueAsString(loginRequest)))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.error").value("Username atau password salah!"));
-    }
+        @Test
+        void login_Success() throws Exception {
+                LoginResponse loginResponse = LoginResponse.builder()
+                                .message("Login berhasil")
+                                .token("dummy-jwt-token")
+                                .user(userDto)
+                                .build();
+
+                when(authService.login(anyString(), anyString())).thenReturn(loginResponse);
+
+                mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonMapper.writeValueAsString(loginRequest)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message").value("Login berhasil"))
+                                .andExpect(jsonPath("$.token").value("dummy-jwt-token"))
+                                .andExpect(jsonPath("$.user.username").value("ahmadFaiq41"))
+                                .andExpect(jsonPath("$.user.displayName").value("Faiq"))
+                                .andExpect(jsonPath("$.user.email").value("faiq@kampus.id"))
+                                .andExpect(jsonPath("$.user.userId").value(user.getId().toString()));
+        }
+
+        @Test
+        void login_Failure() throws Exception {
+                when(authService.login(anyString(), anyString()))
+                                .thenThrow(new IllegalArgumentException("Username/email atau password salah!"));
+
+                mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonMapper.writeValueAsString(loginRequest)))
+                                .andExpect(status().isUnauthorized())
+                                .andExpect(jsonPath("$.error").value("Username/email atau password salah!"));
+        }
+
+        @Test
+        void googleLogin_ExistingUser_Success() throws Exception {
+                GoogleSsoResult result = GoogleSsoResult.builder()
+                                .needsRegistration(false)
+                                .message("Login berhasil")
+                                .token("jwt-token")
+                                .user(userDto)
+                                .build();
+
+                when(authService.googleLogin(anyString())).thenReturn(result);
+
+                GoogleTokenRequest request = new GoogleTokenRequest();
+                request.setToken("valid-google-token");
+
+                mockMvc.perform(post("/api/auth/google")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonMapper.writeValueAsString(request)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.message").value("Login berhasil"))
+                                .andExpect(jsonPath("$.token").value("jwt-token"))
+                                .andExpect(jsonPath("$.user.username").value("ahmadFaiq41"))
+                                .andExpect(jsonPath("$.user.displayName").value("Faiq"))
+                                .andExpect(jsonPath("$.user.email").value("faiq@kampus.id"))
+                                .andExpect(jsonPath("$.user.userId").value(user.getId().toString()));
+        }
+
+        @Test
+        void googleLogin_NewUser_NeedsRegistration() throws Exception {
+                GoogleSsoResult result = GoogleSsoResult.builder()
+                                .needsRegistration(true)
+                                .email("new@kampus.id")
+                                .googleName("New User")
+                                .build();
+
+                when(authService.googleLogin(anyString())).thenReturn(result);
+
+                GoogleTokenRequest request = new GoogleTokenRequest();
+                request.setToken("valid-google-token");
+
+                mockMvc.perform(post("/api/auth/google")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonMapper.writeValueAsString(request)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.needsRegistration").value(true))
+                                .andExpect(jsonPath("$.email").value("new@kampus.id"))
+                                .andExpect(jsonPath("$.googleName").value("New User"));
+        }
+
+        @Test
+        void googleLogin_NewUser_NullGoogleName_NeedsRegistration() throws Exception {
+                GoogleSsoResult result = GoogleSsoResult.builder()
+                                .needsRegistration(true)
+                                .email("new@kampus.id")
+                                .googleName(null)
+                                .build();
+
+                when(authService.googleLogin(anyString())).thenReturn(result);
+
+                GoogleTokenRequest request = new GoogleTokenRequest();
+                request.setToken("valid-google-token");
+
+                mockMvc.perform(post("/api/auth/google")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonMapper.writeValueAsString(request)))
+                                .andExpect(status().isOk())
+                                .andExpect(jsonPath("$.needsRegistration").value(true))
+                                .andExpect(jsonPath("$.email").value("new@kampus.id"));
+        }
+
+        @Test
+        void googleLogin_InvalidToken_BadRequest() throws Exception {
+                when(authService.googleLogin(anyString()))
+                                .thenThrow(new IllegalArgumentException("Token Google tidak valid!"));
+
+                GoogleTokenRequest request = new GoogleTokenRequest();
+                request.setToken("bad-token");
+
+                mockMvc.perform(post("/api/auth/google")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonMapper.writeValueAsString(request)))
+                                .andExpect(status().isBadRequest())
+                                .andExpect(jsonPath("$.error").value("Token Google tidak valid!"));
+        }
 }

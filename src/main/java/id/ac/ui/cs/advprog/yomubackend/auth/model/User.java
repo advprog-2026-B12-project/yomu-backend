@@ -2,12 +2,13 @@ package id.ac.ui.cs.advprog.yomubackend.auth.model;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import java.security.Principal;
 import java.util.UUID;
 
 @Data
 @Entity
 @Table(name = "users")
-public class User {
+public class User implements Principal {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
@@ -23,4 +24,9 @@ public class User {
 
     @Column(nullable = false)
     private String password;
+
+    @Override
+    public String getName() {
+        return username;
+    }
 }

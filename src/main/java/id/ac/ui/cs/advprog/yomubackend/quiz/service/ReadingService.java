@@ -9,4 +9,5 @@ public interface ReadingService {
     Reading create(Reading reading);
     List<Reading> findAll();
     void delete(UUID id);
+    Reading findById(UUID id);
 }

@@ -60,9 +60,10 @@ class OptionServiceImplTest {
 
         when(optionRepo.findByQuestionId(questionId)).thenReturn(List.of(o));
 
-        List<Option> result = optionRepo.findByQuestionId(questionId);
+        List<Option> result = service.findByQuestion(questionId);
 
         assertEquals(1, result.size());
+        verify(optionRepo).findByQuestionId(questionId);
     }
 
     @Test

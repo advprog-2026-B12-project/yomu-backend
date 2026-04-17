@@ -50,4 +50,14 @@ class AdminReadingControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].title").value("Title"));
     }
+
+    @Test
+    void testDeleteReading() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        mvc.perform(delete("/api/admin/readings/" + id))
+                .andExpect(status().isNoContent());
+
+        verify(service).delete(id);
+    }
 }

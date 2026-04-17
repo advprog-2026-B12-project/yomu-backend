@@ -30,4 +30,10 @@ public class ReadingServiceImpl implements ReadingService {
     public void delete(UUID id) {
         repository.deleteById(id);
     }
+
+    @Override
+    public Reading findById(UUID id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Reading not found"));
+    }
 }
