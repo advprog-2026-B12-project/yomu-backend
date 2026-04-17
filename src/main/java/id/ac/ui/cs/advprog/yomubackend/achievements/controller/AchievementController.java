@@ -1,5 +1,7 @@
 package id.ac.ui.cs.advprog.yomubackend.achievements.controller;
 
+import id.ac.ui.cs.advprog.yomubackend.achievements.constant.AchievementEvent;
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementProgressResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementRequest;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.EventTriggerRequest;
@@ -11,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -44,10 +47,16 @@ public class AchievementController {
         return ResponseEntity.ok(achievementService.getUserAchievements(userId));
     }
 
+    @GetMapping("/user/{userId}/progress")
+    public ResponseEntity<List<AchievementProgressResponse>> getUserAchievementProgress(@PathVariable UUID userId) {
+        return ResponseEntity.ok(achievementService.getUserAchievementProgress(userId));
+    }
+
     @PostMapping("/trigger")
     public ResponseEntity<String> triggerEvent(@RequestBody EventTriggerRequest request) {
-        achievementService.processEvent(request.getUserId(), request.getEventType());
-        dailyMissionService.processDailyEvent(request.getUserId(), request.getEventType());
+        String eventType = validateAndNormalizeEventType(request.getEventType());
+        achievementService.processEvent(request.getUserId(), eventType);
+        dailyMissionService.processDailyEvent(request.getUserId(), eventType);
 
         return ResponseEntity.ok("Event processed successfully for Achievements and Daily Missions");
     }
@@ -65,8 +74,19 @@ public class AchievementController {
 
         achievement.setPoints(request.getPoints() != null ? request.getPoints() : 0);
         achievement.setMilestone(request.getMilestone() != null ? request.getMilestone() : 1);
-        achievement.setEventType(request.getEventType());
+        achievement.setEventType(validateAndNormalizeEventType(request.getEventType()));
         return achievement;
+    }
+
+    private String validateAndNormalizeEventType(String eventType) {
+        String normalizedEvent = AchievementEvent.normalize(eventType);
+        if (!AchievementEvent.isSupported(normalizedEvent)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid eventType. Supported values: " + AchievementEvent.supportedEvents()
+            );
+        }
+        return normalizedEvent;
     }
 
     private AchievementResponse mapToResponse(Achievement entity) {
