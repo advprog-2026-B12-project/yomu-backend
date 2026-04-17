@@ -1,12 +1,16 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.Instant;
 
 @Entity
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
 @Table(name = "clans", uniqueConstraints = {
         @UniqueConstraint(name = "uk_clans_name", columnNames = {"name"})
 })
@@ -22,10 +26,19 @@ public class Clan {
     @Column(length = 300)
     private String description;
 
-    // sementara pakai Long aja (ga FK ke user dulu biar ga nabrak modul 1)
     @Column(nullable = false)
     private Long leaderUserId;
 
-    @Column(nullable = false)
-    private Instant createdAt = Instant.now();
+    @Column(nullable = false, length = 20)
+    private String division = "BRONZE";
+
+    @Column(nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = Instant.now();
+        }
+    }
 }
