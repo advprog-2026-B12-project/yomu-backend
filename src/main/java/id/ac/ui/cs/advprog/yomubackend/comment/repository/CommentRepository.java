@@ -1,7 +1,8 @@
-package id.ac.ui.cs.advprog.yomubackend.repository;
+package id.ac.ui.cs.advprog.yomubackend.comment.repository;
 
-import id.ac.ui.cs.advprog.yomubackend.entity.Comment;
 import org.springframework.data.jpa.repository.JpaRepository;
+
+import id.ac.ui.cs.advprog.yomubackend.comment.entity.Comment;
 
 import java.util.List;
 import java.util.UUID;

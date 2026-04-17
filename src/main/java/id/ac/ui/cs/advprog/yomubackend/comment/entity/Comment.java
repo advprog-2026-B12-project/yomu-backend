@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.yomubackend.entity;
+package id.ac.ui.cs.advprog.yomubackend.comment.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;

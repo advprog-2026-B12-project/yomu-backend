@@ -1,7 +1,8 @@
-package id.ac.ui.cs.advprog.yomubackend.controller;
+package id.ac.ui.cs.advprog.yomubackend.comment.controller;
 
-import id.ac.ui.cs.advprog.yomubackend.entity.Comment;
-import id.ac.ui.cs.advprog.yomubackend.repository.CommentRepository;
+import id.ac.ui.cs.advprog.yomubackend.comment.entity.Comment;
+import id.ac.ui.cs.advprog.yomubackend.comment.repository.CommentRepository;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
