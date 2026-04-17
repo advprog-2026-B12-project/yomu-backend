@@ -14,6 +14,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -54,10 +55,6 @@ class CommentServiceImplTest {
         return req;
     }
 
-    private Comment savedCommentAnswer() {
-        return null; // replaced per-test via when().thenAnswer
-    }
-
     @Test
     void createComment_Success_ReturnsResponseWithAuthorAndReading() {
         when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
@@ -84,8 +81,8 @@ class CommentServiceImplTest {
 
     @Test
     void createComment_BlankContent_ThrowsException() {
-        assertThrows(IllegalArgumentException.class, () ->
-                commentService.createComment("reader01", readingId, requestWithContent("   ")));
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.createComment("reader01", readingId, requestWithContent("   ")));
 
         verify(commentRepository, never()).save(any(Comment.class));
     }
@@ -95,8 +92,8 @@ class CommentServiceImplTest {
         when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
         when(readingRepository.existsById(readingId)).thenReturn(false);
 
-        assertThrows(IllegalArgumentException.class, () ->
-                commentService.createComment("reader01", readingId, requestWithContent("hi")));
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.createComment("reader01", readingId, requestWithContent("hi")));
 
         verify(commentRepository, never()).save(any(Comment.class));
     }
@@ -105,8 +102,8 @@ class CommentServiceImplTest {
     void createComment_UserNotFound_ThrowsException() {
         when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () ->
-                commentService.createComment("ghost", readingId, requestWithContent("hi")));
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.createComment("ghost", readingId, requestWithContent("hi")));
 
         verify(commentRepository, never()).save(any(Comment.class));
     }
@@ -144,8 +141,8 @@ class CommentServiceImplTest {
         when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
         when(commentRepository.findById(parentId)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class, () ->
-                commentService.replyToComment("reader01", readingId, parentId,
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.replyToComment("reader01", readingId, parentId,
                         requestWithContent("reply")));
 
         verify(commentRepository, never()).save(any(Comment.class));
@@ -162,8 +159,8 @@ class CommentServiceImplTest {
         when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
         when(commentRepository.findById(parentId)).thenReturn(Optional.of(parent));
 
-        assertThrows(IllegalArgumentException.class, () ->
-                commentService.replyToComment("reader01", readingId, parentId,
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.replyToComment("reader01", readingId, parentId,
                         requestWithContent("reply")));
 
         verify(commentRepository, never()).save(any(Comment.class));
@@ -179,8 +176,8 @@ class CommentServiceImplTest {
         when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
         when(commentRepository.findById(parentId)).thenReturn(Optional.of(parent));
 
-        assertThrows(IllegalArgumentException.class, () ->
-                commentService.replyToComment("reader01", readingId, parentId,
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.replyToComment("reader01", readingId, parentId,
                         requestWithContent("reply")));
 
         verify(commentRepository, never()).save(any(Comment.class));
@@ -190,10 +187,86 @@ class CommentServiceImplTest {
     void replyToComment_BlankContent_ThrowsException() {
         UUID parentId = UUID.randomUUID();
 
-        assertThrows(IllegalArgumentException.class, () ->
-                commentService.replyToComment("reader01", readingId, parentId,
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.replyToComment("reader01", readingId, parentId,
                         requestWithContent(" ")));
 
         verify(commentRepository, never()).save(any(Comment.class));
+    }
+
+    private Comment buildComment(UUID id, String content, Comment parent, boolean deleted) {
+        Comment c = new Comment();
+        c.setId(id);
+        c.setReadingId(readingId);
+        c.setAuthorId(author.getId());
+        c.setContent(content);
+        c.setCreatedAt(java.time.LocalDateTime.now());
+        c.setUpdatedAt(java.time.LocalDateTime.now());
+        c.setParent(parent);
+        c.setDeleted(deleted);
+        return c;
+    }
+
+    @Test
+    void getCommentsByReadingId_ReturnsNestedTree() {
+        Comment top1 = buildComment(UUID.randomUUID(), "top1", null, false);
+        Comment top2 = buildComment(UUID.randomUUID(), "top2", null, false);
+        Comment reply1 = buildComment(UUID.randomUUID(), "reply1", top1, false);
+        Comment reply2 = buildComment(UUID.randomUUID(), "reply2", top1, false);
+        Comment nestedReply = buildComment(UUID.randomUUID(), "nested", reply1, false);
+
+        when(commentRepository.findByReadingIdOrderByCreatedAtAsc(readingId))
+                .thenReturn(List.of(top1, top2, reply1, reply2, nestedReply));
+
+        List<CommentResponse> result = commentService.getCommentsByReadingId(readingId);
+
+        assertEquals(2, result.size());
+        CommentResponse top1Resp = result.stream()
+                .filter(r -> r.getId().equals(top1.getId())).findFirst().orElseThrow();
+        assertEquals(2, top1Resp.getReplies().size());
+        CommentResponse reply1Resp = top1Resp.getReplies().stream()
+                .filter(r -> r.getId().equals(reply1.getId())).findFirst().orElseThrow();
+        assertEquals(1, reply1Resp.getReplies().size());
+        assertEquals(nestedReply.getId(), reply1Resp.getReplies().get(0).getId());
+    }
+
+    @Test
+    void getCommentsByReadingId_ExcludesSoftDeletedTopLevel() {
+        Comment top = buildComment(UUID.randomUUID(), "visible", null, false);
+        Comment hidden = buildComment(UUID.randomUUID(), "gone", null, true);
+
+        when(commentRepository.findByReadingIdOrderByCreatedAtAsc(readingId))
+                .thenReturn(List.of(top, hidden));
+
+        List<CommentResponse> result = commentService.getCommentsByReadingId(readingId);
+
+        assertEquals(1, result.size());
+        assertEquals(top.getId(), result.get(0).getId());
+    }
+
+    @Test
+    void getCommentsByReadingId_ExcludesSoftDeletedReplies() {
+        Comment top = buildComment(UUID.randomUUID(), "visible", null, false);
+        Comment replyAlive = buildComment(UUID.randomUUID(), "alive", top, false);
+        Comment replyDead = buildComment(UUID.randomUUID(), "dead", top, true);
+
+        when(commentRepository.findByReadingIdOrderByCreatedAtAsc(readingId))
+                .thenReturn(List.of(top, replyAlive, replyDead));
+
+        List<CommentResponse> result = commentService.getCommentsByReadingId(readingId);
+
+        assertEquals(1, result.size());
+        assertEquals(1, result.get(0).getReplies().size());
+        assertEquals(replyAlive.getId(), result.get(0).getReplies().get(0).getId());
+    }
+
+    @Test
+    void getCommentsByReadingId_EmptyWhenNoComments() {
+        when(commentRepository.findByReadingIdOrderByCreatedAtAsc(readingId))
+                .thenReturn(List.of());
+
+        List<CommentResponse> result = commentService.getCommentsByReadingId(readingId);
+
+        assertTrue(result.isEmpty());
     }
 }
