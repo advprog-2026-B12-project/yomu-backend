@@ -7,9 +7,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -18,53 +21,50 @@ class ClanMemberRepositoryTest {
     @Mock
     private ClanMemberRepository clanMemberRepository;
 
-    // ────────────────────────────────────────────────
-    // save
-    // ────────────────────────────────────────────────
-
     @Test
     void save_returnsSavedMember() {
         Clan clan = buildClan(1L, "Warriors");
         ClanMember member = buildMember(null, clan, 10L, ClanMember.Role.MEMBER);
-        ClanMember saved  = buildMember(1L,  clan, 10L, ClanMember.Role.MEMBER);
+        ClanMember saved = buildMember(1L, clan, 10L, ClanMember.Role.MEMBER);
+
         when(clanMemberRepository.save(member)).thenReturn(saved);
 
         ClanMember result = clanMemberRepository.save(member);
 
-        assertNotNull(result.getId());
+        assertNotNull(result);
+        assertEquals(1L, result.getId());
         assertEquals(10L, result.getUserId());
         assertEquals(ClanMember.Role.MEMBER, result.getRole());
+        assertEquals(clan, result.getClan());
+
         verify(clanMemberRepository).save(member);
     }
-
-    // ────────────────────────────────────────────────
-    // findById
-    // ────────────────────────────────────────────────
 
     @Test
     void findById_returnsPresent_whenMemberExists() {
         Clan clan = buildClan(1L, "Warriors");
         ClanMember member = buildMember(1L, clan, 10L, ClanMember.Role.MEMBER);
+
         when(clanMemberRepository.findById(1L)).thenReturn(Optional.of(member));
 
         Optional<ClanMember> result = clanMemberRepository.findById(1L);
 
         assertTrue(result.isPresent());
         assertEquals(10L, result.get().getUserId());
+        assertEquals(ClanMember.Role.MEMBER, result.get().getRole());
+
+        verify(clanMemberRepository).findById(1L);
     }
 
     @Test
-    void findById_returnsEmpty_whenNotExists() {
+    void findById_returnsEmpty_whenMemberDoesNotExist() {
         when(clanMemberRepository.findById(999L)).thenReturn(Optional.empty());
 
         Optional<ClanMember> result = clanMemberRepository.findById(999L);
 
         assertTrue(result.isEmpty());
+        verify(clanMemberRepository).findById(999L);
     }
-
-    // ────────────────────────────────────────────────
-    // delete
-    // ────────────────────────────────────────────────
 
     @Test
     void delete_callsRepositoryDelete() {
@@ -76,33 +76,28 @@ class ClanMemberRepositoryTest {
         verify(clanMemberRepository, times(1)).delete(member);
     }
 
-    // ────────────────────────────────────────────────
-    // existsByUserId
-    // ────────────────────────────────────────────────
-
     @Test
     void existsByUserId_returnsTrue_whenUserIsMember() {
         when(clanMemberRepository.existsByUserId(10L)).thenReturn(true);
 
-        assertTrue(clanMemberRepository.existsByUserId(10L));
+        boolean result = clanMemberRepository.existsByUserId(10L);
+
+        assertTrue(result);
+        verify(clanMemberRepository).existsByUserId(10L);
     }
 
     @Test
-    void existsByUserId_returnsFalse_whenUserNotMember() {
+    void existsByUserId_returnsFalse_whenUserIsNotMember() {
         when(clanMemberRepository.existsByUserId(999L)).thenReturn(false);
 
-        assertFalse(clanMemberRepository.existsByUserId(999L));
+        boolean result = clanMemberRepository.existsByUserId(999L);
+
+        assertFalse(result);
+        verify(clanMemberRepository).existsByUserId(999L);
     }
 
     @Test
-    void existsByUserId_returnsFalse_whenRepoEmpty() {
-        when(clanMemberRepository.existsByUserId(anyLong())).thenReturn(false);
-
-        assertFalse(clanMemberRepository.existsByUserId(10L));
-    }
-
-    @Test
-    void existsByUserId_passesUserIdCorrectlyToRepository() {
+    void existsByUserId_passesUserIdCorrectly() {
         when(clanMemberRepository.existsByUserId(anyLong())).thenReturn(true);
 
         clanMemberRepository.existsByUserId(42L);
@@ -110,59 +105,95 @@ class ClanMemberRepositoryTest {
         verify(clanMemberRepository).existsByUserId(42L);
     }
 
-    // ────────────────────────────────────────────────
-    // existsByClan_IdAndUserId
-    // ────────────────────────────────────────────────
-
     @Test
-    void existsByClanIdAndUserId_returnsTrue_whenBothMatch() {
-        when(clanMemberRepository.existsByClan_IdAndUserId(1L, 10L)).thenReturn(true);
+    void findByUserId_returnsPresent_whenUserExistsInClan() {
+        Clan clan = buildClan(1L, "Warriors");
+        ClanMember member = buildMember(2L, clan, 42L, ClanMember.Role.LEADER);
 
-        assertTrue(clanMemberRepository.existsByClan_IdAndUserId(1L, 10L));
+        when(clanMemberRepository.findByUserId(42L)).thenReturn(Optional.of(member));
+
+        Optional<ClanMember> result = clanMemberRepository.findByUserId(42L);
+
+        assertTrue(result.isPresent());
+        assertEquals(42L, result.get().getUserId());
+        assertEquals(ClanMember.Role.LEADER, result.get().getRole());
+
+        verify(clanMemberRepository).findByUserId(42L);
     }
 
     @Test
-    void existsByClanIdAndUserId_returnsFalse_whenWrongUserId() {
-        when(clanMemberRepository.existsByClan_IdAndUserId(1L, 999L)).thenReturn(false);
+    void findByUserId_returnsEmpty_whenUserNotInAnyClan() {
+        when(clanMemberRepository.findByUserId(404L)).thenReturn(Optional.empty());
 
-        assertFalse(clanMemberRepository.existsByClan_IdAndUserId(1L, 999L));
+        Optional<ClanMember> result = clanMemberRepository.findByUserId(404L);
+
+        assertTrue(result.isEmpty());
+        verify(clanMemberRepository).findByUserId(404L);
     }
 
     @Test
-    void existsByClanIdAndUserId_returnsFalse_whenWrongClanId() {
-        when(clanMemberRepository.existsByClan_IdAndUserId(999L, 10L)).thenReturn(false);
+    void findByClan_returnsMembersOfThatClan() {
+        Clan clan = buildClan(1L, "Warriors");
+        ClanMember member1 = buildMember(1L, clan, 10L, ClanMember.Role.LEADER);
+        ClanMember member2 = buildMember(2L, clan, 20L, ClanMember.Role.MEMBER);
 
-        assertFalse(clanMemberRepository.existsByClan_IdAndUserId(999L, 10L));
+        when(clanMemberRepository.findByClan(clan)).thenReturn(List.of(member1, member2));
+
+        List<ClanMember> result = clanMemberRepository.findByClan(clan);
+
+        assertEquals(2, result.size());
+        assertEquals(10L, result.get(0).getUserId());
+        assertEquals(20L, result.get(1).getUserId());
+
+        verify(clanMemberRepository).findByClan(clan);
     }
 
     @Test
-    void existsByClanIdAndUserId_returnsFalse_whenBothWrong() {
-        when(clanMemberRepository.existsByClan_IdAndUserId(999L, 999L)).thenReturn(false);
+    void findByClan_returnsEmptyList_whenClanHasNoMembers() {
+        Clan clan = buildClan(2L, "EmptyClan");
 
-        assertFalse(clanMemberRepository.existsByClan_IdAndUserId(999L, 999L));
+        when(clanMemberRepository.findByClan(clan)).thenReturn(List.of());
+
+        List<ClanMember> result = clanMemberRepository.findByClan(clan);
+
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+
+        verify(clanMemberRepository).findByClan(clan);
     }
 
     @Test
-    void existsByClanIdAndUserId_distinguishesBetweenClans() {
-        when(clanMemberRepository.existsByClan_IdAndUserId(1L, 10L)).thenReturn(true);
-        when(clanMemberRepository.existsByClan_IdAndUserId(2L, 10L)).thenReturn(false);
+    void countByClan_returnsMemberCount() {
+        Clan clan = buildClan(1L, "Warriors");
 
-        assertTrue(clanMemberRepository.existsByClan_IdAndUserId(1L, 10L));
-        assertFalse(clanMemberRepository.existsByClan_IdAndUserId(2L, 10L));
+        when(clanMemberRepository.countByClan(clan)).thenReturn(3L);
+
+        long result = clanMemberRepository.countByClan(clan);
+
+        assertEquals(3L, result);
+        verify(clanMemberRepository).countByClan(clan);
     }
 
     @Test
-    void existsByClanIdAndUserId_passesBothArgsCorrectly() {
-        when(clanMemberRepository.existsByClan_IdAndUserId(anyLong(), anyLong())).thenReturn(true);
+    void countByClan_returnsZero_whenClanHasNoMembers() {
+        Clan clan = buildClan(2L, "EmptyClan");
 
-        clanMemberRepository.existsByClan_IdAndUserId(5L, 20L);
+        when(clanMemberRepository.countByClan(clan)).thenReturn(0L);
 
-        verify(clanMemberRepository).existsByClan_IdAndUserId(5L, 20L);
+        long result = clanMemberRepository.countByClan(clan);
+
+        assertEquals(0L, result);
+        verify(clanMemberRepository).countByClan(clan);
     }
 
-    // ────────────────────────────────────────────────
-    // Helpers
-    // ────────────────────────────────────────────────
+    @Test
+    void deleteByClan_callsRepositoryDeleteByClan() {
+        Clan clan = buildClan(1L, "Warriors");
+
+        clanMemberRepository.deleteByClan(clan);
+
+        verify(clanMemberRepository).deleteByClan(clan);
+    }
 
     private Clan buildClan(Long id, String name) {
         Clan clan = new Clan();

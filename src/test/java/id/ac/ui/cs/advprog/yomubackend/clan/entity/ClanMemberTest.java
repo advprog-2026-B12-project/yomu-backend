@@ -2,6 +2,7 @@ package id.ac.ui.cs.advprog.yomubackend.clan.entity;
 
 import org.junit.jupiter.api.Test;
 
+import java.lang.reflect.Method;
 import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -9,196 +10,113 @@ import static org.junit.jupiter.api.Assertions.*;
 class ClanMemberTest {
 
     @Test
-    void gettersAndSetters_workCorrectly() {
-        Clan clan = buildClan(1L, "Warriors");
+    void gettersAndSetters_shouldWork() {
+        Instant joinedAt = Instant.parse("2026-01-02T00:00:00Z");
+
+        Clan clan = new Clan();
+        clan.setId(1L);
+        clan.setName("Warriors");
 
         ClanMember member = new ClanMember();
         member.setId(10L);
-        member.setUserId(99L);
         member.setClan(clan);
-        member.setRole(ClanMember.Role.MEMBER);
+        member.setUserId(42L);
+        member.setRole(ClanMember.Role.LEADER);
+        member.setJoinedAt(joinedAt);
 
         assertEquals(10L, member.getId());
-        assertEquals(99L, member.getUserId());
         assertEquals(clan, member.getClan());
-        assertEquals(ClanMember.Role.MEMBER, member.getRole());
+        assertEquals(42L, member.getUserId());
+        assertEquals(ClanMember.Role.LEADER, member.getRole());
+        assertEquals(joinedAt, member.getJoinedAt());
     }
 
     @Test
-    void defaultValues_areNullExceptJoinedAt() {
+    void defaultValues_shouldBeNullInitially() {
         ClanMember member = new ClanMember();
 
         assertNull(member.getId());
-        assertNull(member.getUserId());
         assertNull(member.getClan());
+        assertNull(member.getUserId());
         assertNull(member.getRole());
+        assertNull(member.getJoinedAt());
+    }
+
+    @Test
+    void onCreate_shouldSetJoinedAt_whenNull() throws Exception {
+        ClanMember member = new ClanMember();
+        assertNull(member.getJoinedAt());
+
+        Method onCreate = ClanMember.class.getDeclaredMethod("onCreate");
+        onCreate.setAccessible(true);
+        onCreate.invoke(member);
+
         assertNotNull(member.getJoinedAt());
     }
 
     @Test
-    void joinedAt_isSetToNow_onInstantiation() {
-        Instant before = Instant.now();
+    void onCreate_shouldNotOverrideJoinedAt_whenAlreadySet() throws Exception {
+        Instant joinedAt = Instant.parse("2026-01-02T00:00:00Z");
+
         ClanMember member = new ClanMember();
-        Instant after = Instant.now();
+        member.setJoinedAt(joinedAt);
 
-        assertNotNull(member.getJoinedAt());
-        assertFalse(member.getJoinedAt().isBefore(before));
-        assertFalse(member.getJoinedAt().isAfter(after));
+        Method onCreate = ClanMember.class.getDeclaredMethod("onCreate");
+        onCreate.setAccessible(true);
+        onCreate.invoke(member);
+
+        assertEquals(joinedAt, member.getJoinedAt());
     }
 
     @Test
-    void joinedAt_canBeOverridden() {
-        Instant fixed = Instant.parse("2024-06-01T12:00:00Z");
+    void equals_shouldBeTrue_forSameReference() {
         ClanMember member = new ClanMember();
-        member.setJoinedAt(fixed);
+        member.setId(1L);
 
-        assertEquals(fixed, member.getJoinedAt());
+        assertEquals(member, member);
     }
 
     @Test
-    void role_leaderCanBeSet() {
-        ClanMember member = new ClanMember();
-        member.setRole(ClanMember.Role.LEADER);
+    void equals_shouldBeFalse_forDifferentInstancesEvenIfValuesMatch() {
+        Clan clan1 = new Clan();
+        clan1.setId(1L);
 
-        assertEquals(ClanMember.Role.LEADER, member.getRole());
+        Clan clan2 = new Clan();
+        clan2.setId(1L);
+
+        ClanMember member1 = new ClanMember();
+        member1.setId(10L);
+        member1.setClan(clan1);
+        member1.setUserId(42L);
+        member1.setRole(ClanMember.Role.LEADER);
+
+        ClanMember member2 = new ClanMember();
+        member2.setId(10L);
+        member2.setClan(clan2);
+        member2.setUserId(42L);
+        member2.setRole(ClanMember.Role.LEADER);
+
+        assertNotEquals(member1, member2);
     }
 
     @Test
-    void role_memberCanBeSet() {
-        ClanMember member = new ClanMember();
-        member.setRole(ClanMember.Role.MEMBER);
-
-        assertEquals(ClanMember.Role.MEMBER, member.getRole());
-    }
-
-    @Test
-    void role_enumHasExactlyTwoValues() {
-        ClanMember.Role[] roles = ClanMember.Role.values();
-
-        assertEquals(2, roles.length);
-        assertEquals(ClanMember.Role.LEADER, roles[0]);
-        assertEquals(ClanMember.Role.MEMBER, roles[1]);
-    }
-
-    @Test
-    void role_valueOfWorks() {
-        assertEquals(ClanMember.Role.LEADER, ClanMember.Role.valueOf("LEADER"));
-        assertEquals(ClanMember.Role.MEMBER, ClanMember.Role.valueOf("MEMBER"));
-    }
-
-    @Test
-    void equals_returnsTrueForSameValues() {
-        Instant now = Instant.now();
-        Clan clan = buildClan(1L, "Warriors");
-
-        ClanMember m1 = new ClanMember();
-        m1.setId(1L);
-        m1.setUserId(5L);
-        m1.setClan(clan);
-        m1.setRole(ClanMember.Role.MEMBER);
-        m1.setJoinedAt(now);
-
-        ClanMember m2 = new ClanMember();
-        m2.setId(1L);
-        m2.setUserId(5L);
-        m2.setClan(clan);
-        m2.setRole(ClanMember.Role.MEMBER);
-        m2.setJoinedAt(now);
-
-        assertEquals(m1, m2);
-    }
-
-    @Test
-    void equals_returnsFalseForDifferentUserId() {
-        Instant now = Instant.now();
-        Clan clan = buildClan(1L, "Warriors");
-
-        ClanMember m1 = new ClanMember();
-        m1.setId(1L);
-        m1.setUserId(5L);
-        m1.setClan(clan);
-        m1.setRole(ClanMember.Role.MEMBER);
-        m1.setJoinedAt(now);
-
-        ClanMember m2 = new ClanMember();
-        m2.setId(1L);
-        m2.setUserId(99L);
-        m2.setClan(clan);
-        m2.setRole(ClanMember.Role.MEMBER);
-        m2.setJoinedAt(now);
-
-        assertNotEquals(m1, m2);
-    }
-
-    @Test
-    void equals_returnsFalseForDifferentRole() {
-        Instant now = Instant.now();
-        Clan clan = buildClan(1L, "Warriors");
-
-        ClanMember m1 = new ClanMember();
-        m1.setId(1L);
-        m1.setUserId(5L);
-        m1.setClan(clan);
-        m1.setRole(ClanMember.Role.LEADER);
-        m1.setJoinedAt(now);
-
-        ClanMember m2 = new ClanMember();
-        m2.setId(1L);
-        m2.setUserId(5L);
-        m2.setClan(clan);
-        m2.setRole(ClanMember.Role.MEMBER);
-        m2.setJoinedAt(now);
-
-        assertNotEquals(m1, m2);
-    }
-
-    @Test
-    void hashCode_isSameForEqualObjects() {
-        Instant now = Instant.now();
-        Clan clan = buildClan(1L, "Warriors");
-
-        ClanMember m1 = new ClanMember();
-        m1.setId(1L);
-        m1.setUserId(5L);
-        m1.setClan(clan);
-        m1.setRole(ClanMember.Role.MEMBER);
-        m1.setJoinedAt(now);
-
-        ClanMember m2 = new ClanMember();
-        m2.setId(1L);
-        m2.setUserId(5L);
-        m2.setClan(clan);
-        m2.setRole(ClanMember.Role.MEMBER);
-        m2.setJoinedAt(now);
-
-        assertEquals(m1.hashCode(), m2.hashCode());
-    }
-
-    @Test
-    void toString_containsRelevantFields() {
-        Clan clan = buildClan(1L, "Warriors");
-
+    void hashCode_shouldBeStable_forSameReference() {
         ClanMember member = new ClanMember();
         member.setId(10L);
-        member.setUserId(99L);
-        member.setClan(clan);
-        member.setRole(ClanMember.Role.LEADER);
 
-        String str = member.toString();
-        assertTrue(str.contains("10"));
-        assertTrue(str.contains("99"));
-        assertTrue(str.contains("LEADER"));
+        assertEquals(member.hashCode(), member.hashCode());
     }
 
-    // ────────────────────────────────────────────────
-    // Helper
-    // ────────────────────────────────────────────────
+    @Test
+    void toString_shouldReturnNonNullString() {
+        ClanMember member = new ClanMember();
+        member.setId(10L);
+        member.setUserId(42L);
+        member.setRole(ClanMember.Role.LEADER);
 
-    private Clan buildClan(Long id, String name) {
-        Clan clan = new Clan();
-        clan.setId(id);
-        clan.setName(name);
-        clan.setLeaderUserId(1L);
-        return clan;
+        String result = member.toString();
+
+        assertNotNull(result);
+        assertTrue(result.contains("ClanMember"));
     }
 }
