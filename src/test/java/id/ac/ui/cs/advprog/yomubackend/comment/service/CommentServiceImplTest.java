@@ -269,4 +269,151 @@ class CommentServiceImplTest {
 
         assertTrue(result.isEmpty());
     }
+
+    @Test
+    void updateComment_Success_SetsEditedAtAndUpdatesContent() {
+        UUID commentId = UUID.randomUUID();
+        Comment existing = buildComment(commentId, "old content", null, false);
+
+        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
+        when(commentRepository.save(any(Comment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        CommentResponse response = commentService.updateComment(
+                "reader01", readingId, commentId, requestWithContent("new content"));
+
+        assertEquals("new content", response.getContent());
+        assertNotNull(response.getEditedAt());
+        verify(commentRepository, times(1)).save(any(Comment.class));
+    }
+
+    @Test
+    void updateComment_CommentNotFound_ThrowsException() {
+        UUID commentId = UUID.randomUUID();
+        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.updateComment("reader01", readingId, commentId,
+                        requestWithContent("x")));
+    }
+
+    @Test
+    void updateComment_NotAuthor_ThrowsAccessDenied() {
+        UUID commentId = UUID.randomUUID();
+        Comment existing = buildComment(commentId, "owned by other", null, false);
+        existing.setAuthorId(UUID.randomUUID()); // someone else
+
+        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> commentService.updateComment("reader01", readingId, commentId,
+                        requestWithContent("hack")));
+
+        verify(commentRepository, never()).save(any(Comment.class));
+    }
+
+    @Test
+    void updateComment_ReadingMismatch_ThrowsException() {
+        UUID commentId = UUID.randomUUID();
+        Comment existing = buildComment(commentId, "content", null, false);
+        existing.setReadingId(UUID.randomUUID()); // different reading
+
+        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.updateComment("reader01", readingId, commentId,
+                        requestWithContent("x")));
+    }
+
+    @Test
+    void updateComment_AlreadyDeleted_ThrowsException() {
+        UUID commentId = UUID.randomUUID();
+        Comment existing = buildComment(commentId, "gone", null, true);
+
+        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.updateComment("reader01", readingId, commentId,
+                        requestWithContent("x")));
+    }
+
+    @Test
+    void updateComment_BlankContent_ThrowsException() {
+        UUID commentId = UUID.randomUUID();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.updateComment("reader01", readingId, commentId,
+                        requestWithContent("   ")));
+    }
+
+    @Test
+    void softDeleteComment_Success_SetsDeletedFlags() {
+        UUID commentId = UUID.randomUUID();
+        Comment existing = buildComment(commentId, "to delete", null, false);
+
+        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
+        when(commentRepository.save(any(Comment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        commentService.softDeleteComment("reader01", readingId, commentId);
+
+        assertTrue(existing.isDeleted());
+        assertEquals(author.getId(), existing.getDeletedBy());
+        assertNotNull(existing.getDeletedAt());
+        verify(commentRepository, times(1)).save(existing);
+    }
+
+    @Test
+    void softDeleteComment_CommentNotFound_ThrowsException() {
+        UUID commentId = UUID.randomUUID();
+        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.softDeleteComment("reader01", readingId, commentId));
+    }
+
+    @Test
+    void softDeleteComment_NotAuthor_ThrowsAccessDenied() {
+        UUID commentId = UUID.randomUUID();
+        Comment existing = buildComment(commentId, "not yours", null, false);
+        existing.setAuthorId(UUID.randomUUID());
+
+        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
+
+        assertThrows(org.springframework.security.access.AccessDeniedException.class,
+                () -> commentService.softDeleteComment("reader01", readingId, commentId));
+
+        verify(commentRepository, never()).save(any(Comment.class));
+    }
+
+    @Test
+    void softDeleteComment_AlreadyDeleted_ThrowsException() {
+        UUID commentId = UUID.randomUUID();
+        Comment existing = buildComment(commentId, "gone", null, true);
+
+        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.softDeleteComment("reader01", readingId, commentId));
+    }
+
+    @Test
+    void softDeleteComment_ReadingMismatch_ThrowsException() {
+        UUID commentId = UUID.randomUUID();
+        Comment existing = buildComment(commentId, "content", null, false);
+        existing.setReadingId(UUID.randomUUID());
+
+        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.softDeleteComment("reader01", readingId, commentId));
+    }
 }
