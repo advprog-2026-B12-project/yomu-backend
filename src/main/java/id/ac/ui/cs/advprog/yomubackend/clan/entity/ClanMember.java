@@ -1,0 +1,46 @@
+package id.ac.ui.cs.advprog.yomubackend.clan.entity;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+import java.time.Instant;
+
+@Entity
+@Getter
+@Setter
+@NoArgsConstructor
+@Table(name = "clan_members", uniqueConstraints = {
+        @UniqueConstraint(name = "uk_clan_members_clan_user", columnNames = {"clan_id", "user_id"}),
+        @UniqueConstraint(name = "uk_clan_members_user", columnNames = {"user_id"})
+})
+public class ClanMember {
+
+    public enum Role { LEADER, MEMBER }
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "clan_id", nullable = false)
+    private Clan clan;
+
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 10)
+    private Role role;
+
+    @Column(nullable = false, updatable = false)
+    private Instant joinedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (joinedAt == null) {
+            joinedAt = Instant.now();
+        }
+    }
+}

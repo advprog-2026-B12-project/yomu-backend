@@ -1,5 +1,7 @@
 package id.ac.ui.cs.advprog.yomubackend.quiz.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -18,10 +20,12 @@ public class Question {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String questionText;
 
+    @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "reading_id", nullable = false)
     private Reading reading;
 
-    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Option> options;
 }

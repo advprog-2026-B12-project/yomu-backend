@@ -1,5 +1,7 @@
 package id.ac.ui.cs.advprog.yomubackend.quiz.model;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 import lombok.Data;
 
@@ -18,8 +20,10 @@ public class Option {
     private String optionText;
 
     @Column(nullable = false)
+//    @JsonProperty("isCorrect")
     private boolean isCorrect;
 
+    @JsonBackReference
     @ManyToOne
     @JoinColumn(name = "question_id", nullable = false)
     private Question question;

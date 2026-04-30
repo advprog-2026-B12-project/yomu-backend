@@ -46,4 +46,39 @@ class ReadingServiceImplTest {
 
         verify(repository).deleteById(id);
     }
+
+    @Test
+    void testFindById_Success() {
+        UUID id = UUID.randomUUID();
+
+        Reading reading = new Reading();
+        reading.setId(id);
+        reading.setTitle("Test Reading");
+
+        when(repository.findById(id)).thenReturn(java.util.Optional.of(reading));
+
+        Reading result = service.findById(id);
+
+        assertNotNull(result);
+        assertEquals(id, result.getId());
+        assertEquals("Test Reading", result.getTitle());
+
+        verify(repository).findById(id);
+    }
+
+    @Test
+    void testFindById_NotFound() {
+        UUID id = UUID.randomUUID();
+
+        when(repository.findById(id)).thenReturn(java.util.Optional.empty());
+
+        Exception exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> service.findById(id)
+        );
+
+        assertEquals("Reading not found", exception.getMessage());
+
+        verify(repository).findById(id);
+    }
 }
