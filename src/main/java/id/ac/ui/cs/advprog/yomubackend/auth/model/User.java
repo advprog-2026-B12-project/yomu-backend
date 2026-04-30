@@ -25,6 +25,10 @@ public class User implements Principal {
     @Column(nullable = false)
     private String password;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role = Role.PELAJAR;
+
     @Override
     public String getName() {
         return username;
