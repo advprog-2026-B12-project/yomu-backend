@@ -3,13 +3,17 @@ package id.ac.ui.cs.advprog.yomubackend.quiz.controller;
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizResultResponse;
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizSubmitRequest;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Reading;
+import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuizAttemptRepository;
 import id.ac.ui.cs.advprog.yomubackend.quiz.repository.ReadingRepository;
 import id.ac.ui.cs.advprog.yomubackend.quiz.service.QuizService;
 import id.ac.ui.cs.advprog.yomubackend.quiz.service.ReadingService;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/quiz")
@@ -18,12 +22,14 @@ public class QuizController {
     private final ReadingService readingService;
     private final QuizService quizService;
     private final ReadingRepository readingRepository;
+    private final QuizAttemptRepository quizAttemptRepository;
 
     public QuizController(ReadingService readingService,
-                          QuizService quizService, ReadingRepository readingRepository) {
+                          QuizService quizService, ReadingRepository readingRepository, QuizAttemptRepository quizAttemptRepository) {
         this.readingService = readingService;
         this.quizService = quizService;
         this.readingRepository = readingRepository;
+        this.quizAttemptRepository = quizAttemptRepository;
     }
 
     @GetMapping("/{readingId}")
@@ -32,12 +38,28 @@ public class QuizController {
     }
 
     @PostMapping("/submit")
-    public QuizResultResponse submit(@RequestBody QuizSubmitRequest request) {
-        return quizService.submit(request);
+    public ResponseEntity<?> submit(@RequestBody QuizSubmitRequest request) {
+        try {
+            return ResponseEntity.ok(quizService.submit(request));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/all")
     public List<Reading> getAll() {
         return readingRepository.findAll();
+    }
+
+    @GetMapping("/status/{userId}/{readingId}")
+    public Map<String, Boolean> getQuizStatus(
+            @PathVariable UUID userId,
+            @PathVariable UUID readingId
+    ) {
+        boolean completed =
+                quizAttemptRepository.existsByUserIdAndReadingId(userId, readingId);
+
+        return Map.of("completed", completed);
     }
 }
