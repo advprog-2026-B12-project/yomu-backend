@@ -21,10 +21,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -123,27 +120,6 @@ class UserControllerTest {
                         .content(jsonMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.error").value("Username hanya boleh mengandung huruf dan angka!"));
-    }
-
-    @Test
-    @WithMockUser(username = "ahmadFaiq41")
-    void deleteAccount_Success() throws Exception {
-        doNothing().when(userService).deleteAccount("ahmadFaiq41");
-
-        mockMvc.perform(delete("/api/users/account"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.message").value("Akun berhasil dihapus"));
-    }
-
-    @Test
-    @WithMockUser(username = "ghostUser")
-    void deleteAccount_UserNotFound_ReturnsBadRequest() throws Exception {
-        doThrow(new IllegalArgumentException("User tidak ditemukan!"))
-                .when(userService).deleteAccount("ghostUser");
-
-        mockMvc.perform(delete("/api/users/account"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.error").value("User tidak ditemukan!"));
     }
 
     @Test

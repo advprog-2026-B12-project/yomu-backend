@@ -1,6 +1,5 @@
 package id.ac.ui.cs.advprog.yomubackend.auth.dto;
 
-import id.ac.ui.cs.advprog.yomubackend.auth.model.Role;
 import lombok.Builder;
 import lombok.Data;
 
@@ -13,5 +12,4 @@ public class UserDto {
     private String username;
     private String displayName;
     private String email;
-    private Role role;
 }

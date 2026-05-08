@@ -4,13 +4,10 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
 import java.time.Instant;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class ClanTest {
-
-    private static final UUID LEADER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     @Test
     void gettersAndSetters_shouldWork() {
@@ -20,14 +17,14 @@ class ClanTest {
         clan.setId(1L);
         clan.setName("Warriors");
         clan.setDescription("Fight together");
-        clan.setLeaderUserId(LEADER_ID);
+        clan.setLeaderUserId(42L);
         clan.setDivision("BRONZE");
         clan.setCreatedAt(createdAt);
 
         assertEquals(1L, clan.getId());
         assertEquals("Warriors", clan.getName());
         assertEquals("Fight together", clan.getDescription());
-        assertEquals(LEADER_ID, clan.getLeaderUserId());
+        assertEquals(42L, clan.getLeaderUserId());
         assertEquals("BRONZE", clan.getDivision());
         assertEquals(createdAt, clan.getCreatedAt());
     }
@@ -83,7 +80,7 @@ class ClanTest {
         clan1.setId(1L);
         clan1.setName("Warriors");
         clan1.setDescription("Fight together");
-        clan1.setLeaderUserId(LEADER_ID);
+        clan1.setLeaderUserId(42L);
         clan1.setDivision("BRONZE");
         clan1.setCreatedAt(createdAt);
 
@@ -91,7 +88,7 @@ class ClanTest {
         clan2.setId(1L);
         clan2.setName("Warriors");
         clan2.setDescription("Fight together");
-        clan2.setLeaderUserId(LEADER_ID);
+        clan2.setLeaderUserId(42L);
         clan2.setDivision("BRONZE");
         clan2.setCreatedAt(createdAt);
 

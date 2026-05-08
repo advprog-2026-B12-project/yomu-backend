@@ -1,17 +1,15 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.league;
 
 import org.springframework.stereotype.Service;
-import java.util.UUID;
 
 @Service
 public class DummyMemberStatProvider implements MemberStatProvider {
 
     @Override
-    public MemberStat getStatForUser(UUID userId) {
-        int bucket = Math.floorMod(userId.hashCode(), Integer.MAX_VALUE);
-        int totalScore = ((bucket % 5) + 1) * 100;
-        int quizCount = ((bucket % 3) + 1) * 3;
-        double accuracy = 0.5 + ((bucket % 5) * 0.1);
+    public MemberStat getStatForUser(Long userId) {
+        int totalScore = (int) ((userId % 5) + 1) * 100;
+        int quizCount = (int) ((userId % 3) + 1) * 3;
+        double accuracy = 0.5 + ((userId % 5) * 0.1);
 
         return new MemberStat(userId, totalScore, quizCount, accuracy);
     }

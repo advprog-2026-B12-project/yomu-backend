@@ -5,12 +5,11 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import java.time.Instant;
-import java.util.UUID;
 
 @Data
 @AllArgsConstructor
 public class ClanMemberResponse {
-    private UUID userId;
+    private Long userId;
     private ClanMember.Role role;
     private Instant joinedAt;
 }
