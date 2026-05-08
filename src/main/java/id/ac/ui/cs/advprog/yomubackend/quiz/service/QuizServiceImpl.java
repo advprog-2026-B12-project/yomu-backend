@@ -25,6 +25,14 @@ public class QuizServiceImpl implements QuizService {
 
     @Override
     public QuizResultResponse submit(QuizSubmitRequest request) {
+
+        if (quizAttemptRepository.existsByUserIdAndReadingId(
+                request.getUserId(),
+                request.getReadingId()
+        )) {
+            throw new IllegalStateException("Quiz already completed");
+        }
+
         Reading reading = readingService.findById(request.getReadingId());
 
         int correct = 0;
@@ -44,7 +52,7 @@ public class QuizServiceImpl implements QuizService {
         }
 
         QuizAttempt attempt = new QuizAttempt();
-        attempt.setUserId(request.getUserId()); // can mock for now
+        attempt.setUserId(request.getUserId());
         attempt.setReadingId(reading.getId());
         attempt.setScore(correct);
         attempt.setTotal(reading.getQuestions().size());
