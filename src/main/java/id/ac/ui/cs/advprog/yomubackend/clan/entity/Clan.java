@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import java.util.UUID;
 
 import java.time.Instant;
 
@@ -27,7 +28,7 @@ public class Clan {
     private String description;
 
     @Column(nullable = false)
-    private Long leaderUserId;
+    private UUID leaderUserId;
 
     @Column(nullable = false, length = 20)
     private String division = "BRONZE";
