@@ -11,12 +11,14 @@ public interface CommentService {
     CommentResponse createComment(String username, UUID readingId, CommentRequest request);
 
     CommentResponse replyToComment(String username, UUID readingId, UUID parentCommentId,
-                                   CommentRequest request);
+            CommentRequest request);
 
-    List<CommentResponse> getCommentsByReadingId(UUID readingId);
+    List<CommentResponse> getCommentsByReadingId(UUID readingId, String username);
 
     CommentResponse updateComment(String username, UUID readingId, UUID commentId,
-                                  CommentRequest request);
+            CommentRequest request);
 
     void softDeleteComment(String username, UUID readingId, UUID commentId);
+
+    void adminDeleteComment(String username, UUID commentId);
 }
