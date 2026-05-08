@@ -8,7 +8,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -16,16 +15,13 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ClanRepositoryTest {
 
-    private static final UUID LEADER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
-    private static final UUID OTHER_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
-
     @Mock
     private ClanRepository clanRepository;
 
     @Test
     void save_returnsSavedClan() {
-        Clan clan = buildClan(null, "Warriors", "desc", LEADER_ID);
-        Clan saved = buildClan(1L, "Warriors", "desc", LEADER_ID);
+        Clan clan = buildClan(null, "Warriors", "desc", 1L);
+        Clan saved = buildClan(1L, "Warriors", "desc", 1L);
 
         when(clanRepository.save(clan)).thenReturn(saved);
 
@@ -35,13 +31,14 @@ class ClanRepositoryTest {
         assertEquals(1L, result.getId());
         assertEquals("Warriors", result.getName());
         assertEquals("desc", result.getDescription());
-        assertEquals(LEADER_ID, result.getLeaderUserId());
+        assertEquals(1L, result.getLeaderUserId());
+
         verify(clanRepository).save(clan);
     }
 
     @Test
     void findById_returnsPresent_whenClanExists() {
-        Clan clan = buildClan(1L, "Warriors", "desc", LEADER_ID);
+        Clan clan = buildClan(1L, "Warriors", "desc", 1L);
 
         when(clanRepository.findById(1L)).thenReturn(Optional.of(clan));
 
@@ -65,8 +62,8 @@ class ClanRepositoryTest {
     @Test
     void findAll_returnsAllClans() {
         List<Clan> clans = List.of(
-                buildClan(1L, "Warriors", "desc", LEADER_ID),
-                buildClan(2L, "Rangers", "desc", OTHER_ID)
+                buildClan(1L, "Warriors", "desc", 1L),
+                buildClan(2L, "Rangers", "desc", 2L)
         );
 
         when(clanRepository.findAll()).thenReturn(clans);
@@ -76,6 +73,7 @@ class ClanRepositoryTest {
         assertEquals(2, result.size());
         assertEquals("Warriors", result.get(0).getName());
         assertEquals("Rangers", result.get(1).getName());
+
         verify(clanRepository).findAll();
     }
 
@@ -87,12 +85,13 @@ class ClanRepositoryTest {
 
         assertNotNull(result);
         assertTrue(result.isEmpty());
+
         verify(clanRepository).findAll();
     }
 
     @Test
     void delete_callsRepositoryDelete() {
-        Clan clan = buildClan(1L, "Warriors", "desc", LEADER_ID);
+        Clan clan = buildClan(1L, "Warriors", "desc", 1L);
 
         clanRepository.delete(clan);
 
@@ -135,7 +134,8 @@ class ClanRepositoryTest {
         verify(clanRepository).existsByName("Warriors");
     }
 
-    private Clan buildClan(Long id, String name, String description, UUID leaderUserId) {
+
+    private Clan buildClan(Long id, String name, String description, Long leaderUserId) {
         Clan clan = new Clan();
         clan.setId(id);
         clan.setName(name);

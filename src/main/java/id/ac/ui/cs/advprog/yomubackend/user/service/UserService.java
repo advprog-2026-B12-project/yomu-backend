@@ -5,5 +5,4 @@ import id.ac.ui.cs.advprog.yomubackend.user.dto.UpdateProfileRequest;
 
 public interface UserService {
     User updateProfile(String currentUsername, UpdateProfileRequest request);
-    void deleteAccount(String username);
 }

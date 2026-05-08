@@ -15,7 +15,7 @@ public class GoldScoreProvider implements ClanScoreProvider {
     @Override
     public double calculateScore(List<MemberStat> stats) {
         return stats.stream()
-                .mapToDouble(stat -> stat.totalScore() * stat.accuracy())
+                .mapToInt(MemberStat::totalScore)
                 .sum();
     }
 }
