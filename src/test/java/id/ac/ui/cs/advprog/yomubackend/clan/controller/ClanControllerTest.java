@@ -1,10 +1,10 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.controller;
 
+import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import id.ac.ui.cs.advprog.yomubackend.clan.dto.ApiMessageResponse;
 import id.ac.ui.cs.advprog.yomubackend.clan.dto.ClanMemberResponse;
 import id.ac.ui.cs.advprog.yomubackend.clan.dto.ClanResponse;
 import id.ac.ui.cs.advprog.yomubackend.clan.dto.CreateClanRequest;
-import id.ac.ui.cs.advprog.yomubackend.clan.dto.JoinClanRequest;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
 import id.ac.ui.cs.advprog.yomubackend.clan.service.ClanService;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,12 +17,17 @@ import org.springframework.http.ResponseEntity;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ClanControllerTest {
+
+    private static final UUID LEADER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final UUID MEMBER_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
+    private static final UUID OTHER_ID = UUID.fromString("00000000-0000-0000-0000-000000000003");
 
     @Mock
     private ClanService clanService;
@@ -37,11 +42,11 @@ class ClanControllerTest {
     @Test
     void listClans_shouldReturnOkAndAllClans_whenClansExist() {
         ClanResponse clan1 = new ClanResponse(
-                1L, "Alpha", "Alpha desc", 10L, "BRONZE", 3L,
+                1L, "Alpha", "Alpha desc", LEADER_ID, "BRONZE", 3L,
                 Instant.parse("2026-01-01T00:00:00Z")
         );
         ClanResponse clan2 = new ClanResponse(
-                2L, "Beta", "Beta desc", 20L, "SILVER", 5L,
+                2L, "Beta", "Beta desc", MEMBER_ID, "SILVER", 5L,
                 Instant.parse("2026-01-02T00:00:00Z")
         );
 
@@ -52,14 +57,8 @@ class ClanControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(2, response.getBody().size());
-
-        assertEquals(1L, response.getBody().get(0).getId());
-        assertEquals("Alpha", response.getBody().get(0).getName());
-        assertEquals(10L, response.getBody().get(0).getLeaderUserId());
-
-        assertEquals(2L, response.getBody().get(1).getId());
-        assertEquals("Beta", response.getBody().get(1).getName());
-        assertEquals(20L, response.getBody().get(1).getLeaderUserId());
+        assertEquals(LEADER_ID, response.getBody().get(0).getLeaderUserId());
+        assertEquals(MEMBER_ID, response.getBody().get(1).getLeaderUserId());
 
         verify(clanService).getAllClans();
         verifyNoMoreInteractions(clanService);
@@ -82,7 +81,7 @@ class ClanControllerTest {
     @Test
     void getClanById_shouldReturnOkAndClan_whenClanExists() {
         ClanResponse clan = new ClanResponse(
-                1L, "Warriors", "Fight together", 42L, "BRONZE", 4L,
+                1L, "Warriors", "Fight together", LEADER_ID, "BRONZE", 4L,
                 Instant.parse("2026-01-03T00:00:00Z")
         );
 
@@ -94,7 +93,7 @@ class ClanControllerTest {
         assertNotNull(response.getBody());
         assertEquals(1L, response.getBody().getId());
         assertEquals("Warriors", response.getBody().getName());
-        assertEquals(42L, response.getBody().getLeaderUserId());
+        assertEquals(LEADER_ID, response.getBody().getLeaderUserId());
 
         verify(clanService).getClanById(1L);
         verifyNoMoreInteractions(clanService);
@@ -117,10 +116,10 @@ class ClanControllerTest {
     @Test
     void getMembers_shouldReturnOkAndMembers_whenMembersExist() {
         ClanMemberResponse member1 = new ClanMemberResponse(
-                42L, ClanMember.Role.LEADER, Instant.parse("2026-01-01T00:00:00Z")
+                LEADER_ID, ClanMember.Role.LEADER, Instant.parse("2026-01-01T00:00:00Z")
         );
         ClanMemberResponse member2 = new ClanMemberResponse(
-                7L, ClanMember.Role.MEMBER, Instant.parse("2026-01-02T00:00:00Z")
+                MEMBER_ID, ClanMember.Role.MEMBER, Instant.parse("2026-01-02T00:00:00Z")
         );
 
         when(clanService.getMembers(1L)).thenReturn(List.of(member1, member2));
@@ -130,12 +129,8 @@ class ClanControllerTest {
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals(2, response.getBody().size());
-
-        assertEquals(42L, response.getBody().get(0).getUserId());
-        assertEquals(ClanMember.Role.LEADER, response.getBody().get(0).getRole());
-
-        assertEquals(7L, response.getBody().get(1).getUserId());
-        assertEquals(ClanMember.Role.MEMBER, response.getBody().get(1).getRole());
+        assertEquals(LEADER_ID, response.getBody().get(0).getUserId());
+        assertEquals(MEMBER_ID, response.getBody().get(1).getUserId());
 
         verify(clanService).getMembers(1L);
         verifyNoMoreInteractions(clanService);
@@ -170,253 +165,166 @@ class ClanControllerTest {
     }
 
     @Test
-    void createClan_shouldReturnOkAndCreatedClan_whenRequestIsValid() {
+    void createClan_shouldUseAuthenticatedUserAndReturnCreatedClan_whenRequestIsValid() {
+        User user = user(LEADER_ID);
         CreateClanRequest request = new CreateClanRequest();
-        request.setUserId(42L);
         request.setName("Warriors");
         request.setDescription("Fight together");
 
         ClanResponse created = new ClanResponse(
-                1L, "Warriors", "Fight together", 42L, "BRONZE", 1L,
+                1L, "Warriors", "Fight together", LEADER_ID, "BRONZE", 1L,
                 Instant.parse("2026-01-01T00:00:00Z")
         );
 
-        when(clanService.createClan(42L, "Warriors", "Fight together")).thenReturn(created);
+        when(clanService.createClan(LEADER_ID, "Warriors", "Fight together")).thenReturn(created);
 
-        ResponseEntity<ClanResponse> response = clanController.createClan(request);
+        ResponseEntity<ClanResponse> response = clanController.createClan(user, request);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(1L, response.getBody().getId());
-        assertEquals("Warriors", response.getBody().getName());
-        assertEquals("Fight together", response.getBody().getDescription());
-        assertEquals(42L, response.getBody().getLeaderUserId());
-
-        verify(clanService).createClan(42L, "Warriors", "Fight together");
+        assertEquals(LEADER_ID, response.getBody().getLeaderUserId());
+        verify(clanService).createClan(LEADER_ID, "Warriors", "Fight together");
         verifyNoMoreInteractions(clanService);
     }
 
     @Test
     void createClan_shouldStillCallService_whenDescriptionIsNull() {
+        User user = user(MEMBER_ID);
         CreateClanRequest request = new CreateClanRequest();
-        request.setUserId(1L);
         request.setName("Nameless");
         request.setDescription(null);
 
         ClanResponse created = new ClanResponse(
-                3L, "Nameless", null, 1L, "BRONZE", 1L,
+                3L, "Nameless", null, MEMBER_ID, "BRONZE", 1L,
                 Instant.parse("2026-01-01T00:00:00Z")
         );
 
-        when(clanService.createClan(1L, "Nameless", null)).thenReturn(created);
+        when(clanService.createClan(MEMBER_ID, "Nameless", null)).thenReturn(created);
 
-        ResponseEntity<ClanResponse> response = clanController.createClan(request);
+        ResponseEntity<ClanResponse> response = clanController.createClan(user, request);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals("Nameless", response.getBody().getName());
         assertNull(response.getBody().getDescription());
-
-        verify(clanService).createClan(1L, "Nameless", null);
-        verifyNoMoreInteractions(clanService);
-    }
-
-    @Test
-    void createClan_shouldPassExactlyTheFieldsFromRequestToService() {
-        CreateClanRequest request = new CreateClanRequest();
-        request.setUserId(99L);
-        request.setName("Rangers");
-        request.setDescription("Scout ahead");
-
-        ClanResponse created = new ClanResponse(
-                5L, "Rangers", "Scout ahead", 99L, "BRONZE", 1L,
-                Instant.parse("2026-01-01T00:00:00Z")
-        );
-
-        when(clanService.createClan(99L, "Rangers", "Scout ahead")).thenReturn(created);
-
-        ResponseEntity<ClanResponse> response = clanController.createClan(request);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-
-        verify(clanService).createClan(99L, "Rangers", "Scout ahead");
+        verify(clanService).createClan(MEMBER_ID, "Nameless", null);
         verifyNoMoreInteractions(clanService);
     }
 
     @Test
     void createClan_shouldThrowException_whenServiceFails() {
+        User user = user(OTHER_ID);
         CreateClanRequest request = new CreateClanRequest();
-        request.setUserId(7L);
         request.setName("Broken Clan");
         request.setDescription("desc");
 
-        when(clanService.createClan(7L, "Broken Clan", "desc"))
+        when(clanService.createClan(OTHER_ID, "Broken Clan", "desc"))
                 .thenThrow(new RuntimeException("Failed to create clan"));
 
         RuntimeException ex = assertThrows(
                 RuntimeException.class,
-                () -> clanController.createClan(request)
+                () -> clanController.createClan(user, request)
         );
 
         assertEquals("Failed to create clan", ex.getMessage());
-        verify(clanService).createClan(7L, "Broken Clan", "desc");
+        verify(clanService).createClan(OTHER_ID, "Broken Clan", "desc");
         verifyNoMoreInteractions(clanService);
     }
 
     @Test
-    void joinClan_shouldReturnOkAndClanMember_whenRequestIsValid() {
-        JoinClanRequest request = new JoinClanRequest();
-        request.setUserId(20L);
-
+    void joinClan_shouldUseAuthenticatedUserAndClanIdFromPathVariable() {
+        User user = user(MEMBER_ID);
         ClanMemberResponse member = new ClanMemberResponse(
-                20L, ClanMember.Role.MEMBER, Instant.parse("2026-01-05T00:00:00Z")
+                MEMBER_ID, ClanMember.Role.MEMBER, Instant.parse("2026-01-05T00:00:00Z")
         );
 
-        when(clanService.joinClan(20L, 5L)).thenReturn(member);
+        when(clanService.joinClan(MEMBER_ID, 5L)).thenReturn(member);
 
-        ResponseEntity<ClanMemberResponse> response = clanController.joinClan(5L, request);
+        ResponseEntity<ClanMemberResponse> response = clanController.joinClan(user, 5L);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals(20L, response.getBody().getUserId());
-        assertEquals(ClanMember.Role.MEMBER, response.getBody().getRole());
-
-        verify(clanService).joinClan(20L, 5L);
-        verifyNoMoreInteractions(clanService);
-    }
-
-    @Test
-    void joinClan_shouldUseClanIdFromPathVariable() {
-        JoinClanRequest request = new JoinClanRequest();
-        request.setUserId(3L);
-
-        ClanMemberResponse member = new ClanMemberResponse(
-                3L, ClanMember.Role.MEMBER, Instant.parse("2026-01-05T00:00:00Z")
-        );
-
-        when(clanService.joinClan(3L, 99L)).thenReturn(member);
-
-        ResponseEntity<ClanMemberResponse> response = clanController.joinClan(99L, request);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-
-        verify(clanService).joinClan(3L, 99L);
-        verifyNoMoreInteractions(clanService);
-    }
-
-    @Test
-    void joinClan_shouldCallServiceForDifferentUsers() {
-        JoinClanRequest request1 = new JoinClanRequest();
-        request1.setUserId(1L);
-
-        JoinClanRequest request2 = new JoinClanRequest();
-        request2.setUserId(2L);
-
-        ClanMemberResponse member1 = new ClanMemberResponse(
-                1L, ClanMember.Role.MEMBER, Instant.parse("2026-01-05T00:00:00Z")
-        );
-        ClanMemberResponse member2 = new ClanMemberResponse(
-                2L, ClanMember.Role.MEMBER, Instant.parse("2026-01-06T00:00:00Z")
-        );
-
-        when(clanService.joinClan(1L, 5L)).thenReturn(member1);
-        when(clanService.joinClan(2L, 5L)).thenReturn(member2);
-
-        ResponseEntity<ClanMemberResponse> response1 = clanController.joinClan(5L, request1);
-        ResponseEntity<ClanMemberResponse> response2 = clanController.joinClan(5L, request2);
-
-        assertEquals(HttpStatus.OK, response1.getStatusCode());
-        assertEquals(HttpStatus.OK, response2.getStatusCode());
-        assertEquals(1L, response1.getBody().getUserId());
-        assertEquals(2L, response2.getBody().getUserId());
-
-        verify(clanService).joinClan(1L, 5L);
-        verify(clanService).joinClan(2L, 5L);
+        assertEquals(MEMBER_ID, response.getBody().getUserId());
+        verify(clanService).joinClan(MEMBER_ID, 5L);
         verifyNoMoreInteractions(clanService);
     }
 
     @Test
     void joinClan_shouldThrowException_whenServiceFails() {
-        JoinClanRequest request = new JoinClanRequest();
-        request.setUserId(20L);
-
-        when(clanService.joinClan(20L, 5L))
+        User user = user(MEMBER_ID);
+        when(clanService.joinClan(MEMBER_ID, 5L))
                 .thenThrow(new RuntimeException("User already joined a clan"));
 
         RuntimeException ex = assertThrows(
                 RuntimeException.class,
-                () -> clanController.joinClan(5L, request)
+                () -> clanController.joinClan(user, 5L)
         );
 
         assertEquals("User already joined a clan", ex.getMessage());
-        verify(clanService).joinClan(20L, 5L);
+        verify(clanService).joinClan(MEMBER_ID, 5L);
         verifyNoMoreInteractions(clanService);
     }
 
     @Test
-    void leaveClan_shouldReturnSuccessMessage_whenRequestIsValid() {
-        ResponseEntity<ApiMessageResponse> response = clanController.leaveClan(30L);
+    void leaveClan_shouldUseAuthenticatedUserAndReturnSuccessMessage() {
+        User user = user(MEMBER_ID);
+
+        ResponseEntity<ApiMessageResponse> response = clanController.leaveClan(user);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Successfully left the clan", response.getBody().getMessage());
-
-        verify(clanService).leaveClan(30L);
+        verify(clanService).leaveClan(MEMBER_ID);
         verifyNoMoreInteractions(clanService);
     }
 
     @Test
     void leaveClan_shouldThrowException_whenServiceFails() {
+        User user = user(MEMBER_ID);
         doThrow(new RuntimeException("User is not in any clan"))
-                .when(clanService).leaveClan(30L);
+                .when(clanService).leaveClan(MEMBER_ID);
 
         RuntimeException ex = assertThrows(
                 RuntimeException.class,
-                () -> clanController.leaveClan(30L)
+                () -> clanController.leaveClan(user)
         );
 
         assertEquals("User is not in any clan", ex.getMessage());
-        verify(clanService).leaveClan(30L);
+        verify(clanService).leaveClan(MEMBER_ID);
         verifyNoMoreInteractions(clanService);
     }
 
     @Test
-    void deleteClan_shouldReturnSuccessMessage_whenRequesterIsValid() {
-        ResponseEntity<ApiMessageResponse> response = clanController.deleteClan(7L, 99L);
+    void deleteClan_shouldUseAuthenticatedUserAndReturnSuccessMessage() {
+        User user = user(LEADER_ID);
+
+        ResponseEntity<ApiMessageResponse> response = clanController.deleteClan(7L, user);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
         assertEquals("Clan deleted successfully", response.getBody().getMessage());
-
-        verify(clanService).deleteClan(99L, 7L);
-        verifyNoMoreInteractions(clanService);
-    }
-
-    @Test
-    void deleteClan_shouldPassRequesterUserIdAndClanIdCorrectly() {
-        ResponseEntity<ApiMessageResponse> response = clanController.deleteClan(100L, 200L);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-
-        verify(clanService).deleteClan(200L, 100L);
+        verify(clanService).deleteClan(LEADER_ID, 7L);
         verifyNoMoreInteractions(clanService);
     }
 
     @Test
     void deleteClan_shouldThrowException_whenServiceFails() {
+        User user = user(OTHER_ID);
         doThrow(new RuntimeException("Only leader can delete clan"))
-                .when(clanService).deleteClan(99L, 7L);
+                .when(clanService).deleteClan(OTHER_ID, 7L);
 
         RuntimeException ex = assertThrows(
                 RuntimeException.class,
-                () -> clanController.deleteClan(7L, 99L)
+                () -> clanController.deleteClan(7L, user)
         );
 
         assertEquals("Only leader can delete clan", ex.getMessage());
-        verify(clanService).deleteClan(99L, 7L);
+        verify(clanService).deleteClan(OTHER_ID, 7L);
         verifyNoMoreInteractions(clanService);
+    }
+
+    private User user(UUID userId) {
+        User user = new User();
+        user.setId(userId);
+        return user;
     }
 }

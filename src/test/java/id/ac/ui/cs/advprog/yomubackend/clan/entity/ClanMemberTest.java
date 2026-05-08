@@ -4,10 +4,13 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
 import java.time.Instant;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class ClanMemberTest {
+
+    private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     @Test
     void gettersAndSetters_shouldWork() {
@@ -20,13 +23,13 @@ class ClanMemberTest {
         ClanMember member = new ClanMember();
         member.setId(10L);
         member.setClan(clan);
-        member.setUserId(42L);
+        member.setUserId(USER_ID);
         member.setRole(ClanMember.Role.LEADER);
         member.setJoinedAt(joinedAt);
 
         assertEquals(10L, member.getId());
         assertEquals(clan, member.getClan());
-        assertEquals(42L, member.getUserId());
+        assertEquals(USER_ID, member.getUserId());
         assertEquals(ClanMember.Role.LEADER, member.getRole());
         assertEquals(joinedAt, member.getJoinedAt());
     }
@@ -87,13 +90,13 @@ class ClanMemberTest {
         ClanMember member1 = new ClanMember();
         member1.setId(10L);
         member1.setClan(clan1);
-        member1.setUserId(42L);
+        member1.setUserId(USER_ID);
         member1.setRole(ClanMember.Role.LEADER);
 
         ClanMember member2 = new ClanMember();
         member2.setId(10L);
         member2.setClan(clan2);
-        member2.setUserId(42L);
+        member2.setUserId(USER_ID);
         member2.setRole(ClanMember.Role.LEADER);
 
         assertNotEquals(member1, member2);
@@ -111,7 +114,7 @@ class ClanMemberTest {
     void toString_shouldReturnNonNullString() {
         ClanMember member = new ClanMember();
         member.setId(10L);
-        member.setUserId(42L);
+        member.setUserId(USER_ID);
         member.setRole(ClanMember.Role.LEADER);
 
         String result = member.toString();

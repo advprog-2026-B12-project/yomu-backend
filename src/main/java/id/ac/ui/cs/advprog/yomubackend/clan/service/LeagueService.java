@@ -15,6 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
+
 
 @Service
 public class LeagueService {
@@ -25,15 +28,18 @@ public class LeagueService {
     private final ClanMemberRepository clanMemberRepository;
     private final MemberStatProvider memberStatProvider;
     private final ClanScoreProviderResolver resolver;
+    private final ClanScoreModifierService clanScoreModifierService;
 
     public LeagueService(ClanRepository clanRepository,
                          ClanMemberRepository clanMemberRepository,
                          MemberStatProvider memberStatProvider,
-                         ClanScoreProviderResolver resolver) {
+                         ClanScoreProviderResolver resolver,
+                         ClanScoreModifierService clanScoreModifierService) {
         this.clanRepository = clanRepository;
         this.clanMemberRepository = clanMemberRepository;
         this.memberStatProvider = memberStatProvider;
         this.resolver = resolver;
+        this.clanScoreModifierService = clanScoreModifierService;
     }
 
     @Transactional(readOnly = true)
@@ -44,12 +50,7 @@ public class LeagueService {
         for (Clan clan : clans) {
             List<ClanMember> members = clanMemberRepository.findByClan(clan);
 
-            List<MemberStat> stats = members.stream()
-                    .map(member -> memberStatProvider.getStatForUser(member.getUserId()))
-                    .toList();
-
-            ClanScoreProvider provider = resolver.resolve(clan.getDivision());
-            int score = (int) Math.round(provider.calculateScore(stats));
+            int score = calculateClanScore(clan, members);
 
             leaderboard.add(new LeaderboardEntryResponse(
                     0,
@@ -82,68 +83,81 @@ public class LeagueService {
 
     @Transactional
     public void triggerSeasonReset() {
-        processDivision("BRONZE", "SILVER", null);
-        processDivision("SILVER", "GOLD", "BRONZE");
-        processDivision("GOLD", "DIAMOND", "SILVER");
-        processDivision("DIAMOND", null, "GOLD");
-    }
+        Map<Long, String> targetDivisionByClanId = new HashMap<>();
 
-    private void processDivision(String currentDivision,
-                                 String promotionTarget,
-                                 String relegationTarget) {
-        List<Clan> rankedClans = getRankedClans(currentDivision);
-        int moveCount = calculateMoveCount(rankedClans.size());
 
-        if (moveCount == 0) {
-            return;
+        List<Clan> bronzeClans = clanRepository.findByDivision("BRONZE");
+        List<Clan> silverClans = clanRepository.findByDivision("SILVER");
+        List<Clan> goldClans = clanRepository.findByDivision("GOLD");
+        List<Clan> diamondClans = clanRepository.findByDivision("DIAMOND");
+
+        planDivisionMoves(bronzeClans, "SILVER", null, targetDivisionByClanId);
+        planDivisionMoves(silverClans, "GOLD", "BRONZE", targetDivisionByClanId);
+        planDivisionMoves(goldClans, "DIAMOND", "SILVER", targetDivisionByClanId);
+        planDivisionMoves(diamondClans, null, "GOLD", targetDivisionByClanId);
+
+        List<Clan> allClans = new ArrayList<>();
+        allClans.addAll(bronzeClans);
+        allClans.addAll(silverClans);
+        allClans.addAll(goldClans);
+        allClans.addAll(diamondClans);
+
+        for(Clan clan: allClans){
+            String targetDivision = targetDivisionByClanId.get(clan.getId());
+
+            if(targetDivision != null)
+                clan.setDivision(targetDivision);
         }
 
-        promoteTopClans(rankedClans, moveCount, promotionTarget);
-        relegateBottomClans(rankedClans, moveCount, relegationTarget);
-
-        clanRepository.saveAll(rankedClans);
+        clanRepository.saveAll(allClans);
     }
 
-    private List<Clan> getRankedClans(String division) {
-        List<Clan> clans = clanRepository.findByDivision(division);
-
-        return clans.stream()
-                .sorted(Comparator.comparingInt(this::calculateClanScore).reversed())
+    private void planDivisionMoves(
+        List<Clan> clans, 
+        String promoTarget, 
+        String releTarget, 
+        Map<Long, String> targetDivisionByClanId) {
+        
+        List<Clan> rankedClans = clans.stream()
+                .sorted(Comparator.comparingInt((Clan clan) -> calculateClanScore(clan))
+                        .reversed()
+                        .thenComparing(Clan::getId))
                 .toList();
+        int moveCount = calculateMoveCount(clans.size());
+
+        if(moveCount == 0)
+            return;
+
+        if(promoTarget != null){
+            for(int i = 0; i < moveCount; i++){
+                targetDivisionByClanId.put(rankedClans.get(i).getId(), promoTarget);
+            }
+        }
+
+        if(releTarget != null){
+            for(int i = rankedClans.size() - moveCount; i < rankedClans.size(); i++) {
+                targetDivisionByClanId.put(rankedClans.get(i).getId(), releTarget);
+            }
+        }
     }
 
     private int calculateMoveCount(int totalClans) {
         return Math.min(MAX_MOVE_PER_DIVISION, totalClans / 2);
     }
 
-    private void promoteTopClans(List<Clan> rankedClans, int moveCount, String targetDivision) {
-        if (targetDivision == null) {
-            return;
-        }
-
-        for (int i = 0; i < moveCount; i++) {
-            rankedClans.get(i).setDivision(targetDivision);
-        }
-    }
-
-    private void relegateBottomClans(List<Clan> rankedClans, int moveCount, String targetDivision) {
-        if (targetDivision == null) {
-            return;
-        }
-
-        for (int i = rankedClans.size() - moveCount; i < rankedClans.size(); i++) {
-            rankedClans.get(i).setDivision(targetDivision);
-        }
-    }
-
     private int calculateClanScore(Clan clan) {
         List<ClanMember> members = clanMemberRepository.findByClan(clan);
+        return calculateClanScore(clan, members);
+    }
 
+    private int calculateClanScore(Clan clan, List<ClanMember> members) {
         List<MemberStat> stats = members.stream()
                 .map(member -> memberStatProvider.getStatForUser(member.getUserId()))
                 .toList();
 
         ClanScoreProvider provider = resolver.resolve(clan.getDivision());
-        return (int) Math.round(provider.calculateScore(stats));
+        double baseScore = provider.calculateScore(stats);
+        double multiplier = clanScoreModifierService.calculateMultiplier(members);
+        return (int) Math.round(baseScore * multiplier);
     }
 }
