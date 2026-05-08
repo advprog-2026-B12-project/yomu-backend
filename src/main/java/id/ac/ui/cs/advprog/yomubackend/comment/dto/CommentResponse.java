@@ -1,11 +1,14 @@
 package id.ac.ui.cs.advprog.yomubackend.comment.dto;
 
 import id.ac.ui.cs.advprog.yomubackend.comment.entity.Comment;
+import id.ac.ui.cs.advprog.yomubackend.comment.entity.ReactionType;
 import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.EnumMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Data
@@ -21,6 +24,8 @@ public class CommentResponse {
     private LocalDateTime updatedAt;
     private LocalDateTime editedAt;
     private List<CommentResponse> replies = new ArrayList<>();
+    private Map<ReactionType, Integer> reactionCounts = new EnumMap<>(ReactionType.class);
+    private ReactionType myReaction;
 
     public static CommentResponse fromEntity(Comment comment, List<CommentResponse> replies) {
         CommentResponse response = new CommentResponse();
