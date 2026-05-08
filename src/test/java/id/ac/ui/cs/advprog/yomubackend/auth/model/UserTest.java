@@ -6,7 +6,22 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+import id.ac.ui.cs.advprog.yomubackend.auth.model.Role;
+
 class UserTest {
+
+    @Test
+    void defaultRole_IsPelajar() {
+        User user = new User();
+        assertEquals(Role.PELAJAR, user.getRole());
+    }
+
+    @Test
+    void setRole_UpdatesRole() {
+        User user = new User();
+        user.setRole(Role.ADMIN);
+        assertEquals(Role.ADMIN, user.getRole());
+    }
 
     @Test
     void getName_ReturnsUsername() {

@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.yomubackend.security;
 
+import id.ac.ui.cs.advprog.yomubackend.auth.model.Role;
 import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import id.ac.ui.cs.advprog.yomubackend.auth.repository.UserRepository;
 import jakarta.servlet.FilterChain;
@@ -82,16 +83,53 @@ class JwtAuthenticationFilterTest {
     void doFilterInternal_ValidToken_AuthenticatesUser() throws ServletException, IOException {
         String token = "valid-token";
         request.addHeader("Authorization", "Bearer " + token);
-        
+        testUser.setRole(Role.PELAJAR);
+
         when(jwtService.extractUsername(token)).thenReturn("testuser");
         when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
         when(jwtService.isTokenValid(token, "testuser")).thenReturn(true);
-        
+
         jwtAuthenticationFilter.doFilter(request, response, filterChain);
-        
+
         verify(filterChain).doFilter(request, response);
         assertNotNull(SecurityContextHolder.getContext().getAuthentication());
         assertEquals("testuser", ((User) SecurityContextHolder.getContext().getAuthentication().getPrincipal()).getUsername());
+    }
+
+    @Test
+    void doFilterInternal_PelajarToken_AuthoritiesContainRolePelajar() throws ServletException, IOException {
+        String token = "pelajar-token";
+        request.addHeader("Authorization", "Bearer " + token);
+        testUser.setRole(Role.PELAJAR);
+
+        when(jwtService.extractUsername(token)).thenReturn("testuser");
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+        when(jwtService.isTokenValid(token, "testuser")).thenReturn(true);
+
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
+
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        assertNotNull(auth);
+        assertTrue(auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_PELAJAR")));
+    }
+
+    @Test
+    void doFilterInternal_AdminToken_AuthoritiesContainRoleAdmin() throws ServletException, IOException {
+        String token = "admin-token";
+        request.addHeader("Authorization", "Bearer " + token);
+        testUser.setRole(Role.ADMIN);
+
+        when(jwtService.extractUsername(token)).thenReturn("testuser");
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(testUser));
+        when(jwtService.isTokenValid(token, "testuser")).thenReturn(true);
+
+        jwtAuthenticationFilter.doFilter(request, response, filterChain);
+
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        assertNotNull(auth);
+        assertTrue(auth.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN")));
     }
 
     @Test

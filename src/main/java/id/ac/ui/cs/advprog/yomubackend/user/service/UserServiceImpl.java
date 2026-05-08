@@ -48,4 +48,12 @@ public class UserServiceImpl implements UserService {
 
         return userRepository.save(user);
     }
+
+    @Override
+    public void deleteAccount(String username) {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new IllegalArgumentException("User tidak ditemukan!"));
+        // TODO: cascade delete behavior needs to be coordinated with other modules
+        userRepository.delete(user);
+    }
 }

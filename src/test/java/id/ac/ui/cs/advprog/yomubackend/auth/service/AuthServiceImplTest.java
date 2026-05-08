@@ -22,8 +22,12 @@ import java.security.GeneralSecurityException;
 import java.util.Optional;
 import java.util.UUID;
 
+import id.ac.ui.cs.advprog.yomubackend.auth.model.Role;
+
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -112,7 +116,7 @@ class AuthServiceImplTest {
     void login_Success() {
         when(userRepository.findByUsername("ahmad.faiq41")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("rahasia", "hashed_rahasia")).thenReturn(true);
-        when(jwtService.generateToken("ahmad.faiq41")).thenReturn("dummy_token");
+        when(jwtService.generateToken(anyMap(), eq("ahmad.faiq41"))).thenReturn("dummy_token");
 
         LoginResponse result = authService.login("ahmad.faiq41", "rahasia");
 
@@ -124,6 +128,22 @@ class AuthServiceImplTest {
         assertEquals("Faiq", result.getUser().getDisplayName());
         assertEquals("faiq@kampus.id", result.getUser().getEmail());
         assertEquals(user.getId(), result.getUser().getUserId());
+        assertEquals(Role.PELAJAR, result.getUser().getRole());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void login_Success_RoleClaimIsPassedToToken() {
+        when(userRepository.findByUsername("ahmad.faiq41")).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches("rahasia", "hashed_rahasia")).thenReturn(true);
+        when(jwtService.generateToken(anyMap(), eq("ahmad.faiq41"))).thenReturn("dummy_token");
+
+        authService.login("ahmad.faiq41", "rahasia");
+
+        ArgumentCaptor<java.util.Map<String, Object>> claimsCaptor =
+                ArgumentCaptor.forClass(java.util.Map.class);
+        verify(jwtService).generateToken(claimsCaptor.capture(), eq("ahmad.faiq41"));
+        assertEquals("ROLE_PELAJAR", claimsCaptor.getValue().get("role"));
     }
 
     @Test
@@ -153,7 +173,7 @@ class AuthServiceImplTest {
     void login_WithEmail_Success() {
         when(userRepository.findByEmail("faiq@kampus.id")).thenReturn(Optional.of(user));
         when(passwordEncoder.matches("rahasia", "hashed_rahasia")).thenReturn(true);
-        when(jwtService.generateToken("ahmad.faiq41")).thenReturn("dummy_token");
+        when(jwtService.generateToken(anyMap(), eq("ahmad.faiq41"))).thenReturn("dummy_token");
 
         LoginResponse result = authService.login("faiq@kampus.id", "rahasia");
 
@@ -199,7 +219,7 @@ class AuthServiceImplTest {
         when(payload.getEmail()).thenReturn("faiq@kampus.id");
         when(payload.get("name")).thenReturn("Faiq");
         when(userRepository.findByEmail("faiq@kampus.id")).thenReturn(Optional.of(user));
-        when(jwtService.generateToken("ahmad.faiq41")).thenReturn("jwt-token");
+        when(jwtService.generateToken(anyMap(), eq("ahmad.faiq41"))).thenReturn("jwt-token");
 
         GoogleSsoResult result = authService.googleLogin("valid-token");
 
@@ -216,7 +236,7 @@ class AuthServiceImplTest {
         // Existing user must never be modified or re-saved
         verify(userRepository, never()).save(any(User.class));
         // JWT must use the stored username, not any Google-provided value
-        verify(jwtService, times(1)).generateToken("ahmad.faiq41");
+        verify(jwtService, times(1)).generateToken(anyMap(), eq("ahmad.faiq41"));
     }
 
     @Test

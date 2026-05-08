@@ -69,6 +69,31 @@ class JwtServiceTest {
     }
 
     @Test
+    void generateToken_WithPelajarRoleClaim_RoleIsExtractable() {
+        String username = "testuser";
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("role", "ROLE_PELAJAR");
+
+        String token = jwtService.generateToken(extraClaims, username);
+
+        String role = jwtService.extractClaim(token, claims -> claims.get("role", String.class));
+        assertEquals("ROLE_PELAJAR", role);
+    }
+
+    @Test
+    void generateToken_WithAdminRoleClaim_RoleIsExtractable() {
+        String username = "adminuser";
+        Map<String, Object> extraClaims = new HashMap<>();
+        extraClaims.put("role", "ROLE_ADMIN");
+
+        String token = jwtService.generateToken(extraClaims, username);
+
+        String role = jwtService.extractClaim(token, claims -> claims.get("role", String.class));
+        assertEquals("ROLE_ADMIN", role);
+        assertEquals(username, jwtService.extractUsername(token));
+    }
+
+    @Test
     void testIsTokenExpiredThrowsException() throws InterruptedException {
         // Set an extremely short expiration time (1ms)
         ReflectionTestUtils.setField(jwtService, "jwtExpiration", 1L);
