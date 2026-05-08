@@ -14,10 +14,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.List;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
-
 
 @Service
 public class LeagueService {
@@ -85,7 +84,6 @@ public class LeagueService {
     public void triggerSeasonReset() {
         Map<Long, String> targetDivisionByClanId = new HashMap<>();
 
-
         List<Clan> bronzeClans = clanRepository.findByDivision("BRONZE");
         List<Clan> silverClans = clanRepository.findByDivision("SILVER");
         List<Clan> goldClans = clanRepository.findByDivision("GOLD");
@@ -102,22 +100,23 @@ public class LeagueService {
         allClans.addAll(goldClans);
         allClans.addAll(diamondClans);
 
-        for(Clan clan: allClans){
+        for (Clan clan : allClans) {
             String targetDivision = targetDivisionByClanId.get(clan.getId());
 
-            if(targetDivision != null)
+            if (targetDivision != null) {
                 clan.setDivision(targetDivision);
+            }
         }
 
         clanRepository.saveAll(allClans);
     }
 
     private void planDivisionMoves(
-        List<Clan> clans, 
-        String promoTarget, 
-        String releTarget, 
-        Map<Long, String> targetDivisionByClanId) {
-        
+            List<Clan> clans,
+            String promoTarget,
+            String releTarget,
+            Map<Long, String> targetDivisionByClanId) {
+
         List<Clan> rankedClans = clans.stream()
                 .sorted(Comparator.comparingInt((Clan clan) -> calculateClanScore(clan))
                         .reversed()
@@ -125,17 +124,18 @@ public class LeagueService {
                 .toList();
         int moveCount = calculateMoveCount(clans.size());
 
-        if(moveCount == 0)
+        if (moveCount == 0) {
             return;
+        }
 
-        if(promoTarget != null){
-            for(int i = 0; i < moveCount; i++){
+        if (promoTarget != null) {
+            for (int i = 0; i < moveCount; i++) {
                 targetDivisionByClanId.put(rankedClans.get(i).getId(), promoTarget);
             }
         }
 
-        if(releTarget != null){
-            for(int i = rankedClans.size() - moveCount; i < rankedClans.size(); i++) {
+        if (releTarget != null) {
+            for (int i = rankedClans.size() - moveCount; i < rankedClans.size(); i++) {
                 targetDivisionByClanId.put(rankedClans.get(i).getId(), releTarget);
             }
         }
