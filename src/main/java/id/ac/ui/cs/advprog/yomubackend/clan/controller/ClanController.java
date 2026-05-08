@@ -1,13 +1,12 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.controller;
 
-import id.ac.ui.cs.advprog.yomubackend.clan.dto.CreateClanRequest;
-import id.ac.ui.cs.advprog.yomubackend.clan.dto.JoinClanRequest;
-import id.ac.ui.cs.advprog.yomubackend.clan.entity.Clan;
-import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
-import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanRepository;
+import id.ac.ui.cs.advprog.yomubackend.clan.dto.*;
 import id.ac.ui.cs.advprog.yomubackend.clan.service.ClanService;
-
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+
 
 import java.util.List;
 
@@ -15,29 +14,58 @@ import java.util.List;
 @RequestMapping("/api/clans")
 public class ClanController {
 
-    private final ClanRepository clanRepository;
     private final ClanService clanService;
 
-    public ClanController(ClanRepository clanRepository, ClanService clanService) {
-        this.clanRepository = clanRepository;
+    public ClanController(ClanService clanService) {
         this.clanService = clanService;
     }
 
-    // list clans (biar frontend bisa pilih)
     @GetMapping
-    public List<Clan> listClans() {
-        return clanRepository.findAll();
+    public ResponseEntity<List<ClanResponse>> listClans() {
+        return ResponseEntity.ok(clanService.getAllClans());
     }
 
-    // create clan
+    @GetMapping("/{clanId}")
+    public ResponseEntity<ClanResponse> getClanById(@PathVariable Long clanId) {
+        return ResponseEntity.ok(clanService.getClanById(clanId));
+    }
+
+    @GetMapping("/{clanId}/members")
+    public ResponseEntity<List<ClanMemberResponse>> getMembers(@PathVariable Long clanId) {
+        return ResponseEntity.ok(clanService.getMembers(clanId));
+    }
+
     @PostMapping
-    public Clan createClan(@RequestBody CreateClanRequest req) {
-        return clanService.createClan(req.getUserId(), req.getName(), req.getDescription());
+    public ResponseEntity<ClanResponse> createClan(@AuthenticationPrincipal User user, @RequestBody CreateClanRequest request) {
+        return ResponseEntity.ok(
+                clanService.createClan(
+                        user.getId(),
+                        request.getName(),
+                        request.getDescription()
+                )
+        );
     }
 
-    // join clan
     @PostMapping("/{clanId}/join")
-    public ClanMember joinClan(@PathVariable Long clanId, @RequestBody JoinClanRequest req) {
-        return clanService.joinClan(req.getUserId(), clanId);
+    public ResponseEntity<ClanMemberResponse> joinClan(
+            @AuthenticationPrincipal User user,
+            @PathVariable Long clanId) {
+        return ResponseEntity.ok(
+                clanService.joinClan(user.getId(), clanId)
+        );
+    }
+
+    @DeleteMapping("/leave")
+    public ResponseEntity<ApiMessageResponse> leaveClan(@AuthenticationPrincipal User user) {
+        clanService.leaveClan(user.getId());
+        return ResponseEntity.ok(new ApiMessageResponse("Successfully left the clan"));
+    }
+
+    @DeleteMapping("/{clanId}")
+    public ResponseEntity<ApiMessageResponse> deleteClan(
+            @PathVariable Long clanId,
+            @AuthenticationPrincipal User user) {
+        clanService.deleteClan(user.getId(), clanId);
+        return ResponseEntity.ok(new ApiMessageResponse("Clan deleted successfully"));
     }
 }

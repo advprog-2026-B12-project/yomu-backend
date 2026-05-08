@@ -1,11 +1,19 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-
+import id.ac.ui.cs.advprog.yomubackend.clan.entity.Clan;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 
+@Repository
 public interface ClanMemberRepository extends JpaRepository<ClanMember, Long> {
-    boolean existsByUserId(Long userId);
-    boolean existsByClan_IdAndUserId(Long clanId, Long userId);
+    List<ClanMember> findByClan(Clan clan);
+    Optional<ClanMember> findByUserId(UUID userId);
+    boolean existsByUserId(UUID userId);
+    long countByClan(Clan clan);
+    void deleteByClan(Clan clan);
 }

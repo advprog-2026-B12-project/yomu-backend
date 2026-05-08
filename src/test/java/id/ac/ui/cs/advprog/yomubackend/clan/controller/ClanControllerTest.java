@@ -1,272 +1,330 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.controller;
 
+import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
+import id.ac.ui.cs.advprog.yomubackend.clan.dto.ApiMessageResponse;
+import id.ac.ui.cs.advprog.yomubackend.clan.dto.ClanMemberResponse;
+import id.ac.ui.cs.advprog.yomubackend.clan.dto.ClanResponse;
+import id.ac.ui.cs.advprog.yomubackend.clan.dto.CreateClanRequest;
+import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
+import id.ac.ui.cs.advprog.yomubackend.clan.service.ClanService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
-import id.ac.ui.cs.advprog.yomubackend.clan.dto.CreateClanRequest;
-import id.ac.ui.cs.advprog.yomubackend.clan.dto.JoinClanRequest;
-import id.ac.ui.cs.advprog.yomubackend.clan.entity.Clan;
-import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
-import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanRepository;
-import id.ac.ui.cs.advprog.yomubackend.clan.service.ClanService;
-
+import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
 
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @ExtendWith(MockitoExtension.class)
 class ClanControllerTest {
 
-    @Mock
-    private ClanRepository clanRepository;
+    private static final UUID LEADER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
+    private static final UUID MEMBER_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
+    private static final UUID OTHER_ID = UUID.fromString("00000000-0000-0000-0000-000000000003");
 
     @Mock
     private ClanService clanService;
 
-    @InjectMocks
     private ClanController clanController;
-
-    private MockMvc mockMvc;
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(clanController).build();
-    }
-
-    // ────────────────────────────────────────────────
-    // GET /api/clans
-    // ────────────────────────────────────────────────
-
-    @Test
-    void listClans_returnsEmptyList_whenNoClansExist() throws Exception {
-        when(clanRepository.findAll()).thenReturn(List.of());
-
-        mockMvc.perform(get("/api/clans"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.length()").value(0));
-
-        verify(clanRepository, times(1)).findAll();
+        clanController = new ClanController(clanService);
     }
 
     @Test
-    void listClans_returnsAllClans() throws Exception {
-        Clan clan1 = buildClan(1L, "Alpha", "Alpha desc", 10L);
-        Clan clan2 = buildClan(2L, "Beta",  "Beta desc",  20L);
-        when(clanRepository.findAll()).thenReturn(List.of(clan1, clan2));
+    void listClans_shouldReturnOkAndAllClans_whenClansExist() {
+        ClanResponse clan1 = new ClanResponse(
+                1L, "Alpha", "Alpha desc", LEADER_ID, "BRONZE", 3L,
+                Instant.parse("2026-01-01T00:00:00Z")
+        );
+        ClanResponse clan2 = new ClanResponse(
+                2L, "Beta", "Beta desc", MEMBER_ID, "SILVER", 5L,
+                Instant.parse("2026-01-02T00:00:00Z")
+        );
 
-        mockMvc.perform(get("/api/clans"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].id").value(1))
-                .andExpect(jsonPath("$[0].name").value("Alpha"))
-                .andExpect(jsonPath("$[0].leaderUserId").value(10))
-                .andExpect(jsonPath("$[1].id").value(2))
-                .andExpect(jsonPath("$[1].name").value("Beta"))
-                .andExpect(jsonPath("$[1].leaderUserId").value(20));
+        when(clanService.getAllClans()).thenReturn(List.of(clan1, clan2));
 
-        verify(clanRepository, times(1)).findAll();
+        ResponseEntity<List<ClanResponse>> response = clanController.listClans();
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(2, response.getBody().size());
+        assertEquals(LEADER_ID, response.getBody().get(0).getLeaderUserId());
+        assertEquals(MEMBER_ID, response.getBody().get(1).getLeaderUserId());
+
+        verify(clanService).getAllClans();
+        verifyNoMoreInteractions(clanService);
     }
 
     @Test
-    void listClans_returnsSingleClan() throws Exception {
-        Clan clan = buildClan(10L, "Solo Clan", "Only one", 99L);
-        when(clanRepository.findAll()).thenReturn(List.of(clan));
+    void listClans_shouldReturnOkAndEmptyList_whenNoClansExist() {
+        when(clanService.getAllClans()).thenReturn(List.of());
 
-        mockMvc.perform(get("/api/clans"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].name").value("Solo Clan"))
-                .andExpect(jsonPath("$[0].description").value("Only one"))
-                .andExpect(jsonPath("$[0].leaderUserId").value(99));
-    }
+        ResponseEntity<List<ClanResponse>> response = clanController.listClans();
 
-    // ────────────────────────────────────────────────
-    // POST /api/clans
-    // ────────────────────────────────────────────────
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody().isEmpty());
 
-    @Test
-    void createClan_returnsCreatedClan() throws Exception {
-        CreateClanRequest req = buildCreateRequest(42L, "Warriors", "Fight together");
-        Clan created = buildClan(1L, "Warriors", "Fight together", 42L);
-        when(clanService.createClan(42L, "Warriors", "Fight together")).thenReturn(created);
-
-        mockMvc.perform(post("/api/clans")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(req)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.name").value("Warriors"))
-                .andExpect(jsonPath("$.description").value("Fight together"))
-                .andExpect(jsonPath("$.leaderUserId").value(42));
-
-        verify(clanService, times(1)).createClan(42L, "Warriors", "Fight together");
+        verify(clanService).getAllClans();
+        verifyNoMoreInteractions(clanService);
     }
 
     @Test
-    void createClan_delegatesCorrectFieldsToService() throws Exception {
-        CreateClanRequest req = buildCreateRequest(99L, "Rangers", "Scout ahead");
-        Clan created = buildClan(5L, "Rangers", "Scout ahead", 99L);
-        when(clanService.createClan(anyLong(), anyString(), anyString())).thenReturn(created);
+    void getClanById_shouldReturnOkAndClan_whenClanExists() {
+        ClanResponse clan = new ClanResponse(
+                1L, "Warriors", "Fight together", LEADER_ID, "BRONZE", 4L,
+                Instant.parse("2026-01-03T00:00:00Z")
+        );
 
-        mockMvc.perform(post("/api/clans")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(req)))
-                .andExpect(status().isOk());
+        when(clanService.getClanById(1L)).thenReturn(clan);
 
-        verify(clanService).createClan(eq(99L), eq("Rangers"), eq("Scout ahead"));
+        ResponseEntity<ClanResponse> response = clanController.getClanById(1L);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(1L, response.getBody().getId());
+        assertEquals("Warriors", response.getBody().getName());
+        assertEquals(LEADER_ID, response.getBody().getLeaderUserId());
+
+        verify(clanService).getClanById(1L);
+        verifyNoMoreInteractions(clanService);
     }
 
     @Test
-    void createClan_withNullDescription_stillCallsService() throws Exception {
-        CreateClanRequest req = buildCreateRequest(1L, "Nameless", null);
-        Clan created = buildClan(3L, "Nameless", null, 1L);
-        when(clanService.createClan(1L, "Nameless", null)).thenReturn(created);
+    void getClanById_shouldThrowException_whenServiceFails() {
+        when(clanService.getClanById(99L)).thenThrow(new RuntimeException("Clan not found"));
 
-        mockMvc.perform(post("/api/clans")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(req)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.name").value("Nameless"))
-                .andExpect(jsonPath("$.description").doesNotExist());
-    }
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
+                () -> clanController.getClanById(99L)
+        );
 
-    // ────────────────────────────────────────────────
-    // POST /api/clans/{clanId}/join
-    // ────────────────────────────────────────────────
-
-    @Test
-    void joinClan_returnsClanMember() throws Exception {
-        JoinClanRequest req = buildJoinRequest(7L);
-        Clan clan = buildClan(10L, "Warriors", "Fight together", 1L);
-        ClanMember member = buildClanMember(1L, 7L, clan, ClanMember.Role.MEMBER);
-        when(clanService.joinClan(7L, 10L)).thenReturn(member);
-
-        mockMvc.perform(post("/api/clans/10/join")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(req)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(1))
-                .andExpect(jsonPath("$.userId").value(7))
-                .andExpect(jsonPath("$.clan.id").value(10))
-                .andExpect(jsonPath("$.role").value("MEMBER"));
-
-        verify(clanService, times(1)).joinClan(7L, 10L);
+        assertEquals("Clan not found", ex.getMessage());
+        verify(clanService).getClanById(99L);
+        verifyNoMoreInteractions(clanService);
     }
 
     @Test
-    void joinClan_usesClanIdFromPathVariable() throws Exception {
-        JoinClanRequest req = buildJoinRequest(3L);
-        Clan clan = buildClan(99L, "Clan99", "desc", 1L);
-        ClanMember member = buildClanMember(2L, 3L, clan, ClanMember.Role.MEMBER);
-        when(clanService.joinClan(anyLong(), anyLong())).thenReturn(member);
+    void getMembers_shouldReturnOkAndMembers_whenMembersExist() {
+        ClanMemberResponse member1 = new ClanMemberResponse(
+                LEADER_ID, ClanMember.Role.LEADER, Instant.parse("2026-01-01T00:00:00Z")
+        );
+        ClanMemberResponse member2 = new ClanMemberResponse(
+                MEMBER_ID, ClanMember.Role.MEMBER, Instant.parse("2026-01-02T00:00:00Z")
+        );
 
-        mockMvc.perform(post("/api/clans/99/join")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(req)))
-                .andExpect(status().isOk());
+        when(clanService.getMembers(1L)).thenReturn(List.of(member1, member2));
 
-        // clanId harus berasal dari path variable, bukan body
-        verify(clanService).joinClan(eq(3L), eq(99L));
+        ResponseEntity<List<ClanMemberResponse>> response = clanController.getMembers(1L);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(2, response.getBody().size());
+        assertEquals(LEADER_ID, response.getBody().get(0).getUserId());
+        assertEquals(MEMBER_ID, response.getBody().get(1).getUserId());
+
+        verify(clanService).getMembers(1L);
+        verifyNoMoreInteractions(clanService);
     }
 
     @Test
-    void joinClan_leaderRole_isReflectedInResponse() throws Exception {
-        JoinClanRequest req = buildJoinRequest(5L);
-        Clan clan = buildClan(1L, "Founders", "First clan", 5L);
-        ClanMember member = buildClanMember(1L, 5L, clan, ClanMember.Role.LEADER);
-        when(clanService.joinClan(5L, 1L)).thenReturn(member);
+    void getMembers_shouldReturnOkAndEmptyList_whenClanHasNoMembers() {
+        when(clanService.getMembers(1L)).thenReturn(List.of());
 
-        mockMvc.perform(post("/api/clans/1/join")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(req)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.role").value("LEADER"))
-                .andExpect(jsonPath("$.userId").value(5));
+        ResponseEntity<List<ClanMemberResponse>> response = clanController.getMembers(1L);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertTrue(response.getBody().isEmpty());
+
+        verify(clanService).getMembers(1L);
+        verifyNoMoreInteractions(clanService);
     }
 
     @Test
-    void joinClan_withDifferentUsers_callsServiceEachTime() throws Exception {
-        Clan clan = buildClan(5L, "Mixed", "desc", 1L);
-        ClanMember m1 = buildClanMember(10L, 1L, clan, ClanMember.Role.MEMBER);
-        ClanMember m2 = buildClanMember(11L, 2L, clan, ClanMember.Role.MEMBER);
+    void getMembers_shouldThrowException_whenServiceFails() {
+        when(clanService.getMembers(99L)).thenThrow(new RuntimeException("Clan not found"));
 
-        when(clanService.joinClan(1L, 5L)).thenReturn(m1);
-        when(clanService.joinClan(2L, 5L)).thenReturn(m2);
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
+                () -> clanController.getMembers(99L)
+        );
 
-        mockMvc.perform(post("/api/clans/5/join")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(buildJoinRequest(1L))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(1));
-
-        mockMvc.perform(post("/api/clans/5/join")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(toJson(buildJoinRequest(2L))))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.userId").value(2));
-
-        verify(clanService, times(1)).joinClan(1L, 5L);
-        verify(clanService, times(1)).joinClan(2L, 5L);
+        assertEquals("Clan not found", ex.getMessage());
+        verify(clanService).getMembers(99L);
+        verifyNoMoreInteractions(clanService);
     }
 
-    // ────────────────────────────────────────────────
-    // Helpers
-    // ────────────────────────────────────────────────
+    @Test
+    void createClan_shouldUseAuthenticatedUserAndReturnCreatedClan_whenRequestIsValid() {
+        User user = user(LEADER_ID);
+        CreateClanRequest request = new CreateClanRequest();
+        request.setName("Warriors");
+        request.setDescription("Fight together");
 
-    private Clan buildClan(Long id, String name, String description, Long leaderUserId) {
-        Clan clan = new Clan();
-        clan.setId(id);
-        clan.setName(name);
-        clan.setDescription(description);
-        clan.setLeaderUserId(leaderUserId);
-        return clan;
+        ClanResponse created = new ClanResponse(
+                1L, "Warriors", "Fight together", LEADER_ID, "BRONZE", 1L,
+                Instant.parse("2026-01-01T00:00:00Z")
+        );
+
+        when(clanService.createClan(LEADER_ID, "Warriors", "Fight together")).thenReturn(created);
+
+        ResponseEntity<ClanResponse> response = clanController.createClan(user, request);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(LEADER_ID, response.getBody().getLeaderUserId());
+        verify(clanService).createClan(LEADER_ID, "Warriors", "Fight together");
+        verifyNoMoreInteractions(clanService);
     }
 
-    private ClanMember buildClanMember(Long id, Long userId, Clan clan, ClanMember.Role role) {
-        ClanMember member = new ClanMember();
-        member.setId(id);
-        member.setUserId(userId);
-        member.setClan(clan);
-        member.setRole(role);
-        return member;
+    @Test
+    void createClan_shouldStillCallService_whenDescriptionIsNull() {
+        User user = user(MEMBER_ID);
+        CreateClanRequest request = new CreateClanRequest();
+        request.setName("Nameless");
+        request.setDescription(null);
+
+        ClanResponse created = new ClanResponse(
+                3L, "Nameless", null, MEMBER_ID, "BRONZE", 1L,
+                Instant.parse("2026-01-01T00:00:00Z")
+        );
+
+        when(clanService.createClan(MEMBER_ID, "Nameless", null)).thenReturn(created);
+
+        ResponseEntity<ClanResponse> response = clanController.createClan(user, request);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertNull(response.getBody().getDescription());
+        verify(clanService).createClan(MEMBER_ID, "Nameless", null);
+        verifyNoMoreInteractions(clanService);
     }
 
-    private CreateClanRequest buildCreateRequest(Long userId, String name, String description) {
-        CreateClanRequest req = new CreateClanRequest();
-        req.setUserId(userId);
-        req.setName(name);
-        req.setDescription(description);
-        return req;
+    @Test
+    void createClan_shouldThrowException_whenServiceFails() {
+        User user = user(OTHER_ID);
+        CreateClanRequest request = new CreateClanRequest();
+        request.setName("Broken Clan");
+        request.setDescription("desc");
+
+        when(clanService.createClan(OTHER_ID, "Broken Clan", "desc"))
+                .thenThrow(new RuntimeException("Failed to create clan"));
+
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
+                () -> clanController.createClan(user, request)
+        );
+
+        assertEquals("Failed to create clan", ex.getMessage());
+        verify(clanService).createClan(OTHER_ID, "Broken Clan", "desc");
+        verifyNoMoreInteractions(clanService);
     }
 
-    private JoinClanRequest buildJoinRequest(Long userId) {
-        JoinClanRequest req = new JoinClanRequest();
-        req.setUserId(userId);
-        return req;
+    @Test
+    void joinClan_shouldUseAuthenticatedUserAndClanIdFromPathVariable() {
+        User user = user(MEMBER_ID);
+        ClanMemberResponse member = new ClanMemberResponse(
+                MEMBER_ID, ClanMember.Role.MEMBER, Instant.parse("2026-01-05T00:00:00Z")
+        );
+
+        when(clanService.joinClan(MEMBER_ID, 5L)).thenReturn(member);
+
+        ResponseEntity<ClanMemberResponse> response = clanController.joinClan(user, 5L);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(MEMBER_ID, response.getBody().getUserId());
+        verify(clanService).joinClan(MEMBER_ID, 5L);
+        verifyNoMoreInteractions(clanService);
     }
 
-    /** Serialize a CreateClanRequest to a JSON string without ObjectMapper. */
-    private String toJson(CreateClanRequest req) {
-        String desc = req.getDescription() == null ? "null" : "\"" + req.getDescription() + "\"";
-        return String.format("{\"userId\":%d,\"name\":\"%s\",\"description\":%s}",
-                req.getUserId(), req.getName(), desc);
+    @Test
+    void joinClan_shouldThrowException_whenServiceFails() {
+        User user = user(MEMBER_ID);
+        when(clanService.joinClan(MEMBER_ID, 5L))
+                .thenThrow(new RuntimeException("User already joined a clan"));
+
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
+                () -> clanController.joinClan(user, 5L)
+        );
+
+        assertEquals("User already joined a clan", ex.getMessage());
+        verify(clanService).joinClan(MEMBER_ID, 5L);
+        verifyNoMoreInteractions(clanService);
     }
 
-    /** Serialize a JoinClanRequest to a JSON string without ObjectMapper. */
-    private String toJson(JoinClanRequest req) {
-        return String.format("{\"userId\":%d}", req.getUserId());
+    @Test
+    void leaveClan_shouldUseAuthenticatedUserAndReturnSuccessMessage() {
+        User user = user(MEMBER_ID);
+
+        ResponseEntity<ApiMessageResponse> response = clanController.leaveClan(user);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Successfully left the clan", response.getBody().getMessage());
+        verify(clanService).leaveClan(MEMBER_ID);
+        verifyNoMoreInteractions(clanService);
+    }
+
+    @Test
+    void leaveClan_shouldThrowException_whenServiceFails() {
+        User user = user(MEMBER_ID);
+        doThrow(new RuntimeException("User is not in any clan"))
+                .when(clanService).leaveClan(MEMBER_ID);
+
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
+                () -> clanController.leaveClan(user)
+        );
+
+        assertEquals("User is not in any clan", ex.getMessage());
+        verify(clanService).leaveClan(MEMBER_ID);
+        verifyNoMoreInteractions(clanService);
+    }
+
+    @Test
+    void deleteClan_shouldUseAuthenticatedUserAndReturnSuccessMessage() {
+        User user = user(LEADER_ID);
+
+        ResponseEntity<ApiMessageResponse> response = clanController.deleteClan(7L, user);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals("Clan deleted successfully", response.getBody().getMessage());
+        verify(clanService).deleteClan(LEADER_ID, 7L);
+        verifyNoMoreInteractions(clanService);
+    }
+
+    @Test
+    void deleteClan_shouldThrowException_whenServiceFails() {
+        User user = user(OTHER_ID);
+        doThrow(new RuntimeException("Only leader can delete clan"))
+                .when(clanService).deleteClan(OTHER_ID, 7L);
+
+        RuntimeException ex = assertThrows(
+                RuntimeException.class,
+                () -> clanController.deleteClan(7L, user)
+        );
+
+        assertEquals("Only leader can delete clan", ex.getMessage());
+        verify(clanService).deleteClan(OTHER_ID, 7L);
+        verifyNoMoreInteractions(clanService);
+    }
+
+    private User user(UUID userId) {
+        User user = new User();
+        user.setId(userId);
+        return user;
     }
 }

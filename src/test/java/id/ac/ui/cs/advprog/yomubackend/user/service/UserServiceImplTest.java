@@ -212,6 +212,26 @@ class UserServiceImplTest {
     }
 
     @Test
+    void deleteAccount_Success() {
+        when(userRepository.findByUsername("ahmadFaiq41")).thenReturn(Optional.of(user));
+
+        userService.deleteAccount("ahmadFaiq41");
+
+        verify(userRepository, times(1)).delete(user);
+    }
+
+    @Test
+    void deleteAccount_UserNotFound_ThrowsException() {
+        when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> userService.deleteAccount("nonexistent"));
+
+        assertEquals("User tidak ditemukan!", ex.getMessage());
+        verify(userRepository, never()).delete(any(User.class));
+    }
+
+    @Test
     void updateProfile_BlankOldPassword_ThrowsException() {
         UpdateProfileRequest request = new UpdateProfileRequest();
         request.setOldPassword("   "); // not null, but blank

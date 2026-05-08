@@ -1,6 +1,7 @@
 package id.ac.ui.cs.advprog.yomubackend.achievements.service;
 
 import id.ac.ui.cs.advprog.yomubackend.achievements.constant.AchievementEvent;
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementProgressResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.Achievement;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserAchievement;
 import id.ac.ui.cs.advprog.yomubackend.achievements.repository.AchievementRepository;
@@ -103,6 +104,7 @@ class AchievementServiceTest {
     void testGetUserAchievements_ShouldReturnList() {
         UserAchievement ua = new UserAchievement();
         ua.setUserId(dummyUserId);
+        ua.setAchievement(dummyAchievement);
         when(userAchievementRepository.findByUserId(dummyUserId)).thenReturn(List.of(ua));
 
         List<UserAchievement> result = achievementService.getUserAchievements(dummyUserId);
@@ -125,5 +127,34 @@ class AchievementServiceTest {
         achievementService.processEvent(dummyUserId, "UNKNOWN_EVENT");
 
         verify(userAchievementRepository, never()).save(any());
+    }
+
+    @Test
+    void testGetUserAchievementProgress_ShouldReturnAllAchievementsWithDefaultProgress() {
+        Achievement anotherAchievement = new Achievement();
+        anotherAchievement.setId(UUID.randomUUID());
+        anotherAchievement.setName("Quiz Finisher");
+        anotherAchievement.setMilestone(3);
+        anotherAchievement.setEventType(AchievementEvent.QUIZ_FINISHED);
+
+        UserAchievement userAchievement = new UserAchievement();
+        userAchievement.setUserId(dummyUserId);
+        userAchievement.setAchievement(dummyAchievement);
+        userAchievement.setCurrentProgress(1);
+        userAchievement.setIsUnlocked(true);
+        userAchievement.setIsDisplayed(true);
+
+        when(achievementRepository.findAll()).thenReturn(List.of(dummyAchievement, anotherAchievement));
+        when(userAchievementRepository.findByUserId(dummyUserId)).thenReturn(List.of(userAchievement));
+
+        List<AchievementProgressResponse> result = achievementService.getUserAchievementProgress(dummyUserId);
+
+        assertEquals(2, result.size());
+        assertEquals(dummyAchievement.getId(), result.get(0).getAchievementId());
+        assertEquals(1, result.get(0).getCurrentProgress());
+        assertTrue(result.get(0).getIsUnlocked());
+        assertEquals(anotherAchievement.getId(), result.get(1).getAchievementId());
+        assertEquals(0, result.get(1).getCurrentProgress());
+        assertFalse(result.get(1).getIsUnlocked());
     }
 }

@@ -1,15 +1,20 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.entity;
 
 import jakarta.persistence.*;
-import lombok.Data;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
+import java.util.UUID;
 import java.time.Instant;
 
 @Entity
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
 @Table(name = "clan_members", uniqueConstraints = {
         @UniqueConstraint(name = "uk_clan_members_clan_user", columnNames = {"clan_id", "user_id"}),
-        @UniqueConstraint(name = "uk_clan_members_user", columnNames = {"user_id"}) // 1 user cuma boleh 1 clan (hapus ini kalau mau multi-clan)
+        @UniqueConstraint(name = "uk_clan_members_user", columnNames = {"user_id"})
 })
 public class ClanMember {
 
@@ -19,18 +24,24 @@ public class ClanMember {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // FK ke clan
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
     @JoinColumn(name = "clan_id", nullable = false)
     private Clan clan;
 
     @Column(name = "user_id", nullable = false)
-    private Long userId;
+    private UUID userId;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 10)
     private Role role;
 
-    @Column(nullable = false)
-    private Instant joinedAt = Instant.now();
+    @Column(nullable = false, updatable = false)
+    private Instant joinedAt;
+
+    @PrePersist
+    protected void onCreate() {
+        if (joinedAt == null) {
+            joinedAt = Instant.now();
+        }
+    }
 }

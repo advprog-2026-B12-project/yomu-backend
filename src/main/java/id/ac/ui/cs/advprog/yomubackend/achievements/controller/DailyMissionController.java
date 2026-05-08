@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.yomubackend.achievements.controller;
 
+import id.ac.ui.cs.advprog.yomubackend.achievements.constant.AchievementEvent;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.DailyMissionRequest;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.DailyMissionResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.DailyMission;
@@ -9,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
@@ -61,9 +63,20 @@ public class DailyMissionController {
         mission.setName(request.getName());
         mission.setDescription(request.getDescription());
         mission.setMilestone(request.getMilestone() != null ? request.getMilestone() : 1);
-        mission.setEventType(request.getEventType());
+        mission.setEventType(validateAndNormalizeEventType(request.getEventType()));
         mission.setIsActive(request.getIsActive());
         return mission;
+    }
+
+    private String validateAndNormalizeEventType(String eventType) {
+        String normalizedEvent = AchievementEvent.normalize(eventType);
+        if (!AchievementEvent.isSupported(normalizedEvent)) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid eventType. Supported values: " + AchievementEvent.supportedEvents()
+            );
+        }
+        return normalizedEvent;
     }
 
     private DailyMissionResponse mapToResponse(DailyMission entity) {
