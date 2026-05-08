@@ -49,7 +49,7 @@ class CommentServiceImplTest {
         author = new User();
         author.setId(UUID.randomUUID());
         author.setUsername("reader01");
-        author.setRole(Role.USER);
+        author.setRole(Role.PELAJAR);
 
         readingId = UUID.randomUUID();
     }

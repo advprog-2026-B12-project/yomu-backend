@@ -47,7 +47,7 @@ class CommentReactionServiceImplTest {
         user = new User();
         user.setId(UUID.randomUUID());
         user.setUsername("reader01");
-        user.setRole(Role.USER);
+        user.setRole(Role.PELAJAR);
 
         commentId = UUID.randomUUID();
     }
