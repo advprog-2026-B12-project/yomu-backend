@@ -25,13 +25,16 @@ public class CommentServiceImpl implements CommentService {
     private final CommentRepository commentRepository;
     private final ReadingRepository readingRepository;
     private final UserRepository userRepository;
+    private final CommentReactionService reactionService;
 
     public CommentServiceImpl(CommentRepository commentRepository,
             ReadingRepository readingRepository,
-            UserRepository userRepository) {
+            UserRepository userRepository,
+            CommentReactionService reactionService) {
         this.commentRepository = commentRepository;
         this.readingRepository = readingRepository;
         this.userRepository = userRepository;
+        this.reactionService = reactionService;
     }
 
     @Override
@@ -73,12 +76,12 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CommentResponse> getCommentsByReadingId(UUID readingId) {
+    public List<CommentResponse> getCommentsByReadingId(UUID readingId, String username) {
         List<Comment> all = commentRepository.findByReadingIdOrderByCreatedAtAsc(readingId);
-        return assembleTree(all);
+        return assembleTree(all, username);
     }
 
-    private List<CommentResponse> assembleTree(List<Comment> all) {
+    private List<CommentResponse> assembleTree(List<Comment> all, String username) {
         Map<UUID, List<Comment>> childrenByParent = new HashMap<>();
         List<Comment> topLevel = new ArrayList<>();
         for (Comment c : all) {
@@ -94,20 +97,25 @@ public class CommentServiceImpl implements CommentService {
         for (Comment top : topLevel) {
             if (top.isDeleted())
                 continue;
-            result.add(buildNode(top, childrenByParent));
+            result.add(buildNode(top, childrenByParent, username));
         }
         return result;
     }
 
-    private CommentResponse buildNode(Comment comment, Map<UUID, List<Comment>> childrenByParent) {
+    private CommentResponse buildNode(Comment comment, Map<UUID, List<Comment>> childrenByParent, String username) {
         List<Comment> children = childrenByParent.getOrDefault(comment.getId(), Collections.emptyList());
         List<CommentResponse> childResponses = new ArrayList<>();
         for (Comment child : children) {
             if (child.isDeleted())
                 continue;
-            childResponses.add(buildNode(child, childrenByParent));
+            childResponses.add(buildNode(child, childrenByParent, username));
         }
-        return CommentResponse.fromEntity(comment, childResponses);
+        CommentResponse response = CommentResponse.fromEntity(comment, childResponses);
+        response.setReactionCounts(reactionService.getReactionCounts(comment.getId()));
+        if (username != null) {
+            response.setMyReaction(reactionService.getUserReaction(username, comment.getId()));
+        }
+        return response;
     }
 
     @Override
@@ -138,6 +146,25 @@ public class CommentServiceImpl implements CommentService {
         LocalDateTime now = LocalDateTime.now();
         existing.setDeleted(true);
         existing.setDeletedBy(currentUser.getId());
+        existing.setDeletedAt(now);
+        existing.setUpdatedAt(now);
+
+        commentRepository.save(existing);
+    }
+
+    @Override
+    @Transactional
+    public void adminDeleteComment(String username, UUID commentId) {
+        User admin = resolveUser(username);
+        Comment existing = commentRepository.findById(commentId)
+                .orElseThrow(() -> new IllegalArgumentException("Komentar tidak ditemukan!"));
+        if (existing.isDeleted()) {
+            throw new IllegalArgumentException("Komentar sudah dihapus!");
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        existing.setDeleted(true);
+        existing.setDeletedBy(admin.getId());
         existing.setDeletedAt(now);
         existing.setUpdatedAt(now);
 
