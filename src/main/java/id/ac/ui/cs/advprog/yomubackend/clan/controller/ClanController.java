@@ -4,6 +4,9 @@ import id.ac.ui.cs.advprog.yomubackend.clan.dto.*;
 import id.ac.ui.cs.advprog.yomubackend.clan.service.ClanService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+
 
 import java.util.List;
 
@@ -33,10 +36,10 @@ public class ClanController {
     }
 
     @PostMapping
-    public ResponseEntity<ClanResponse> createClan(@RequestBody CreateClanRequest request) {
+    public ResponseEntity<ClanResponse> createClan(@AuthenticationPrincipal User user, @RequestBody CreateClanRequest request) {
         return ResponseEntity.ok(
                 clanService.createClan(
-                        request.getUserId(),
+                        user.getId(),
                         request.getName(),
                         request.getDescription()
                 )
@@ -45,24 +48,24 @@ public class ClanController {
 
     @PostMapping("/{clanId}/join")
     public ResponseEntity<ClanMemberResponse> joinClan(
-            @PathVariable Long clanId,
-            @RequestBody JoinClanRequest request) {
+            @AuthenticationPrincipal User user,
+            @PathVariable Long clanId) {
         return ResponseEntity.ok(
-                clanService.joinClan(request.getUserId(), clanId)
+                clanService.joinClan(user.getId(), clanId)
         );
     }
 
     @DeleteMapping("/leave")
-    public ResponseEntity<ApiMessageResponse> leaveClan(@RequestParam Long userId) {
-        clanService.leaveClan(userId);
+    public ResponseEntity<ApiMessageResponse> leaveClan(@AuthenticationPrincipal User user) {
+        clanService.leaveClan(user.getId());
         return ResponseEntity.ok(new ApiMessageResponse("Successfully left the clan"));
     }
 
     @DeleteMapping("/{clanId}")
     public ResponseEntity<ApiMessageResponse> deleteClan(
             @PathVariable Long clanId,
-            @RequestParam Long requesterUserId) {
-        clanService.deleteClan(requesterUserId, clanId);
+            @AuthenticationPrincipal User user) {
+        clanService.deleteClan(user.getId(), clanId);
         return ResponseEntity.ok(new ApiMessageResponse("Clan deleted successfully"));
     }
 }

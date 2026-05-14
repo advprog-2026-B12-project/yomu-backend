@@ -7,6 +7,8 @@ import java.util.List;
 @Component
 public class SilverScoreProvider implements ClanScoreProvider {
 
+    private static final int QUIZ_ACTIVITY_BONUS = 10;
+
     @Override
     public String getDivision() {
         return "SILVER";
@@ -15,7 +17,7 @@ public class SilverScoreProvider implements ClanScoreProvider {
     @Override
     public double calculateScore(List<MemberStat> stats) {
         return stats.stream()
-                .mapToInt(MemberStat::totalScore)
+                .mapToInt(stat -> stat.totalScore() + (stat.quizCount() * QUIZ_ACTIVITY_BONUS))
                 .sum();
     }
 }

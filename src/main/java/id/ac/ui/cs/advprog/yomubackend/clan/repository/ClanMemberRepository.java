@@ -7,12 +7,13 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
 public interface ClanMemberRepository extends JpaRepository<ClanMember, Long> {
     List<ClanMember> findByClan(Clan clan);
-    Optional<ClanMember> findByUserId(Long userId);
-    boolean existsByUserId(Long userId);
+    Optional<ClanMember> findByUserId(UUID userId);
+    boolean existsByUserId(UUID userId);
     long countByClan(Clan clan);
     void deleteByClan(Clan clan);
 }
