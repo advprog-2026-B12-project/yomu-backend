@@ -5,6 +5,8 @@ import id.ac.ui.cs.advprog.yomubackend.clan.dto.LeaderboardEntryResponse;
 import id.ac.ui.cs.advprog.yomubackend.clan.service.LeagueService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.access.prepost.PreAuthorize;
+
 
 import java.util.List;
 
@@ -25,6 +27,7 @@ public class LeagueController {
     }
 
     @PostMapping("/season/reset")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiMessageResponse> triggerSeasonReset() {
         leagueService.triggerSeasonReset();
         return ResponseEntity.ok(new ApiMessageResponse("Season reset triggered"));
