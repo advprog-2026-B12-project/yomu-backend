@@ -12,7 +12,6 @@ import id.ac.ui.cs.advprog.yomubackend.security.JwtService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -64,7 +63,7 @@ public class AuthServiceImpl implements AuthService {
                 .filter(u -> passwordEncoder.matches(password, u.getPassword()))
                 .orElseThrow(() -> new IllegalArgumentException("Username/email atau password salah!"));
 
-        String token = jwtService.generateToken(Map.of("role", "ROLE_" + user.getRole().name()), user.getUsername());
+        String token = jwtService.generateToken(user.getUsername());
         UserDto userDto = buildUserDto(user);
         return LoginResponse.builder()
                 .message("Login berhasil")
@@ -88,7 +87,7 @@ public class AuthServiceImpl implements AuthService {
             Optional<User> existingUser = userRepository.findByEmail(email);
             if (existingUser.isPresent()) {
                 User found = existingUser.get();
-                String jwtToken = jwtService.generateToken(Map.of("role", "ROLE_" + found.getRole().name()), found.getUsername());
+                String jwtToken = jwtService.generateToken(found.getUsername());
                 return GoogleSsoResult.builder()
                         .needsRegistration(false)
                         .message("Login berhasil")
@@ -115,7 +114,6 @@ public class AuthServiceImpl implements AuthService {
                 .username(user.getUsername())
                 .displayName(user.getDisplayName())
                 .email(user.getEmail())
-                .role(user.getRole())
                 .build();
     }
 }
