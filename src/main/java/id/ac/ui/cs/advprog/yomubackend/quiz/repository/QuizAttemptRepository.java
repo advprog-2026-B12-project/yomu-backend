@@ -10,6 +10,8 @@ import java.util.UUID;
 public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, UUID> {
     List<QuizAttempt> findByUserId(UUID userId);
 
+    boolean existsByUserIdAndReadingId(UUID userId, UUID readingId);
+
     List<QuizAttempt> findByUserIdAndCreatedAtBetween(
             UUID userId,
             LocalDateTime start,
