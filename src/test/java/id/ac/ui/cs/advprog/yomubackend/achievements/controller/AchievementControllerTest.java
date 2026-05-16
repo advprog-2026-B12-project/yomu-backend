@@ -165,12 +165,3 @@ class AchievementControllerTest {
                 .andExpect(jsonPath("$.completedDailyMissions").isEmpty());
     }
 }
-
-        String jsonRequest = "{\"userId\":\"" + dummyUserId + "\", \"eventType\":\"READING_COMPLETED\"}";
-
-        mockMvc.perform(post("/api/achievements/trigger")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest))
-                .andExpect(status().isOk());
-    }
-}
