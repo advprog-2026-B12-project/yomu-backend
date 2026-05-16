@@ -32,8 +32,9 @@ public class AchievementServiceImpl implements AchievementService {
 
     @Override
     @Transactional
-    public void processEvent(UUID userId, String eventType) {
+    public List<AchievementProgressResponse> processEvent(UUID userId, String eventType) {
         List<Achievement> relatedAchievements = achievementRepository.findByEventType(eventType);
+        List<AchievementProgressResponse> newlyUnlocked = new java.util.ArrayList<>();
 
         for (Achievement achievement : relatedAchievements) {
             UserAchievement userProgress = userAchievementRepository
@@ -57,10 +58,27 @@ public class AchievementServiceImpl implements AchievementService {
             if (userProgress.getCurrentProgress() >= achievement.getMilestone()) {
                 userProgress.setIsUnlocked(true); // Sah! Unlocked!
                 userProgress.setUnlockedAt(LocalDateTime.now());
+                
+                AchievementProgressResponse unlockedResponse = new AchievementProgressResponse();
+                unlockedResponse.setAchievementId(achievement.getId());
+                unlockedResponse.setName(achievement.getName());
+                unlockedResponse.setDescription(achievement.getDescription());
+                unlockedResponse.setIconUrl(achievement.getIconUrl());
+                unlockedResponse.setPoints(achievement.getPoints());
+                unlockedResponse.setMilestone(achievement.getMilestone());
+                unlockedResponse.setEventType(achievement.getEventType());
+                unlockedResponse.setCurrentProgress(userProgress.getCurrentProgress());
+                unlockedResponse.setIsUnlocked(true);
+                unlockedResponse.setIsDisplayed(userProgress.getIsDisplayed());
+                unlockedResponse.setUnlockedAt(userProgress.getUnlockedAt());
+                
+                newlyUnlocked.add(unlockedResponse);
             }
 
             userAchievementRepository.save(userProgress);
         }
+        
+        return newlyUnlocked;
     }
 
     @Override

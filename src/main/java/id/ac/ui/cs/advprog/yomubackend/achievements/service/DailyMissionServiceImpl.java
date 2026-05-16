@@ -31,8 +31,9 @@ public class DailyMissionServiceImpl implements DailyMissionService {
 
     @Override
     @Transactional
-    public void processDailyEvent(UUID userId, String eventType) {
+    public List<String> processDailyEvent(UUID userId, String eventType) {
         List<DailyMission> activeMissions = dailyMissionRepository.findByEventTypeAndIsActiveTrue(eventType);
+        List<String> completedMissionNames = new java.util.ArrayList<>();
 
         LocalDate today = LocalDate.now();
 
@@ -58,10 +59,13 @@ public class DailyMissionServiceImpl implements DailyMissionService {
             if (userProgress.getCurrentProgress() >= mission.getMilestone()) {
                 userProgress.setIsCompleted(true);
                 userProgress.setCompletedAt(LocalDateTime.now());
+                completedMissionNames.add(mission.getName());
             }
 
             userDailyMissionRepository.save(userProgress);
         }
+        
+        return completedMissionNames;
     }
 
     @Override
