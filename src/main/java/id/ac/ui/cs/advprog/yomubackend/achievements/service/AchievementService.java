@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface AchievementService {
-    void processEvent(UUID userId, String eventType);
+    List<AchievementProgressResponse> processEvent(UUID userId, String eventType);
     Achievement createAchievement(Achievement achievement);
     List<Achievement> getAllAchievements();
     List<UserAchievement> getUserAchievements(UUID userId);

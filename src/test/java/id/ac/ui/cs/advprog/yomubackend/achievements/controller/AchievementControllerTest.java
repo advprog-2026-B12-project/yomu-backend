@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -122,12 +123,46 @@ class AchievementControllerTest {
     }
 
     @Test
-    void testTriggerEvent_ShouldReturn200() throws Exception {
-        String jsonRequest = "{\"userId\":\"" + dummyUserId + "\", \"eventType\":\"READING_COMPLETED\"}";
+    void testTriggerEvent_ShouldReturn200WithUnlockedAchievements() throws Exception {
+        AchievementProgressResponse unlockedAch = new AchievementProgressResponse();
+        unlockedAch.setAchievementId(dummyAchievement.getId());
+        unlockedAch.setName(dummyAchievement.getName());
+        unlockedAch.setIsUnlocked(true);
+
+        when(achievementService.processEvent(any(UUID.class), anyString()))
+                .thenReturn(List.of(unlockedAch));
+        when(dailyMissionService.processDailyEvent(any(UUID.class), anyString()))
+                .thenReturn(List.of("Membaca Berita"));
+
+        String body = "{\"userId\":\"" + dummyUserId + "\", \"eventType\":\"READING_COMPLETED\"}";
 
         mockMvc.perform(post("/api/achievements/trigger")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(jsonRequest))
-                .andExpect(status().isOk());
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.unlockedAchievements").isArray())
+                .andExpect(jsonPath("$.unlockedAchievements[0].name").value("Kutu Buku"))
+                .andExpect(jsonPath("$.unlockedAchievements[0].isUnlocked").value(true))
+                .andExpect(jsonPath("$.completedDailyMissions").isArray())
+                .andExpect(jsonPath("$.completedDailyMissions[0]").value("Membaca Berita"));
+    }
+
+    @Test
+    void testTriggerEvent_ShouldReturnEmptyLists_WhenNothingUnlocked() throws Exception {
+        when(achievementService.processEvent(any(UUID.class), anyString()))
+                .thenReturn(List.of());
+        when(dailyMissionService.processDailyEvent(any(UUID.class), anyString()))
+                .thenReturn(List.of());
+
+        String body = "{\"userId\":\"" + dummyUserId + "\", \"eventType\":\"READING_COMPLETED\"}";
+
+        mockMvc.perform(post("/api/achievements/trigger")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.unlockedAchievements").isArray())
+                .andExpect(jsonPath("$.unlockedAchievements").isEmpty())
+                .andExpect(jsonPath("$.completedDailyMissions").isArray())
+                .andExpect(jsonPath("$.completedDailyMissions").isEmpty());
     }
 }

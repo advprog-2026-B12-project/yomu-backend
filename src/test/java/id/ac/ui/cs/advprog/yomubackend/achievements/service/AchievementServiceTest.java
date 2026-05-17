@@ -49,24 +49,23 @@ class AchievementServiceTest {
     }
 
     @Test
-    void testProcessEvent_ShouldIncrementProgressAndUnlock_WhenMilestoneReached() {
+    void testProcessEvent_ShouldReturnUnlockedAchievement_WhenMilestoneReached() {
         when(achievementRepository.findByEventType(AchievementEvent.READING_COMPLETED))
                 .thenReturn(List.of(dummyAchievement));
 
         when(userAchievementRepository.findByUserIdAndAchievementId(dummyUserId, dummyAchievement.getId()))
                 .thenReturn(Optional.empty());
 
-        achievementService.processEvent(dummyUserId, AchievementEvent.READING_COMPLETED);
+        List<AchievementProgressResponse> result =
+                achievementService.processEvent(dummyUserId, AchievementEvent.READING_COMPLETED);
 
         verify(userAchievementRepository, times(1)).save(any(UserAchievement.class));
 
-        verify(userAchievementRepository).save(argThat(userAchievement -> {
-            assertEquals(dummyUserId, userAchievement.getUserId());
-            assertEquals(1, userAchievement.getCurrentProgress());
-            assertTrue(userAchievement.getIsUnlocked());
-            assertNotNull(userAchievement.getUnlockedAt());
-            return true;
-        }));
+        // Must return exactly the achievement that was just unlocked
+        assertEquals(1, result.size());
+        assertEquals(dummyAchievement.getId(), result.get(0).getAchievementId());
+        assertEquals(dummyAchievement.getName(), result.get(0).getName());
+        assertTrue(result.get(0).getIsUnlocked());
     }
 
     @Test
@@ -121,12 +120,57 @@ class AchievementServiceTest {
     }
 
     @Test
-    void testProcessEvent_ShouldDoNothing_WhenNoAchievementFound() {
+    void testProcessEvent_ShouldReturnEmptyList_WhenNoAchievementFound() {
         when(achievementRepository.findByEventType("UNKNOWN_EVENT")).thenReturn(List.of());
 
-        achievementService.processEvent(dummyUserId, "UNKNOWN_EVENT");
+        List<AchievementProgressResponse> result =
+                achievementService.processEvent(dummyUserId, "UNKNOWN_EVENT");
 
         verify(userAchievementRepository, never()).save(any());
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testProcessEvent_ShouldReturnEmptyList_WhenAlreadyUnlocked() {
+        UserAchievement alreadyUnlocked = new UserAchievement();
+        alreadyUnlocked.setUserId(dummyUserId);
+        alreadyUnlocked.setAchievement(dummyAchievement);
+        alreadyUnlocked.setCurrentProgress(1);
+        alreadyUnlocked.setIsUnlocked(true);
+
+        when(achievementRepository.findByEventType(AchievementEvent.READING_COMPLETED))
+                .thenReturn(List.of(dummyAchievement));
+        when(userAchievementRepository.findByUserIdAndAchievementId(dummyUserId, dummyAchievement.getId()))
+                .thenReturn(Optional.of(alreadyUnlocked));
+
+        List<AchievementProgressResponse> result =
+                achievementService.processEvent(dummyUserId, AchievementEvent.READING_COMPLETED);
+
+        verify(userAchievementRepository, never()).save(any());
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testProcessEvent_ShouldReturnEmptyList_WhenMilestoneNotYetReached() {
+        Achievement highMilestone = new Achievement();
+        highMilestone.setId(UUID.randomUUID());
+        highMilestone.setName("Quiz Master");
+        highMilestone.setMilestone(5);
+        highMilestone.setEventType(AchievementEvent.QUIZ_FINISHED);
+
+        when(achievementRepository.findByEventType(AchievementEvent.QUIZ_FINISHED))
+                .thenReturn(List.of(highMilestone));
+        when(userAchievementRepository.findByUserIdAndAchievementId(dummyUserId, highMilestone.getId()))
+                .thenReturn(Optional.empty());
+
+        List<AchievementProgressResponse> result =
+                achievementService.processEvent(dummyUserId, AchievementEvent.QUIZ_FINISHED);
+
+        verify(userAchievementRepository, times(1)).save(any(UserAchievement.class));
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
     }
 
     @Test
