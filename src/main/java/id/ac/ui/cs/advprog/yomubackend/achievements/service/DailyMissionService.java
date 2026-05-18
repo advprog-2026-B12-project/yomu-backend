@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 public interface DailyMissionService {
-    void processDailyEvent(UUID userId, String eventType);
+    List<String> processDailyEvent(UUID userId, String eventType);
     DailyMission createDailyMission(DailyMission mission);
     List<DailyMission> getActiveDailyMissions();
     List<UserDailyMission> getUserDailyMissions(UUID userId);

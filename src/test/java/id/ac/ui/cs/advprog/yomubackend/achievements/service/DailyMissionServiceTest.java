@@ -58,7 +58,7 @@ class DailyMissionServiceTest {
                 eq(dummyUserId), eq(dummyMission.getId()), any(LocalDate.class)))
                 .thenReturn(Optional.empty());
 
-        dailyMissionService.processDailyEvent(dummyUserId, AchievementEvent.READING_COMPLETED);
+        List<String> result = dailyMissionService.processDailyEvent(dummyUserId, AchievementEvent.READING_COMPLETED);
 
         verify(userDailyMissionRepository, times(1)).save(argThat(progress -> {
             assertEquals(dummyUserId, progress.getUserId());
@@ -67,6 +67,32 @@ class DailyMissionServiceTest {
             assertEquals(LocalDate.now(), progress.getDateAssigned());
             return true;
         }));
+
+        // milestone is 3, progress is 1 => not completed yet
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testProcessDailyEvent_ShouldReturnMissionName_WhenMilestoneReached() {
+        DailyMission easyMission = new DailyMission();
+        easyMission.setId(UUID.randomUUID());
+        easyMission.setName("Quick Read");
+        easyMission.setMilestone(1);
+        easyMission.setEventType(AchievementEvent.READING_COMPLETED);
+        easyMission.setIsActive(true);
+
+        when(dailyMissionRepository.findByEventTypeAndIsActiveTrue(AchievementEvent.READING_COMPLETED))
+                .thenReturn(List.of(easyMission));
+
+        when(userDailyMissionRepository.findByUserIdAndDailyMissionIdAndDateAssigned(
+                eq(dummyUserId), eq(easyMission.getId()), any(LocalDate.class)))
+                .thenReturn(Optional.empty());
+
+        List<String> result = dailyMissionService.processDailyEvent(dummyUserId, AchievementEvent.READING_COMPLETED);
+
+        assertEquals(1, result.size());
+        assertEquals("Quick Read", result.get(0));
     }
 
     @Test
@@ -154,11 +180,13 @@ class DailyMissionServiceTest {
     }
 
     @Test
-    void testProcessDailyEvent_ShouldDoNothing_WhenNoActiveMissionFound() {
+    void testProcessDailyEvent_ShouldReturnEmptyList_WhenNoActiveMissionFound() {
         when(dailyMissionRepository.findByEventTypeAndIsActiveTrue("UNKNOWN")).thenReturn(List.of());
 
-        dailyMissionService.processDailyEvent(dummyUserId, "UNKNOWN");
+        List<String> result = dailyMissionService.processDailyEvent(dummyUserId, "UNKNOWN");
 
         verify(userDailyMissionRepository, never()).save(any());
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
     }
 }

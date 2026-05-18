@@ -13,6 +13,7 @@ import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
 import java.util.List;
 
 @Service
@@ -27,7 +28,7 @@ public class ClanService {
     }
 
     @Transactional
-    public ClanResponse createClan(Long userId, String name, String description) {
+    public ClanResponse createClan(UUID userId, String name, String description) {
         if (name == null || name.isBlank()) {
             throw new IllegalArgumentException("Clan name must not be blank");
         }
@@ -58,7 +59,7 @@ public class ClanService {
     }
 
     @Transactional
-    public ClanMemberResponse joinClan(Long userId, Long clanId) {
+    public ClanMemberResponse joinClan(UUID userId, Long clanId) {
         Clan clan = clanRepository.findById(clanId)
                 .orElseThrow(() -> new ClanNotFoundException("Clan not found"));
 
@@ -81,7 +82,7 @@ public class ClanService {
     }
 
     @Transactional
-    public void leaveClan(Long userId) {
+    public void leaveClan(UUID userId) {
         ClanMember member = clanMemberRepository.findByUserId(userId)
                 .orElseThrow(() -> new UserNotInClanException("User is not in any clan"));
 
@@ -93,7 +94,7 @@ public class ClanService {
     }
 
     @Transactional
-    public void deleteClan(Long requesterUserId, Long clanId) {
+    public void deleteClan(UUID requesterUserId, Long clanId) {
         Clan clan = clanRepository.findById(clanId)
                 .orElseThrow(() -> new ClanNotFoundException("Clan not found"));
 

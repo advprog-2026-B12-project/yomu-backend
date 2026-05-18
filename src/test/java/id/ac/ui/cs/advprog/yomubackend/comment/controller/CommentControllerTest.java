@@ -54,23 +54,23 @@ class CommentControllerTest {
     void getComments_ReturnsListFromService() {
         CommentResponse resp = new CommentResponse();
         resp.setId(UUID.randomUUID());
-        when(commentService.getCommentsByReadingId(readingId)).thenReturn(List.of(resp));
+        when(commentService.getCommentsByReadingId(readingId, username)).thenReturn(List.of(resp));
 
         ResponseEntity<?> response = commentController.getCommentsByReadingId(readingId);
 
         assertEquals(HttpStatus.OK.value(), response.getStatusCode().value());
         assertNotNull(response.getBody());
-        verify(commentService, times(1)).getCommentsByReadingId(readingId);
+        verify(commentService, times(1)).getCommentsByReadingId(readingId, username);
     }
 
     @Test
     void getComments_EmptyList_ReturnsOkWithEmpty() {
-        when(commentService.getCommentsByReadingId(readingId)).thenReturn(Collections.emptyList());
+        when(commentService.getCommentsByReadingId(readingId, username)).thenReturn(Collections.emptyList());
 
         ResponseEntity<?> response = commentController.getCommentsByReadingId(readingId);
 
         assertEquals(HttpStatus.OK.value(), response.getStatusCode().value());
-        verify(commentService, times(1)).getCommentsByReadingId(readingId);
+        verify(commentService, times(1)).getCommentsByReadingId(readingId, username);
     }
 
     @Test
@@ -199,6 +199,28 @@ class CommentControllerTest {
                 .when(commentService).softDeleteComment(username, readingId, commentId);
 
         ResponseEntity<?> response = commentController.deleteComment(readingId, commentId);
+
+        assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
+    }
+
+    @Test
+    void adminDeleteComment_Success_ReturnsNoContent() {
+        UUID commentId = UUID.randomUUID();
+        doNothing().when(commentService).adminDeleteComment(username, commentId);
+
+        ResponseEntity<?> response = commentController.adminDeleteComment(commentId);
+
+        assertEquals(HttpStatus.NO_CONTENT.value(), response.getStatusCode().value());
+        verify(commentService, times(1)).adminDeleteComment(username, commentId);
+    }
+
+    @Test
+    void adminDeleteComment_NotFound_ReturnsBadRequest() {
+        UUID commentId = UUID.randomUUID();
+        doThrow(new IllegalArgumentException("Komentar tidak ditemukan!"))
+                .when(commentService).adminDeleteComment(username, commentId);
+
+        ResponseEntity<?> response = commentController.adminDeleteComment(commentId);
 
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
     }

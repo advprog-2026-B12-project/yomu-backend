@@ -49,4 +49,15 @@ public class UserController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+    @DeleteMapping("/account")
+    public ResponseEntity<?> deleteAccount() {
+        try {
+            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+            userService.deleteAccount(authentication.getName());
+            return ResponseEntity.ok(Map.of("message", "Akun berhasil dihapus"));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }

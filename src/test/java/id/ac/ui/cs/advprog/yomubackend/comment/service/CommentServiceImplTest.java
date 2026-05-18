@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.yomubackend.comment.service;
 
+import id.ac.ui.cs.advprog.yomubackend.auth.model.Role;
 import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import id.ac.ui.cs.advprog.yomubackend.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.yomubackend.comment.dto.CommentRequest;
@@ -34,6 +35,9 @@ class CommentServiceImplTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private CommentReactionService reactionService;
+
     @InjectMocks
     private CommentServiceImpl commentService;
 
@@ -45,6 +49,7 @@ class CommentServiceImplTest {
         author = new User();
         author.setId(UUID.randomUUID());
         author.setUsername("reader01");
+        author.setRole(Role.PELAJAR);
 
         readingId = UUID.randomUUID();
     }
@@ -217,8 +222,10 @@ class CommentServiceImplTest {
 
         when(commentRepository.findByReadingIdOrderByCreatedAtAsc(readingId))
                 .thenReturn(List.of(top1, top2, reply1, reply2, nestedReply));
+        when(reactionService.getReactionCounts(any())).thenReturn(java.util.Collections.emptyMap());
+        when(reactionService.getUserReaction(eq("reader01"), any())).thenReturn(null);
 
-        List<CommentResponse> result = commentService.getCommentsByReadingId(readingId);
+        List<CommentResponse> result = commentService.getCommentsByReadingId(readingId, "reader01");
 
         assertEquals(2, result.size());
         CommentResponse top1Resp = result.stream()
@@ -237,8 +244,9 @@ class CommentServiceImplTest {
 
         when(commentRepository.findByReadingIdOrderByCreatedAtAsc(readingId))
                 .thenReturn(List.of(top, hidden));
+        when(reactionService.getReactionCounts(any())).thenReturn(java.util.Collections.emptyMap());
 
-        List<CommentResponse> result = commentService.getCommentsByReadingId(readingId);
+        List<CommentResponse> result = commentService.getCommentsByReadingId(readingId, null);
 
         assertEquals(1, result.size());
         assertEquals(top.getId(), result.get(0).getId());
@@ -252,8 +260,9 @@ class CommentServiceImplTest {
 
         when(commentRepository.findByReadingIdOrderByCreatedAtAsc(readingId))
                 .thenReturn(List.of(top, replyAlive, replyDead));
+        when(reactionService.getReactionCounts(any())).thenReturn(java.util.Collections.emptyMap());
 
-        List<CommentResponse> result = commentService.getCommentsByReadingId(readingId);
+        List<CommentResponse> result = commentService.getCommentsByReadingId(readingId, null);
 
         assertEquals(1, result.size());
         assertEquals(1, result.get(0).getReplies().size());
@@ -265,7 +274,7 @@ class CommentServiceImplTest {
         when(commentRepository.findByReadingIdOrderByCreatedAtAsc(readingId))
                 .thenReturn(List.of());
 
-        List<CommentResponse> result = commentService.getCommentsByReadingId(readingId);
+        List<CommentResponse> result = commentService.getCommentsByReadingId(readingId, null);
 
         assertTrue(result.isEmpty());
     }
@@ -415,5 +424,61 @@ class CommentServiceImplTest {
 
         assertThrows(IllegalArgumentException.class,
                 () -> commentService.softDeleteComment("reader01", readingId, commentId));
+    }
+
+    @Test
+    void adminDeleteComment_Success_SetsDeletedFlagsByAdmin() {
+        UUID commentId = UUID.randomUUID();
+        Comment existing = buildComment(commentId, "spam", null, false);
+        existing.setAuthorId(UUID.randomUUID());
+
+        User admin = new User();
+        admin.setId(UUID.randomUUID());
+        admin.setUsername("admin01");
+        admin.setRole(Role.ADMIN);
+
+        when(userRepository.findByUsername("admin01")).thenReturn(Optional.of(admin));
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
+        when(commentRepository.save(any(Comment.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        commentService.adminDeleteComment("admin01", commentId);
+
+        assertTrue(existing.isDeleted());
+        assertEquals(admin.getId(), existing.getDeletedBy());
+        assertNotNull(existing.getDeletedAt());
+        verify(commentRepository, times(1)).save(existing);
+    }
+
+    @Test
+    void adminDeleteComment_CommentAlreadyDeleted_ThrowsException() {
+        UUID commentId = UUID.randomUUID();
+        Comment existing = buildComment(commentId, "gone", null, true);
+
+        User admin = new User();
+        admin.setId(UUID.randomUUID());
+        admin.setUsername("admin01");
+        admin.setRole(Role.ADMIN);
+
+        when(userRepository.findByUsername("admin01")).thenReturn(Optional.of(admin));
+        when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.adminDeleteComment("admin01", commentId));
+    }
+
+    @Test
+    void adminDeleteComment_CommentNotFound_ThrowsException() {
+        UUID commentId = UUID.randomUUID();
+
+        User admin = new User();
+        admin.setId(UUID.randomUUID());
+        admin.setUsername("admin01");
+        admin.setRole(Role.ADMIN);
+
+        when(userRepository.findByUsername("admin01")).thenReturn(Optional.of(admin));
+        when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
+
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.adminDeleteComment("admin01", commentId));
     }
 }

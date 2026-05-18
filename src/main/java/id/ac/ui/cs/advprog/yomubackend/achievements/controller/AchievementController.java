@@ -5,6 +5,7 @@ import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementProgressRespo
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementRequest;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.EventTriggerRequest;
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.EventTriggerResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.Achievement;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserAchievement;
 import id.ac.ui.cs.advprog.yomubackend.achievements.service.AchievementService;
@@ -53,12 +54,16 @@ public class AchievementController {
     }
 
     @PostMapping("/trigger")
-    public ResponseEntity<String> triggerEvent(@RequestBody EventTriggerRequest request) {
+    public ResponseEntity<EventTriggerResponse> triggerEvent(@RequestBody EventTriggerRequest request) {
         String eventType = validateAndNormalizeEventType(request.getEventType());
-        achievementService.processEvent(request.getUserId(), eventType);
-        dailyMissionService.processDailyEvent(request.getUserId(), eventType);
+        List<AchievementProgressResponse> unlockedAchievements = achievementService.processEvent(request.getUserId(), eventType);
+        List<String> completedDailyMissions = dailyMissionService.processDailyEvent(request.getUserId(), eventType);
 
-        return ResponseEntity.ok("Event processed successfully for Achievements and Daily Missions");
+        EventTriggerResponse response = new EventTriggerResponse();
+        response.setUnlockedAchievements(unlockedAchievements);
+        response.setCompletedDailyMissions(completedDailyMissions);
+
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/display/{userAchievementId}")
