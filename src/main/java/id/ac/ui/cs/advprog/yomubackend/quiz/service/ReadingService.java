@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public interface ReadingService {
     Reading create(Reading reading);
+    Reading update(UUID id, Reading reading);
     List<Reading> findAll();
     void delete(UUID id);
     Reading findById(UUID id);

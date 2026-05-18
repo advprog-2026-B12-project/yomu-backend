@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public interface OptionService {
     Option create(UUID questionId, Option option);
+    Option update(UUID optionId, Option option);
     List<Option> findByQuestion(UUID questionId);
     void delete(UUID optionId);
 }

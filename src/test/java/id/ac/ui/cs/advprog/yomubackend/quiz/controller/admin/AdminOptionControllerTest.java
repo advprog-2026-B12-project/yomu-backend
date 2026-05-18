@@ -1,6 +1,7 @@
 package id.ac.ui.cs.advprog.yomubackend.quiz.controller.admin;
 
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Option;
+import id.ac.ui.cs.advprog.yomubackend.quiz.mapper.QuizResponseMapper;
 import id.ac.ui.cs.advprog.yomubackend.quiz.service.OptionService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
@@ -17,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AdminOptionControllerTest {
 
     OptionService service = mock(OptionService.class);
-    MockMvc mvc = MockMvcBuilders.standaloneSetup(new AdminOptionController(service)).build();
+    MockMvc mvc = MockMvcBuilders.standaloneSetup(new AdminOptionController(service, new QuizResponseMapper())).build();
 
     @Test
     void testCreateOption() throws Exception {
@@ -54,6 +55,29 @@ class AdminOptionControllerTest {
         mvc.perform(get("/api/admin/options/question/" + questionId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].optionText").value("Paris"));
+    }
+
+    @Test
+    void testUpdateOption() throws Exception {
+        UUID optionId = UUID.randomUUID();
+
+        Option updated = new Option();
+        updated.setId(optionId);
+        updated.setOptionText("Jakarta");
+        updated.setCorrect(true);
+
+        when(service.update(eq(optionId), any())).thenReturn(updated);
+
+        String body = """
+                {"optionText": "Jakarta", "isCorrect": true}
+                """;
+
+        mvc.perform(put("/api/admin/options/" + optionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.optionText").value("Jakarta"))
+                .andExpect(jsonPath("$.correct").value(true));
     }
 
     @Test

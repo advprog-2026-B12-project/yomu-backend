@@ -10,5 +10,6 @@ import java.util.UUID;
 public class ReadingResponse {
     private UUID id;
     private String title;
+    private String category;
     private String content;
 }

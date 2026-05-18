@@ -7,6 +7,7 @@ import java.util.UUID;
 
 public interface QuestionService {
     Question create(UUID readingId, Question question);
+    Question update(UUID questionId, Question question);
     List<Question> findByReading(UUID readingId);
     void delete(UUID questionId);
 }

@@ -4,6 +4,7 @@ import id.ac.ui.cs.advprog.yomubackend.quiz.model.QuizAttempt;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -11,10 +12,9 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, UUID> 
     List<QuizAttempt> findByUserId(UUID userId);
 
     boolean existsByUserIdAndReadingId(UUID userId, UUID readingId);
+    void deleteByReadingId(UUID readingId);
 
-    List<QuizAttempt> findByUserIdAndCreatedAtBetween(
-            UUID userId,
-            LocalDateTime start,
-            LocalDateTime end
-    );
+    List<QuizAttempt> findByUserIdAndCreatedAtBetween(UUID userId, LocalDateTime start, LocalDateTime end);
+
+    List<QuizAttempt> findByUserIdInAndCreatedAtBetween(Collection<UUID> userIds, LocalDateTime start, LocalDateTime end);
 }

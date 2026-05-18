@@ -1,7 +1,11 @@
 package id.ac.ui.cs.advprog.yomubackend.achievements.service;
 
 import id.ac.ui.cs.advprog.yomubackend.achievements.constant.AchievementEvent;
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserDailyMissionResponse;
+import id.ac.ui.cs.advprog.yomubackend.achievements.exception.DailyMissionNotFoundException;
+import id.ac.ui.cs.advprog.yomubackend.achievements.mapper.UserDailyMissionMapper;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.DailyMission;
+import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserDailyMission;
 import id.ac.ui.cs.advprog.yomubackend.achievements.repository.DailyMissionRepository;
 import id.ac.ui.cs.advprog.yomubackend.achievements.repository.UserDailyMissionRepository;
 
@@ -30,6 +34,9 @@ class DailyMissionServiceTest {
 
     @Mock
     private UserDailyMissionRepository userDailyMissionRepository;
+
+    @Mock
+    private UserDailyMissionMapper userDailyMissionMapper;
 
     @InjectMocks
     private DailyMissionServiceImpl dailyMissionService;
@@ -68,7 +75,6 @@ class DailyMissionServiceTest {
             return true;
         }));
 
-        // milestone is 3, progress is 1 => not completed yet
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
@@ -126,7 +132,7 @@ class DailyMissionServiceTest {
         updatedData.setName("Baru");
         updatedData.setMilestone(5);
 
-        when(dailyMissionRepository.findById(existing.getId())).thenReturn(java.util.Optional.of(existing));
+        when(dailyMissionRepository.findById(existing.getId())).thenReturn(Optional.of(existing));
         when(dailyMissionRepository.save(any(DailyMission.class))).thenReturn(existing);
 
         DailyMission result = dailyMissionService.updateDailyMission(existing.getId(), updatedData);
@@ -161,10 +167,15 @@ class DailyMissionServiceTest {
 
     @Test
     void testGetUserDailyMissions_ShouldReturnList() {
-        when(userDailyMissionRepository.findByUserId(dummyUserId)).thenReturn(List.of());
-        List<id.ac.ui.cs.advprog.yomubackend.achievements.model.UserDailyMission> result =
-                dailyMissionService.getUserDailyMissions(dummyUserId);
+        UserDailyMission udm = new UserDailyMission();
+        UserDailyMissionResponse response = new UserDailyMissionResponse();
+
+        when(userDailyMissionRepository.findByUserId(dummyUserId)).thenReturn(List.of(udm));
+        when(userDailyMissionMapper.toResponse(udm)).thenReturn(response);
+
+        List<UserDailyMissionResponse> result = dailyMissionService.getUserDailyMissions(dummyUserId);
         assertNotNull(result);
+        assertEquals(1, result.size());
     }
 
     @Test
@@ -172,10 +183,8 @@ class DailyMissionServiceTest {
         UUID randomId = UUID.randomUUID();
         when(dailyMissionRepository.findById(randomId)).thenReturn(Optional.empty());
 
-        DailyMission missionToUpdate = new DailyMission();
-
-        assertThrows(RuntimeException.class, () ->
-                dailyMissionService.updateDailyMission(randomId, missionToUpdate)
+        assertThrows(DailyMissionNotFoundException.class, () ->
+                dailyMissionService.updateDailyMission(randomId, new DailyMission())
         );
     }
 

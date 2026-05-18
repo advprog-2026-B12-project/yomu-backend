@@ -15,7 +15,7 @@ public class DiamondScoreProvider implements ClanScoreProvider {
 
     @Override
     public String getDivision() {
-        return "DIAMOND";
+        return LeagueDivision.DIAMOND.value();
     }
 
     @Override

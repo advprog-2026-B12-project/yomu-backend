@@ -9,7 +9,7 @@ public class GoldScoreProvider implements ClanScoreProvider {
 
     @Override
     public String getDivision() {
-        return "GOLD";
+        return LeagueDivision.GOLD.value();
     }
 
     @Override

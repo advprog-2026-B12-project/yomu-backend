@@ -1,16 +1,17 @@
 package id.ac.ui.cs.advprog.yomubackend.achievements.service;
 
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementProgressResponse;
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserAchievementResponse;
+import id.ac.ui.cs.advprog.yomubackend.achievements.exception.UserAchievementNotFoundException;
+import id.ac.ui.cs.advprog.yomubackend.achievements.mapper.AchievementProgressMapper;
+import id.ac.ui.cs.advprog.yomubackend.achievements.mapper.UserAchievementMapper;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.Achievement;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserAchievement;
 import id.ac.ui.cs.advprog.yomubackend.achievements.repository.AchievementRepository;
 import id.ac.ui.cs.advprog.yomubackend.achievements.repository.UserAchievementRepository;
-
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -21,64 +22,17 @@ public class AchievementServiceImpl implements AchievementService {
 
     private final AchievementRepository achievementRepository;
     private final UserAchievementRepository userAchievementRepository;
+    private final AchievementProgressMapper progressMapper;
+    private final UserAchievementMapper userAchievementMapper;
 
-    // Dependency Injection
-    @Autowired
     public AchievementServiceImpl(AchievementRepository achievementRepository,
-                                  UserAchievementRepository userAchievementRepository) {
+                                  UserAchievementRepository userAchievementRepository,
+                                  AchievementProgressMapper progressMapper,
+                                  UserAchievementMapper userAchievementMapper) {
         this.achievementRepository = achievementRepository;
         this.userAchievementRepository = userAchievementRepository;
-    }
-
-    @Override
-    @Transactional
-    public List<AchievementProgressResponse> processEvent(UUID userId, String eventType) {
-        List<Achievement> relatedAchievements = achievementRepository.findByEventType(eventType);
-        List<AchievementProgressResponse> newlyUnlocked = new java.util.ArrayList<>();
-
-        for (Achievement achievement : relatedAchievements) {
-            UserAchievement userProgress = userAchievementRepository
-                    .findByUserIdAndAchievementId(userId, achievement.getId())
-                    .orElseGet(() -> {
-                        UserAchievement newProgress = new UserAchievement();
-                        newProgress.setUserId(userId);
-                        newProgress.setAchievement(achievement);
-                        newProgress.setCurrentProgress(0);
-                        newProgress.setIsUnlocked(false);
-                        newProgress.setIsDisplayed(false);
-                        return newProgress;
-                    });
-
-            if (userProgress.getIsUnlocked()) {
-                continue;
-            }
-
-            userProgress.setCurrentProgress(userProgress.getCurrentProgress() + 1);
-
-            if (userProgress.getCurrentProgress() >= achievement.getMilestone()) {
-                userProgress.setIsUnlocked(true); // Sah! Unlocked!
-                userProgress.setUnlockedAt(LocalDateTime.now());
-                
-                AchievementProgressResponse unlockedResponse = new AchievementProgressResponse();
-                unlockedResponse.setAchievementId(achievement.getId());
-                unlockedResponse.setName(achievement.getName());
-                unlockedResponse.setDescription(achievement.getDescription());
-                unlockedResponse.setIconUrl(achievement.getIconUrl());
-                unlockedResponse.setPoints(achievement.getPoints());
-                unlockedResponse.setMilestone(achievement.getMilestone());
-                unlockedResponse.setEventType(achievement.getEventType());
-                unlockedResponse.setCurrentProgress(userProgress.getCurrentProgress());
-                unlockedResponse.setIsUnlocked(true);
-                unlockedResponse.setIsDisplayed(userProgress.getIsDisplayed());
-                unlockedResponse.setUnlockedAt(userProgress.getUnlockedAt());
-                
-                newlyUnlocked.add(unlockedResponse);
-            }
-
-            userAchievementRepository.save(userProgress);
-        }
-        
-        return newlyUnlocked;
+        this.progressMapper = progressMapper;
+        this.userAchievementMapper = userAchievementMapper;
     }
 
     @Override
@@ -92,47 +46,35 @@ public class AchievementServiceImpl implements AchievementService {
     }
 
     @Override
-    public List<UserAchievement> getUserAchievements(UUID userId) {
-        return userAchievementRepository.findByUserId(userId);
+    @Transactional(readOnly = true)
+    public List<UserAchievementResponse> getUserAchievements(UUID userId) {
+        return userAchievementRepository.findByUserId(userId).stream()
+                .map(userAchievementMapper::toResponse)
+                .toList();
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AchievementProgressResponse> getUserAchievementProgress(UUID userId) {
         List<Achievement> achievements = achievementRepository.findAll();
         List<UserAchievement> userAchievements = userAchievementRepository.findByUserId(userId);
 
-        Map<UUID, UserAchievement> userAchievementByAchievementId = new HashMap<>();
-        for (UserAchievement userAchievement : userAchievements) {
-            userAchievementByAchievementId.put(userAchievement.getAchievement().getId(), userAchievement);
+        Map<UUID, UserAchievement> byAchievementId = new HashMap<>();
+        for (UserAchievement ua : userAchievements) {
+            byAchievementId.put(ua.getAchievement().getId(), ua);
         }
 
-        return achievements.stream().map(achievement -> {
-            UserAchievement progress = userAchievementByAchievementId.get(achievement.getId());
-            AchievementProgressResponse response = new AchievementProgressResponse();
-
-            response.setAchievementId(achievement.getId());
-            response.setName(achievement.getName());
-            response.setDescription(achievement.getDescription());
-            response.setIconUrl(achievement.getIconUrl());
-            response.setPoints(achievement.getPoints());
-            response.setMilestone(achievement.getMilestone());
-            response.setEventType(achievement.getEventType());
-
-            response.setCurrentProgress(progress != null ? progress.getCurrentProgress() : 0);
-            response.setIsUnlocked(progress != null ? progress.getIsUnlocked() : false);
-            response.setIsDisplayed(progress != null ? progress.getIsDisplayed() : false);
-            response.setUnlockedAt(progress != null ? progress.getUnlockedAt() : null);
-            return response;
-        }).toList();
+        return achievements.stream()
+                .map(a -> progressMapper.toProgressResponse(a, byAchievementId.get(a.getId())))
+                .toList();
     }
 
     @Override
-    public UserAchievement toggleDisplayAchievement(UUID userAchievementId) {
+    @Transactional
+    public UserAchievementResponse toggleDisplayAchievement(UUID userAchievementId) {
         UserAchievement userAchievement = userAchievementRepository.findById(userAchievementId)
-                .orElseThrow(() -> new IllegalArgumentException("User Achievement tidak ditemukan"));
-
+                .orElseThrow(() -> new UserAchievementNotFoundException(userAchievementId));
         userAchievement.setIsDisplayed(!userAchievement.getIsDisplayed());
-
-        return userAchievementRepository.save(userAchievement);
+        return userAchievementMapper.toResponse(userAchievementRepository.save(userAchievement));
     }
 }
