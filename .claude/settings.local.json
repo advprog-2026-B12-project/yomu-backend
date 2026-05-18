@@ -8,7 +8,9 @@
       "Bash(Remove-Item \"d:\\\\TA ADPRO\\\\yomu-backend\\\\src\\\\main\\\\java\\\\id\\\\ac\\\\ui\\\\cs\\\\advprog\\\\yomubackend\\\\clan\\\\service\\\\ClanService.java\")",
       "Bash(Remove-Item \"d:\\\\TA ADPRO\\\\yomu-backend\\\\src\\\\main\\\\java\\\\id\\\\ac\\\\ui\\\\cs\\\\advprog\\\\yomubackend\\\\clan\\\\service\\\\ClanServiceImpl.java\")",
       "Bash(Remove-Item \"d:\\\\TA ADPRO\\\\yomu-backend\\\\src\\\\test\\\\java\\\\id\\\\ac\\\\ui\\\\cs\\\\advprog\\\\yomubackend\\\\clan\\\\service\\\\ClanServiceTest.java\")",
-      "Bash(Write-Host \"Deleted\")"
+      "Bash(Write-Host \"Deleted\")",
+      "Bash(./gradlew test *)",
+      "Bash(python -c ' *)"
     ]
   }
 }

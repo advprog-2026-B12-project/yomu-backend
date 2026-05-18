@@ -198,4 +198,34 @@ class DailyMissionServiceTest {
         assertNotNull(result);
         assertTrue(result.isEmpty());
     }
+
+    @Test
+    void testProcessDailyEvent_ShouldSkip_WhenMissionAlreadyCompleted() {
+        when(dailyMissionRepository.findByEventTypeAndIsActiveTrue(AchievementEvent.READING_COMPLETED))
+                .thenReturn(List.of(dummyMission));
+
+        UserDailyMission completedProgress = new UserDailyMission();
+        completedProgress.setUserId(dummyUserId);
+        completedProgress.setDailyMission(dummyMission);
+        completedProgress.setCurrentProgress(3);
+        completedProgress.setIsCompleted(true);
+
+        when(userDailyMissionRepository.findByUserIdAndDailyMissionIdAndDateAssigned(
+                eq(dummyUserId), eq(dummyMission.getId()), any(LocalDate.class)))
+                .thenReturn(Optional.of(completedProgress));
+
+        List<String> result = dailyMissionService.processDailyEvent(dummyUserId, AchievementEvent.READING_COMPLETED);
+
+        verify(userDailyMissionRepository, never()).save(any());
+        assertTrue(result.isEmpty());
+    }
+
+    @Test
+    void testRotateDailyMissions_ShouldDoNothing_WhenNoMissions() {
+        when(dailyMissionRepository.findAll()).thenReturn(List.of());
+
+        dailyMissionService.rotateDailyMissions();
+
+        verify(dailyMissionRepository, never()).saveAll(any());
+    }
 }

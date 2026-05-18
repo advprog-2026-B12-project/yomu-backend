@@ -15,6 +15,7 @@ import id.ac.ui.cs.advprog.yomubackend.achievements.util.AchievementEventUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
@@ -32,6 +33,7 @@ public class AchievementController {
     private final AchievementMapper achievementMapper;
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<AchievementResponse> createAchievement(@RequestBody AchievementRequest request) {
         Achievement savedAchievement = achievementService.createAchievement(achievementMapper.toEntity(request));
         return new ResponseEntity<>(achievementMapper.toResponse(savedAchievement), HttpStatus.CREATED);
@@ -56,6 +58,7 @@ public class AchievementController {
     }
 
     @PostMapping("/trigger")
+    @PreAuthorize("hasRole('ADMIN')")
     @Transactional
     public ResponseEntity<EventTriggerResponse> triggerEvent(@RequestBody EventTriggerRequest request) {
         String eventType = AchievementEventUtils.validateAndNormalize(request.getEventType());
@@ -72,6 +75,7 @@ public class AchievementController {
     }
 
     @PutMapping("/display/{userAchievementId}")
+    @PreAuthorize("hasRole('PELAJAR')")
     public ResponseEntity<UserAchievementResponse> toggleDisplayAchievement(@PathVariable UUID userAchievementId) {
         return ResponseEntity.ok(achievementService.toggleDisplayAchievement(userAchievementId));
     }
