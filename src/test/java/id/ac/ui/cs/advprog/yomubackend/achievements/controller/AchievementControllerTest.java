@@ -17,6 +17,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementRequest;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -164,5 +166,51 @@ class AchievementControllerTest {
                 .andExpect(jsonPath("$.unlockedAchievements").isEmpty())
                 .andExpect(jsonPath("$.completedDailyMissions").isArray())
                 .andExpect(jsonPath("$.completedDailyMissions").isEmpty());
+    }
+
+    @Test
+    void testCreateAchievement_NullPointsAndMilestone_UsesDefaults() throws Exception {
+        AchievementRequest request = new AchievementRequest();
+        request.setName("Test Achievement");
+        request.setEventType("READING_COMPLETED");
+        // points and milestone are null -> mapToEntity defaults to 0 and 1
+
+        Achievement saved = new Achievement();
+        saved.setId(UUID.randomUUID());
+        saved.setName("Test Achievement");
+        saved.setPoints(0);
+        saved.setMilestone(1);
+        saved.setEventType("READING_COMPLETED");
+        when(achievementService.createAchievement(any(Achievement.class))).thenReturn(saved);
+
+        mockMvc.perform(post("/api/achievements")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Test Achievement"));
+    }
+
+    @Test
+    void testCreateAchievement_InvalidEventType_ReturnsBadRequest() throws Exception {
+        AchievementRequest request = new AchievementRequest();
+        request.setName("Test");
+        request.setEventType("INVALID_EVENT");
+        request.setPoints(5);
+        request.setMilestone(3);
+
+        mockMvc.perform(post("/api/achievements")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testTriggerEvent_InvalidEventType_ReturnsBadRequest() throws Exception {
+        String body = "{\"userId\":\"" + dummyUserId + "\", \"eventType\":\"INVALID_EVENT\"}";
+
+        mockMvc.perform(post("/api/achievements/trigger")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
     }
 }

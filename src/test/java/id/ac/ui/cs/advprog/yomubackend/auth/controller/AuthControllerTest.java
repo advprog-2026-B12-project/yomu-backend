@@ -67,7 +67,7 @@ class AuthControllerTest {
                 registerRequest.setUsername("ahmadFaiq41");
                 registerRequest.setEmail("faiq@kampus.id");
                 registerRequest.setDisplayName("Faiq");
-                registerRequest.setPassword("rahasia");
+                registerRequest.setPassword("rahasia1");
 
                 loginRequest = new LoginRequest();
                 loginRequest.setUsername("ahmadFaiq41");

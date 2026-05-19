@@ -2,6 +2,7 @@ package id.ac.ui.cs.advprog.yomubackend.achievements.controller;
 
 import id.ac.ui.cs.advprog.yomubackend.achievements.constant.AchievementEvent;
 import tools.jackson.databind.ObjectMapper;
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.DailyMissionRequest;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.DailyMission;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserDailyMission;
 import id.ac.ui.cs.advprog.yomubackend.achievements.service.DailyMissionService;
@@ -111,5 +112,56 @@ class DailyMissionControllerTest {
     void testDeleteDailyMission_ShouldReturn204() throws Exception {
         mockMvc.perform(delete("/api/daily-missions/" + dummyMission.getId()))
                 .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void testCreateDailyMission_NullMilestone_UsesDefault() throws Exception {
+        DailyMissionRequest request = new DailyMissionRequest();
+        request.setName("Read Daily");
+        request.setEventType("READING_COMPLETED");
+        request.setIsActive(true);
+        // milestone left null -> mapToEntity defaults to 1
+
+        DailyMission saved = new DailyMission();
+        saved.setId(UUID.randomUUID());
+        saved.setName("Read Daily");
+        saved.setMilestone(1);
+        saved.setEventType("READING_COMPLETED");
+        saved.setIsActive(true);
+        when(dailyMissionService.createDailyMission(any(DailyMission.class))).thenReturn(saved);
+
+        mockMvc.perform(post("/api/daily-missions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Read Daily"));
+    }
+
+    @Test
+    void testCreateDailyMission_InvalidEventType_ReturnsBadRequest() throws Exception {
+        DailyMissionRequest request = new DailyMissionRequest();
+        request.setName("Read Daily");
+        request.setEventType("INVALID_EVENT");
+        request.setMilestone(3);
+        request.setIsActive(true);
+
+        mockMvc.perform(post("/api/daily-missions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testUpdateDailyMission_InvalidEventType_ReturnsBadRequest() throws Exception {
+        DailyMissionRequest request = new DailyMissionRequest();
+        request.setName("Read Daily");
+        request.setEventType("INVALID_EVENT");
+        request.setMilestone(3);
+        request.setIsActive(true);
+
+        mockMvc.perform(put("/api/daily-missions/" + dummyMission.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
     }
 }
