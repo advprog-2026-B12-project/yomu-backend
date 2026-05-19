@@ -223,6 +223,14 @@ class DailyMissionServiceTest {
         when(userDailyMissionRepository.findByUserIdAndDailyMissionIdAndDateAssigned(
                 eq(dummyUserId), eq(dummyMission.getId()), any(LocalDate.class)))
                 .thenReturn(Optional.of(alreadyCompleted));
+
+        List<String> result = dailyMissionService.processDailyEvent(dummyUserId, AchievementEvent.READING_COMPLETED);
+
+        verify(userDailyMissionRepository, never()).save(any());
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+    
     void testProcessDailyEvent_ShouldSkip_WhenMissionAlreadyCompleted() {
         when(dailyMissionRepository.findByEventTypeAndIsActiveTrue(AchievementEvent.READING_COMPLETED))
                 .thenReturn(List.of(dummyMission));
@@ -241,9 +249,6 @@ class DailyMissionServiceTest {
 
         verify(userDailyMissionRepository, never()).save(any());
         assertNotNull(result);
-        assertTrue(result.isEmpty());
-    }
-}
         assertTrue(result.isEmpty());
     }
 

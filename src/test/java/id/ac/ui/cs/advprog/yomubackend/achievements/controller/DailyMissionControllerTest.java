@@ -8,16 +8,17 @@ import id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserDailyMissionResponse
 import id.ac.ui.cs.advprog.yomubackend.achievements.mapper.DailyMissionMapper;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.DailyMission;
 import id.ac.ui.cs.advprog.yomubackend.achievements.service.DailyMissionService;
-import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -141,6 +142,13 @@ class DailyMissionControllerTest {
         saved.setMilestone(1);
         saved.setEventType("READING_COMPLETED");
         saved.setIsActive(true);
+
+        DailyMissionResponse savedResponse = new DailyMissionResponse();
+        savedResponse.setId(saved.getId());
+        savedResponse.setName("Read Daily");
+
+        when(dailyMissionMapper.toEntity(any())).thenReturn(saved);
+        when(dailyMissionMapper.toResponse(any())).thenReturn(savedResponse);
         when(dailyMissionService.createDailyMission(any(DailyMission.class))).thenReturn(saved);
 
         mockMvc.perform(post("/api/daily-missions")
@@ -158,6 +166,9 @@ class DailyMissionControllerTest {
         request.setMilestone(3);
         request.setIsActive(true);
 
+        when(dailyMissionMapper.toEntity(any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid eventType"));
+
         mockMvc.perform(post("/api/daily-missions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -172,10 +183,12 @@ class DailyMissionControllerTest {
         request.setMilestone(3);
         request.setIsActive(true);
 
+        when(dailyMissionMapper.toEntity(any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid eventType"));
+
         mockMvc.perform(put("/api/daily-missions/" + dummyMission.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
-}
 }

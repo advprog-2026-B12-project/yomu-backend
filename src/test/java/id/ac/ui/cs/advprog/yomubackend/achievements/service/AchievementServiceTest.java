@@ -204,4 +204,3 @@ class AchievementServiceTest {
         assertTrue(events.contains(AchievementEvent.LOGIN_STREAK));
     }
 }
-}

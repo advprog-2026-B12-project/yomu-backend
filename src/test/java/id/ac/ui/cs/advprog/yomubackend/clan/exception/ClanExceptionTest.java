@@ -9,8 +9,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ClanExceptionTest {
 
-    // ── Exception constructors ────────────────────────────────────────────────
-
     @Test
     void clanNotFoundException_storesMessage() {
         ClanNotFoundException ex = new ClanNotFoundException("Clan not found");
@@ -39,14 +37,12 @@ class ClanExceptionTest {
         assertInstanceOf(RuntimeException.class, ex);
     }
 
-    // ── GlobalExceptionHandler ────────────────────────────────────────────────
-
     @Test
     void handleClanNotFound_returns404WithMessage() {
-        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+        ClanExceptionHandler handler = new ClanExceptionHandler();
         ClanNotFoundException ex = new ClanNotFoundException("Clan not found");
 
-        ResponseEntity<ApiMessageResponse> response = handler.handleClanNotFound(ex);
+        ResponseEntity<ApiMessageResponse> response = handler.handleNotFound(ex);
 
         assertEquals(HttpStatus.NOT_FOUND, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -55,7 +51,7 @@ class ClanExceptionTest {
 
     @Test
     void handleBadRequest_withUserAlreadyInClan_returns400() {
-        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+        ClanExceptionHandler handler = new ClanExceptionHandler();
         UserAlreadyInClanException ex = new UserAlreadyInClanException("Already in clan");
 
         ResponseEntity<ApiMessageResponse> response = handler.handleBadRequest(ex);
@@ -67,7 +63,7 @@ class ClanExceptionTest {
 
     @Test
     void handleBadRequest_withUserNotInClan_returns400() {
-        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+        ClanExceptionHandler handler = new ClanExceptionHandler();
         UserNotInClanException ex = new UserNotInClanException("Not in clan");
 
         ResponseEntity<ApiMessageResponse> response = handler.handleBadRequest(ex);
@@ -79,8 +75,8 @@ class ClanExceptionTest {
 
     @Test
     void handleBadRequest_withIllegalArgument_returns400() {
-        GlobalExceptionHandler handler = new GlobalExceptionHandler();
-        IllegalArgumentException ex = new IllegalArgumentException("Invalid argument");
+        ClanExceptionHandler handler = new ClanExceptionHandler();
+        UserNotInClanException ex = new UserNotInClanException("Invalid argument");
 
         ResponseEntity<ApiMessageResponse> response = handler.handleBadRequest(ex);
 
@@ -91,7 +87,7 @@ class ClanExceptionTest {
 
     @Test
     void handleForbidden_returns403WithMessage() {
-        GlobalExceptionHandler handler = new GlobalExceptionHandler();
+        ClanExceptionHandler handler = new ClanExceptionHandler();
         UnauthorizedClanActionException ex = new UnauthorizedClanActionException("Forbidden");
 
         ResponseEntity<ApiMessageResponse> response = handler.handleForbidden(ex);

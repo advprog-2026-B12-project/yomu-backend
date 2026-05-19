@@ -16,9 +16,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.server.ResponseStatusException;
 
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementRequest;
 
@@ -200,6 +202,13 @@ class AchievementControllerTest {
         saved.setPoints(0);
         saved.setMilestone(1);
         saved.setEventType("READING_COMPLETED");
+
+        AchievementResponse savedResponse = new AchievementResponse();
+        savedResponse.setId(saved.getId());
+        savedResponse.setName("Test Achievement");
+
+        when(achievementMapper.toEntity(any())).thenReturn(saved);
+        when(achievementMapper.toResponse(any())).thenReturn(savedResponse);
         when(achievementService.createAchievement(any(Achievement.class))).thenReturn(saved);
 
         mockMvc.perform(post("/api/achievements")
@@ -216,6 +225,9 @@ class AchievementControllerTest {
         request.setEventType("INVALID_EVENT");
         request.setPoints(5);
         request.setMilestone(3);
+
+        when(achievementMapper.toEntity(any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid eventType"));
 
         mockMvc.perform(post("/api/achievements")
                         .contentType(MediaType.APPLICATION_JSON)
