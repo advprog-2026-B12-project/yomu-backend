@@ -2,7 +2,6 @@ package id.ac.ui.cs.advprog.yomubackend.comment.service;
 
 import id.ac.ui.cs.advprog.yomubackend.auth.model.Role;
 import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
-import id.ac.ui.cs.advprog.yomubackend.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.yomubackend.comment.dto.CommentRequest;
 import id.ac.ui.cs.advprog.yomubackend.comment.dto.CommentResponse;
 import id.ac.ui.cs.advprog.yomubackend.comment.entity.Comment;
@@ -33,7 +32,7 @@ class CommentServiceImplTest {
     private ReadingRepository readingRepository;
 
     @Mock
-    private UserRepository userRepository;
+    private UserLookup userLookup;
 
     @Mock
     private CommentReactionService reactionService;
@@ -62,7 +61,7 @@ class CommentServiceImplTest {
 
     @Test
     void createComment_Success_ReturnsResponseWithAuthorAndReading() {
-        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
         when(readingRepository.existsById(readingId)).thenReturn(true);
         when(commentRepository.save(any(Comment.class))).thenAnswer(inv -> {
             Comment c = inv.getArgument(0);
@@ -94,7 +93,7 @@ class CommentServiceImplTest {
 
     @Test
     void createComment_ReadingNotFound_ThrowsException() {
-        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
         when(readingRepository.existsById(readingId)).thenReturn(false);
 
         assertThrows(IllegalArgumentException.class,
@@ -105,7 +104,7 @@ class CommentServiceImplTest {
 
     @Test
     void createComment_UserNotFound_ThrowsException() {
-        when(userRepository.findByUsername("ghost")).thenReturn(Optional.empty());
+        when(userLookup.resolveUserId("ghost")).thenReturn(null);
 
         assertThrows(IllegalArgumentException.class,
                 () -> commentService.createComment("ghost", readingId, requestWithContent("hi")));
@@ -122,7 +121,7 @@ class CommentServiceImplTest {
         parent.setAuthorId(UUID.randomUUID());
         parent.setContent("parent");
 
-        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
         when(commentRepository.findById(parentId)).thenReturn(Optional.of(parent));
         when(commentRepository.save(any(Comment.class))).thenAnswer(inv -> {
             Comment c = inv.getArgument(0);
@@ -143,7 +142,7 @@ class CommentServiceImplTest {
     @Test
     void replyToComment_ParentNotFound_ThrowsException() {
         UUID parentId = UUID.randomUUID();
-        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
         when(commentRepository.findById(parentId)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class,
@@ -161,7 +160,7 @@ class CommentServiceImplTest {
         parent.setReadingId(readingId);
         parent.setDeleted(true);
 
-        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
         when(commentRepository.findById(parentId)).thenReturn(Optional.of(parent));
 
         assertThrows(IllegalArgumentException.class,
@@ -178,7 +177,7 @@ class CommentServiceImplTest {
         parent.setId(parentId);
         parent.setReadingId(UUID.randomUUID()); // different reading
 
-        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
         when(commentRepository.findById(parentId)).thenReturn(Optional.of(parent));
 
         assertThrows(IllegalArgumentException.class,
@@ -284,7 +283,7 @@ class CommentServiceImplTest {
         UUID commentId = UUID.randomUUID();
         Comment existing = buildComment(commentId, "old content", null, false);
 
-        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
         when(commentRepository.save(any(Comment.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -299,7 +298,7 @@ class CommentServiceImplTest {
     @Test
     void updateComment_CommentNotFound_ThrowsException() {
         UUID commentId = UUID.randomUUID();
-        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
         when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class,
@@ -313,7 +312,7 @@ class CommentServiceImplTest {
         Comment existing = buildComment(commentId, "owned by other", null, false);
         existing.setAuthorId(UUID.randomUUID()); // someone else
 
-        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
 
         assertThrows(org.springframework.security.access.AccessDeniedException.class,
@@ -329,7 +328,7 @@ class CommentServiceImplTest {
         Comment existing = buildComment(commentId, "content", null, false);
         existing.setReadingId(UUID.randomUUID()); // different reading
 
-        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
 
         assertThrows(IllegalArgumentException.class,
@@ -342,7 +341,7 @@ class CommentServiceImplTest {
         UUID commentId = UUID.randomUUID();
         Comment existing = buildComment(commentId, "gone", null, true);
 
-        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
 
         assertThrows(IllegalArgumentException.class,
@@ -364,7 +363,7 @@ class CommentServiceImplTest {
         UUID commentId = UUID.randomUUID();
         Comment existing = buildComment(commentId, "to delete", null, false);
 
-        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
         when(commentRepository.save(any(Comment.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -379,7 +378,7 @@ class CommentServiceImplTest {
     @Test
     void softDeleteComment_CommentNotFound_ThrowsException() {
         UUID commentId = UUID.randomUUID();
-        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
         when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class,
@@ -392,7 +391,7 @@ class CommentServiceImplTest {
         Comment existing = buildComment(commentId, "not yours", null, false);
         existing.setAuthorId(UUID.randomUUID());
 
-        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
 
         assertThrows(org.springframework.security.access.AccessDeniedException.class,
@@ -406,7 +405,7 @@ class CommentServiceImplTest {
         UUID commentId = UUID.randomUUID();
         Comment existing = buildComment(commentId, "gone", null, true);
 
-        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
 
         assertThrows(IllegalArgumentException.class,
@@ -419,7 +418,7 @@ class CommentServiceImplTest {
         Comment existing = buildComment(commentId, "content", null, false);
         existing.setReadingId(UUID.randomUUID());
 
-        when(userRepository.findByUsername("reader01")).thenReturn(Optional.of(author));
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
 
         assertThrows(IllegalArgumentException.class,
@@ -437,7 +436,7 @@ class CommentServiceImplTest {
         admin.setUsername("admin01");
         admin.setRole(Role.ADMIN);
 
-        when(userRepository.findByUsername("admin01")).thenReturn(Optional.of(admin));
+        when(userLookup.resolveUserId("admin01")).thenReturn(admin.getId());
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
         when(commentRepository.save(any(Comment.class))).thenAnswer(inv -> inv.getArgument(0));
 
@@ -459,7 +458,7 @@ class CommentServiceImplTest {
         admin.setUsername("admin01");
         admin.setRole(Role.ADMIN);
 
-        when(userRepository.findByUsername("admin01")).thenReturn(Optional.of(admin));
+        when(userLookup.resolveUserId("admin01")).thenReturn(admin.getId());
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(existing));
 
         assertThrows(IllegalArgumentException.class,
@@ -475,7 +474,7 @@ class CommentServiceImplTest {
         admin.setUsername("admin01");
         admin.setRole(Role.ADMIN);
 
-        when(userRepository.findByUsername("admin01")).thenReturn(Optional.of(admin));
+        when(userLookup.resolveUserId("admin01")).thenReturn(admin.getId());
         when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class,

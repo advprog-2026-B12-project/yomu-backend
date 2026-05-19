@@ -1,7 +1,5 @@
 package id.ac.ui.cs.advprog.yomubackend.comment.service;
 
-import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
-import id.ac.ui.cs.advprog.yomubackend.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.yomubackend.comment.dto.ReactionRequest;
 import id.ac.ui.cs.advprog.yomubackend.comment.entity.Comment;
 import id.ac.ui.cs.advprog.yomubackend.comment.entity.CommentReaction;
@@ -22,24 +20,24 @@ public class CommentReactionServiceImpl implements CommentReactionService {
 
     private final CommentReactionRepository reactionRepository;
     private final CommentRepository commentRepository;
-    private final UserRepository userRepository;
+    private final UserLookup userLookup;
 
     public CommentReactionServiceImpl(CommentReactionRepository reactionRepository,
-                                     CommentRepository commentRepository,
-                                     UserRepository userRepository) {
+            CommentRepository commentRepository,
+            UserLookup userLookup) {
         this.reactionRepository = reactionRepository;
         this.commentRepository = commentRepository;
-        this.userRepository = userRepository;
+        this.userLookup = userLookup;
     }
 
     @Override
     @Transactional
     public void addOrUpdateReaction(String username, UUID commentId, ReactionRequest request) {
-        User user = resolveUser(username);
+        UUID userId = userLookup.resolveUserId(username);
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("Komentar tidak ditemukan!"));
 
-        reactionRepository.findByCommentIdAndUserId(commentId, user.getId())
+        reactionRepository.findByCommentIdAndUserId(commentId, userId)
                 .ifPresentOrElse(
                         existing -> {
                             existing.setReactionType(request.getReactionType());
@@ -47,19 +45,18 @@ public class CommentReactionServiceImpl implements CommentReactionService {
                         () -> {
                             CommentReaction reaction = new CommentReaction();
                             reaction.setComment(comment);
-                            reaction.setUserId(user.getId());
+                            reaction.setUserId(userId);
                             reaction.setReactionType(request.getReactionType());
                             reaction.setCreatedAt(LocalDateTime.now());
                             reactionRepository.save(reaction);
-                        }
-                );
+                        });
     }
 
     @Override
     @Transactional
     public void removeReaction(String username, UUID commentId) {
-        User user = resolveUser(username);
-        reactionRepository.findByCommentIdAndUserId(commentId, user.getId())
+        UUID userId = userLookup.resolveUserId(username);
+        reactionRepository.findByCommentIdAndUserId(commentId, userId)
                 .ifPresent(reactionRepository::delete);
     }
 
@@ -77,14 +74,9 @@ public class CommentReactionServiceImpl implements CommentReactionService {
     @Override
     @Transactional(readOnly = true)
     public ReactionType getUserReaction(String username, UUID commentId) {
-        User user = resolveUser(username);
-        return reactionRepository.findByCommentIdAndUserId(commentId, user.getId())
+        UUID userId = userLookup.resolveUserId(username);
+        return reactionRepository.findByCommentIdAndUserId(commentId, userId)
                 .map(CommentReaction::getReactionType)
                 .orElse(null);
-    }
-
-    private User resolveUser(String username) {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User tidak ditemukan!"));
     }
 }

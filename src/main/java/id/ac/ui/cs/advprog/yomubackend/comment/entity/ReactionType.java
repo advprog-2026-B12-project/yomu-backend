@@ -7,6 +7,5 @@ public enum ReactionType {
     ROCKET,
     LAUGH,
     PARTY,
-    THINKINGad
+    THINKING
 }
-
