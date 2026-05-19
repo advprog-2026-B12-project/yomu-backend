@@ -200,6 +200,37 @@ class DailyMissionServiceTest {
     }
 
     @Test
+    void testRotateDailyMissions_EmptyList_ReturnsWithoutSaving() {
+        when(dailyMissionRepository.findAll()).thenReturn(List.of());
+
+        dailyMissionService.rotateDailyMissions();
+
+        verify(dailyMissionRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void testProcessDailyEvent_AlreadyCompleted_SkipsProgress() {
+        id.ac.ui.cs.advprog.yomubackend.achievements.model.UserDailyMission alreadyCompleted =
+                new id.ac.ui.cs.advprog.yomubackend.achievements.model.UserDailyMission();
+        alreadyCompleted.setUserId(dummyUserId);
+        alreadyCompleted.setDailyMission(dummyMission);
+        alreadyCompleted.setDateAssigned(LocalDate.now());
+        alreadyCompleted.setCurrentProgress(3);
+        alreadyCompleted.setIsCompleted(true);
+
+        when(dailyMissionRepository.findByEventTypeAndIsActiveTrue(AchievementEvent.READING_COMPLETED))
+                .thenReturn(List.of(dummyMission));
+        when(userDailyMissionRepository.findByUserIdAndDailyMissionIdAndDateAssigned(
+                eq(dummyUserId), eq(dummyMission.getId()), any(LocalDate.class)))
+                .thenReturn(Optional.of(alreadyCompleted));
+
+        List<String> result = dailyMissionService.processDailyEvent(dummyUserId, AchievementEvent.READING_COMPLETED);
+
+        verify(userDailyMissionRepository, never()).save(any());
+        assertNotNull(result);
+        assertTrue(result.isEmpty());
+    }
+    
     void testProcessDailyEvent_ShouldSkip_WhenMissionAlreadyCompleted() {
         when(dailyMissionRepository.findByEventTypeAndIsActiveTrue(AchievementEvent.READING_COMPLETED))
                 .thenReturn(List.of(dummyMission));
@@ -217,6 +248,7 @@ class DailyMissionServiceTest {
         List<String> result = dailyMissionService.processDailyEvent(dummyUserId, AchievementEvent.READING_COMPLETED);
 
         verify(userDailyMissionRepository, never()).save(any());
+        assertNotNull(result);
         assertTrue(result.isEmpty());
     }
 

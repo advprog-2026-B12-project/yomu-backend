@@ -97,4 +97,20 @@ class CommentResponseTest {
         assertEquals(1, response.getReplies().size());
         assertEquals(child.getId(), response.getReplies().get(0).getId());
     }
+
+    @Test
+    void givenNullReplies_whenFromEntity_thenRepliesIsEmptyList() {
+        Comment comment = new Comment();
+        comment.setId(UUID.randomUUID());
+        comment.setReadingId(UUID.randomUUID());
+        comment.setAuthorId(UUID.randomUUID());
+        comment.setContent("test");
+        comment.setCreatedAt(LocalDateTime.now());
+        comment.setUpdatedAt(LocalDateTime.now());
+
+        CommentResponse response = CommentResponse.fromEntity(comment, null);
+
+        assertNotNull(response.getReplies());
+        assertTrue(response.getReplies().isEmpty());
+    }
 }

@@ -90,4 +90,17 @@ class CommentReactionControllerTest {
 
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
     }
+
+    @Test
+    void addOrUpdateReaction_WithNullAuth_PassesNullUsernameToService() {
+        SecurityContextHolder.clearContext();
+        ReactionRequest req = new ReactionRequest();
+        req.setReactionType(ReactionType.UPVOTE);
+        doNothing().when(reactionService).addOrUpdateReaction(null, commentId, req);
+
+        ResponseEntity<?> response = reactionController.addOrUpdateReaction(commentId, req);
+
+        assertEquals(HttpStatus.CREATED.value(), response.getStatusCode().value());
+        verify(reactionService).addOrUpdateReaction(null, commentId, req);
+    }
 }
