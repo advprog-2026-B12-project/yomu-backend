@@ -2,11 +2,14 @@ package id.ac.ui.cs.advprog.yomubackend.achievements.controller;
 
 import id.ac.ui.cs.advprog.yomubackend.achievements.constant.AchievementEvent;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementProgressResponse;
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementResponse;
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserAchievementResponse;
+import id.ac.ui.cs.advprog.yomubackend.achievements.mapper.AchievementMapper;
+import id.ac.ui.cs.advprog.yomubackend.achievements.model.Achievement;
+import id.ac.ui.cs.advprog.yomubackend.achievements.service.AchievementEventService;
+import id.ac.ui.cs.advprog.yomubackend.achievements.service.AchievementService;
 import id.ac.ui.cs.advprog.yomubackend.achievements.service.DailyMissionService;
 import tools.jackson.databind.ObjectMapper;
-import id.ac.ui.cs.advprog.yomubackend.achievements.model.Achievement;
-import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserAchievement;
-import id.ac.ui.cs.advprog.yomubackend.achievements.service.AchievementService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,7 +41,13 @@ class AchievementControllerTest {
     private AchievementService achievementService;
 
     @Mock
+    private AchievementEventService achievementEventService;
+
+    @Mock
     private DailyMissionService dailyMissionService;
+
+    @Mock
+    private AchievementMapper achievementMapper;
 
     @InjectMocks
     private AchievementController achievementController;
@@ -46,7 +55,8 @@ class AchievementControllerTest {
     private ObjectMapper objectMapper;
 
     private Achievement dummyAchievement;
-    private UserAchievement dummyUserAchievement;
+    private AchievementResponse dummyAchievementResponse;
+    private UserAchievementResponse dummyUserAchievementResponse;
     private UUID dummyUserId;
 
     @BeforeEach
@@ -62,15 +72,20 @@ class AchievementControllerTest {
         dummyAchievement.setMilestone(10);
         dummyAchievement.setEventType(AchievementEvent.READING_COMPLETED);
 
-        dummyUserAchievement = new UserAchievement();
-        dummyUserAchievement.setId(UUID.randomUUID());
-        dummyUserAchievement.setUserId(dummyUserId);
-        dummyUserAchievement.setAchievement(dummyAchievement);
-        dummyUserAchievement.setCurrentProgress(5);
+        dummyAchievementResponse = new AchievementResponse();
+        dummyAchievementResponse.setId(dummyAchievement.getId());
+        dummyAchievementResponse.setName("Kutu Buku");
+
+        dummyUserAchievementResponse = new UserAchievementResponse();
+        dummyUserAchievementResponse.setId(UUID.randomUUID());
+        dummyUserAchievementResponse.setUserId(dummyUserId);
+        dummyUserAchievementResponse.setCurrentProgress(5);
     }
 
     @Test
     void testCreateAchievement_ShouldReturn201() throws Exception {
+        when(achievementMapper.toEntity(any())).thenReturn(dummyAchievement);
+        when(achievementMapper.toResponse(any())).thenReturn(dummyAchievementResponse);
         when(achievementService.createAchievement(any(Achievement.class))).thenReturn(dummyAchievement);
 
         mockMvc.perform(post("/api/achievements")
@@ -82,6 +97,7 @@ class AchievementControllerTest {
 
     @Test
     void testGetAllAchievements_ShouldReturn200() throws Exception {
+        when(achievementMapper.toResponse(any())).thenReturn(dummyAchievementResponse);
         when(achievementService.getAllAchievements()).thenReturn(List.of(dummyAchievement));
 
         mockMvc.perform(get("/api/achievements"))
@@ -91,7 +107,8 @@ class AchievementControllerTest {
 
     @Test
     void testGetUserAchievements_ShouldReturn200() throws Exception {
-        when(achievementService.getUserAchievements(dummyUserId)).thenReturn(List.of(dummyUserAchievement));
+        when(achievementService.getUserAchievements(dummyUserId))
+                .thenReturn(List.of(dummyUserAchievementResponse));
 
         mockMvc.perform(get("/api/achievements/user/" + dummyUserId))
                 .andExpect(status().isOk())
@@ -116,10 +133,12 @@ class AchievementControllerTest {
 
     @Test
     void testToggleDisplayAchievement_ShouldReturn200() throws Exception {
-        dummyUserAchievement.setIsDisplayed(true);
-        when(achievementService.toggleDisplayAchievement(dummyUserAchievement.getId())).thenReturn(dummyUserAchievement);
+        dummyUserAchievementResponse.setIsDisplayed(true);
+        UUID userAchievementId = dummyUserAchievementResponse.getId();
+        when(achievementService.toggleDisplayAchievement(userAchievementId))
+                .thenReturn(dummyUserAchievementResponse);
 
-        mockMvc.perform(put("/api/achievements/display/" + dummyUserAchievement.getId()))
+        mockMvc.perform(put("/api/achievements/display/" + userAchievementId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.isDisplayed").value(true));
     }
@@ -131,7 +150,7 @@ class AchievementControllerTest {
         unlockedAch.setName(dummyAchievement.getName());
         unlockedAch.setIsUnlocked(true);
 
-        when(achievementService.processEvent(any(UUID.class), anyString()))
+        when(achievementEventService.processEvent(any(UUID.class), anyString()))
                 .thenReturn(List.of(unlockedAch));
         when(dailyMissionService.processDailyEvent(any(UUID.class), anyString()))
                 .thenReturn(List.of("Membaca Berita"));
@@ -151,7 +170,7 @@ class AchievementControllerTest {
 
     @Test
     void testTriggerEvent_ShouldReturnEmptyLists_WhenNothingUnlocked() throws Exception {
-        when(achievementService.processEvent(any(UUID.class), anyString()))
+        when(achievementEventService.processEvent(any(UUID.class), anyString()))
                 .thenReturn(List.of());
         when(dailyMissionService.processDailyEvent(any(UUID.class), anyString()))
                 .thenReturn(List.of());

@@ -26,6 +26,6 @@ public class Question {
     private Reading reading;
 
     @JsonManagedReference
-    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "question", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Option> options;
 }

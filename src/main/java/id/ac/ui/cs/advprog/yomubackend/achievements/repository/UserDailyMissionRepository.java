@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -16,4 +17,6 @@ public interface UserDailyMissionRepository extends JpaRepository<UserDailyMissi
     Optional<UserDailyMission> findByUserIdAndDailyMissionIdAndDateAssigned(UUID userId, UUID missionId, LocalDate dateAssigned);
 
     List<UserDailyMission> findByUserId(UUID userId);
+
+    long countByUserIdInAndDateAssignedAndIsCompletedTrue(Collection<UUID> userIds, LocalDate dateAssigned);
 }

@@ -3,9 +3,12 @@ package id.ac.ui.cs.advprog.yomubackend.achievements.controller;
 import id.ac.ui.cs.advprog.yomubackend.achievements.constant.AchievementEvent;
 import tools.jackson.databind.ObjectMapper;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.DailyMissionRequest;
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.DailyMissionResponse;
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserDailyMissionResponse;
+import id.ac.ui.cs.advprog.yomubackend.achievements.mapper.DailyMissionMapper;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.DailyMission;
-import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserDailyMission;
 import id.ac.ui.cs.advprog.yomubackend.achievements.service.DailyMissionService;
+import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,10 +25,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -37,18 +37,21 @@ class DailyMissionControllerTest {
     @Mock
     private DailyMissionService dailyMissionService;
 
+    @Mock
+    private DailyMissionMapper dailyMissionMapper;
+
     @InjectMocks
     private DailyMissionController dailyMissionController;
 
     private ObjectMapper objectMapper;
 
     private DailyMission dummyMission;
-    private UserDailyMission dummyUserMission;
+    private DailyMissionResponse dummyMissionResponse;
+    private UserDailyMissionResponse dummyUserMissionResponse;
     private UUID dummyUserId;
 
     @BeforeEach
     void setUp() {
-        // Setup Standalone yang super cepat dan anti-error library
         mockMvc = MockMvcBuilders.standaloneSetup(dailyMissionController).build();
         objectMapper = new ObjectMapper();
 
@@ -61,16 +64,21 @@ class DailyMissionControllerTest {
         dummyMission.setEventType(AchievementEvent.READING_COMPLETED);
         dummyMission.setIsActive(true);
 
-        dummyUserMission = new UserDailyMission();
-        dummyUserMission.setId(UUID.randomUUID());
-        dummyUserMission.setUserId(dummyUserId);
-        dummyUserMission.setDailyMission(dummyMission);
-        dummyUserMission.setCurrentProgress(1);
-        dummyUserMission.setDateAssigned(LocalDate.now());
+        dummyMissionResponse = new DailyMissionResponse();
+        dummyMissionResponse.setId(dummyMission.getId());
+        dummyMissionResponse.setName("Membaca 3 Artikel");
+
+        dummyUserMissionResponse = new UserDailyMissionResponse();
+        dummyUserMissionResponse.setId(UUID.randomUUID());
+        dummyUserMissionResponse.setUserId(dummyUserId);
+        dummyUserMissionResponse.setCurrentProgress(1);
+        dummyUserMissionResponse.setDateAssigned(LocalDate.now());
     }
 
     @Test
     void testCreateDailyMission_ShouldReturn201() throws Exception {
+        when(dailyMissionMapper.toEntity(any())).thenReturn(dummyMission);
+        when(dailyMissionMapper.toResponse(any())).thenReturn(dummyMissionResponse);
         when(dailyMissionService.createDailyMission(any(DailyMission.class))).thenReturn(dummyMission);
 
         mockMvc.perform(post("/api/daily-missions")
@@ -82,6 +90,7 @@ class DailyMissionControllerTest {
 
     @Test
     void testGetActiveDailyMissions_ShouldReturn200() throws Exception {
+        when(dailyMissionMapper.toResponse(any())).thenReturn(dummyMissionResponse);
         when(dailyMissionService.getActiveDailyMissions()).thenReturn(List.of(dummyMission));
 
         mockMvc.perform(get("/api/daily-missions/active"))
@@ -91,7 +100,8 @@ class DailyMissionControllerTest {
 
     @Test
     void testGetUserDailyMissions_ShouldReturn200() throws Exception {
-        when(dailyMissionService.getUserDailyMissions(dummyUserId)).thenReturn(List.of(dummyUserMission));
+        when(dailyMissionService.getUserDailyMissions(dummyUserId))
+                .thenReturn(List.of(dummyUserMissionResponse));
 
         mockMvc.perform(get("/api/daily-missions/user/" + dummyUserId))
                 .andExpect(status().isOk())
@@ -100,7 +110,10 @@ class DailyMissionControllerTest {
 
     @Test
     void testUpdateDailyMission_ShouldReturn200() throws Exception {
-        when(dailyMissionService.updateDailyMission(any(UUID.class), any(DailyMission.class))).thenReturn(dummyMission);
+        when(dailyMissionMapper.toEntity(any())).thenReturn(dummyMission);
+        when(dailyMissionMapper.toResponse(any())).thenReturn(dummyMissionResponse);
+        when(dailyMissionService.updateDailyMission(any(UUID.class), any(DailyMission.class)))
+                .thenReturn(dummyMission);
 
         mockMvc.perform(put("/api/daily-missions/" + dummyMission.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -164,4 +177,5 @@ class DailyMissionControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
+}
 }
