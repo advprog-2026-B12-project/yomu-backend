@@ -28,6 +28,8 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -110,6 +112,34 @@ class AuthControllerTest {
         }
 
         @Test
+        void register_BlankRequiredFields_ReturnsBadRequest() throws Exception {
+                RegisterRequest request = new RegisterRequest();
+                request.setUsername("");
+                request.setEmail("");
+                request.setDisplayName("");
+                request.setPassword("");
+
+                mockMvc.perform(post("/api/auth/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonMapper.writeValueAsString(request)))
+                                .andExpect(status().isBadRequest());
+
+                verify(authService, never()).register(any(RegisterRequest.class));
+        }
+
+        @Test
+        void register_InvalidEmail_ReturnsBadRequest() throws Exception {
+                registerRequest.setEmail("not-an-email");
+
+                mockMvc.perform(post("/api/auth/register")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonMapper.writeValueAsString(registerRequest)))
+                                .andExpect(status().isBadRequest());
+
+                verify(authService, never()).register(any(RegisterRequest.class));
+        }
+
+        @Test
         void login_Success() throws Exception {
                 LoginResponse loginResponse = LoginResponse.builder()
                                 .message("Login berhasil")
@@ -141,6 +171,20 @@ class AuthControllerTest {
                                 .content(jsonMapper.writeValueAsString(loginRequest)))
                                 .andExpect(status().isUnauthorized())
                                 .andExpect(jsonPath("$.error").value("Username/email atau password salah!"));
+        }
+
+        @Test
+        void login_BlankRequiredFields_ReturnsBadRequest() throws Exception {
+                LoginRequest request = new LoginRequest();
+                request.setUsername("");
+                request.setPassword("");
+
+                mockMvc.perform(post("/api/auth/login")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonMapper.writeValueAsString(request)))
+                                .andExpect(status().isBadRequest());
+
+                verify(authService, never()).login(anyString(), anyString());
         }
 
         @Test
@@ -210,6 +254,19 @@ class AuthControllerTest {
                                 .andExpect(status().isOk())
                                 .andExpect(jsonPath("$.needsRegistration").value(true))
                                 .andExpect(jsonPath("$.email").value("new@kampus.id"));
+        }
+
+        @Test
+        void googleLogin_BlankToken_ReturnsBadRequest() throws Exception {
+                GoogleTokenRequest request = new GoogleTokenRequest();
+                request.setToken("");
+
+                mockMvc.perform(post("/api/auth/google")
+                                .contentType(MediaType.APPLICATION_JSON)
+                                .content(jsonMapper.writeValueAsString(request)))
+                                .andExpect(status().isBadRequest());
+
+                verify(authService, never()).googleLogin(anyString());
         }
 
         @Test

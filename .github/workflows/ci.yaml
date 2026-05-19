@@ -5,6 +5,18 @@ on:
     branches: [ '**' ]
   pull_request:
     branches: [ '**' ]
+  workflow_dispatch:
+    inputs:
+      run_k6:
+        description: 'Run manual k6 Auth smoke test'
+        required: false
+        default: false
+        type: boolean
+      base_url:
+        description: 'Backend base URL for k6, for example https://staging.example.com'
+        required: false
+        default: ''
+        type: string
 
 permissions:
   contents: read
@@ -12,6 +24,7 @@ permissions:
 
 jobs:
   build:
+    if: ${{ github.event_name != 'workflow_dispatch' || !inputs.run_k6 }}
     runs-on: ubuntu-latest
 
     services:
@@ -57,12 +70,36 @@ jobs:
       - name: Grant execute permission
         run: chmod +x gradlew
 
-      - name: Build and test
+      - name: Build, test, and coverage report
         env:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/yomu_test
           SPRING_DATASOURCE_USERNAME: postgres
           SPRING_DATASOURCE_PASSWORD: postgres
-        run: ./gradlew build --info
+        run: ./gradlew clean build jacocoTestReport --info
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-report
+          path: build/reports/tests/test
+          if-no-files-found: warn
+
+      - name: Upload JaCoCo HTML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jacoco-html-report
+          path: build/reports/jacoco/test/html
+          if-no-files-found: warn
+
+      - name: Upload JaCoCo XML report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jacoco-xml-report
+          path: build/reports/jacoco/test/jacocoTestReport.xml
+          if-no-files-found: warn
 
       - name: Analyze with SonarQube
         if: ${{ github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository }}
@@ -72,3 +109,27 @@ jobs:
           SPRING_DATASOURCE_PASSWORD: postgres
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: ./gradlew sonar --info
+
+  k6-auth-smoke:
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_k6 && inputs.base_url != '' }}
+    runs-on: ubuntu-latest
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Run Auth performance smoke test
+        env:
+          BASE_URL: ${{ inputs.base_url }}
+        run: k6 run performance/auth.k6.js
+
+      - name: Upload k6 summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-auth-k6-summary
+          path: k6-summary.json
+          if-no-files-found: warn
