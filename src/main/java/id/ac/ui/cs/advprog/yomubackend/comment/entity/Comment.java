@@ -2,12 +2,16 @@ package id.ac.ui.cs.advprog.yomubackend.comment.entity;
 
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.ToString;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
 @Data
+@EqualsAndHashCode(of = "id")
+@ToString(exclude = "parent")
 @Table(name = "comments", indexes = {
         @Index(name = "IDX_comments_reading_id", columnList = "reading_id"),
         @Index(name = "IDX_comments_author_id", columnList = "author_id"),

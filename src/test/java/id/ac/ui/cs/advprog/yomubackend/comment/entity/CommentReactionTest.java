@@ -56,22 +56,22 @@ class CommentReactionTest {
                         ReactionType.UPVOTE,
                         ReactionType.DOWNVOTE,
                         ReactionType.FIRE,
-                        ReactionType.THINKING,
-                        ReactionType.CLAP,
-                        ReactionType.SURPRISED,
-                        ReactionType.LOVE
+                        ReactionType.ROCKET,
+                        ReactionType.LAUGH,
+                        ReactionType.PARTY,
+                        ReactionType.THINKING
                 },
                 ReactionType.values());
     }
 
     @Test
     void givenTwoReactionsWithSameFields_whenEqualsIsChecked_thenTheyAreEqual() {
-        CommentReaction r1 = buildReaction(reactionId, ReactionType.LOVE);
-        CommentReaction r2 = buildReaction(reactionId, ReactionType.LOVE);
+        CommentReaction r1 = buildReaction(reactionId, ReactionType.PARTY);
+        CommentReaction r2 = buildReaction(reactionId, ReactionType.PARTY);
 
         assertEquals(r1, r2);
         assertEquals(r1.hashCode(), r2.hashCode());
-        assertTrue(r1.toString().contains("LOVE"));
+        assertTrue(r1.toString().contains("PARTY"));
     }
 
     @Test

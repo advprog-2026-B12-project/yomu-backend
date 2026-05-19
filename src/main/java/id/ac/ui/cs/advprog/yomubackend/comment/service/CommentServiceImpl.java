@@ -1,7 +1,5 @@
 package id.ac.ui.cs.advprog.yomubackend.comment.service;
 
-import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
-import id.ac.ui.cs.advprog.yomubackend.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.yomubackend.comment.dto.CommentRequest;
 import id.ac.ui.cs.advprog.yomubackend.comment.dto.CommentResponse;
 import id.ac.ui.cs.advprog.yomubackend.comment.entity.Comment;
@@ -24,16 +22,16 @@ public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
     private final ReadingRepository readingRepository;
-    private final UserRepository userRepository;
+    private final UserLookup userLookup;
     private final CommentReactionService reactionService;
 
     public CommentServiceImpl(CommentRepository commentRepository,
             ReadingRepository readingRepository,
-            UserRepository userRepository,
+            UserLookup userLookup,
             CommentReactionService reactionService) {
         this.commentRepository = commentRepository;
         this.readingRepository = readingRepository;
-        this.userRepository = userRepository;
+        this.userLookup = userLookup;
         this.reactionService = reactionService;
     }
 
@@ -41,12 +39,12 @@ public class CommentServiceImpl implements CommentService {
     @Transactional
     public CommentResponse createComment(String username, UUID readingId, CommentRequest request) {
         validateContent(request);
-        User author = resolveUser(username);
+        UUID authorId = userLookup.resolveUserId(username);
         if (!readingRepository.existsById(readingId)) {
             throw new IllegalArgumentException("Reading tidak ditemukan!");
         }
 
-        Comment comment = newBaseComment(readingId, author.getId(), request.getContent().trim());
+        Comment comment = newBaseComment(readingId, authorId, request.getContent().trim());
         Comment saved = commentRepository.save(comment);
         return CommentResponse.fromEntity(saved, Collections.emptyList());
     }
@@ -56,7 +54,7 @@ public class CommentServiceImpl implements CommentService {
     public CommentResponse replyToComment(String username, UUID readingId, UUID parentCommentId,
             CommentRequest request) {
         validateContent(request);
-        User author = resolveUser(username);
+        UUID authorId = userLookup.resolveUserId(username);
 
         Comment parent = commentRepository.findById(parentCommentId)
                 .orElseThrow(() -> new IllegalArgumentException("Komentar induk tidak ditemukan!"));
@@ -68,7 +66,7 @@ public class CommentServiceImpl implements CommentService {
             throw new IllegalArgumentException("Komentar induk bukan milik reading ini!");
         }
 
-        Comment reply = newBaseComment(readingId, author.getId(), request.getContent().trim());
+        Comment reply = newBaseComment(readingId, authorId, request.getContent().trim());
         reply.setParent(parent);
         Comment saved = commentRepository.save(reply);
         return CommentResponse.fromEntity(saved, Collections.emptyList());
@@ -123,9 +121,9 @@ public class CommentServiceImpl implements CommentService {
     public CommentResponse updateComment(String username, UUID readingId, UUID commentId,
             CommentRequest request) {
         validateContent(request);
-        User currentUser = resolveUser(username);
+        UUID currentUserId = userLookup.resolveUserId(username);
         Comment existing = loadActiveCommentForReading(commentId, readingId);
-        requireOwnership(existing, currentUser);
+        requireOwnership(existing, currentUserId);
 
         existing.setContent(request.getContent().trim());
         LocalDateTime now = LocalDateTime.now();
@@ -139,13 +137,13 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public void softDeleteComment(String username, UUID readingId, UUID commentId) {
-        User currentUser = resolveUser(username);
+        UUID currentUserId = userLookup.resolveUserId(username);
         Comment existing = loadActiveCommentForReading(commentId, readingId);
-        requireOwnership(existing, currentUser);
+        requireOwnership(existing, currentUserId);
 
         LocalDateTime now = LocalDateTime.now();
         existing.setDeleted(true);
-        existing.setDeletedBy(currentUser.getId());
+        existing.setDeletedBy(currentUserId);
         existing.setDeletedAt(now);
         existing.setUpdatedAt(now);
 
@@ -155,7 +153,7 @@ public class CommentServiceImpl implements CommentService {
     @Override
     @Transactional
     public void adminDeleteComment(String username, UUID commentId) {
-        User admin = resolveUser(username);
+        UUID adminId = userLookup.resolveUserId(username);
         Comment existing = commentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("Komentar tidak ditemukan!"));
         if (existing.isDeleted()) {
@@ -164,7 +162,7 @@ public class CommentServiceImpl implements CommentService {
 
         LocalDateTime now = LocalDateTime.now();
         existing.setDeleted(true);
-        existing.setDeletedBy(admin.getId());
+        existing.setDeletedBy(adminId);
         existing.setDeletedAt(now);
         existing.setUpdatedAt(now);
 
@@ -183,8 +181,8 @@ public class CommentServiceImpl implements CommentService {
         return existing;
     }
 
-    private void requireOwnership(Comment comment, User user) {
-        if (!comment.getAuthorId().equals(user.getId())) {
+    private void requireOwnership(Comment comment, UUID userId) {
+        if (!comment.getAuthorId().equals(userId)) {
             throw new AccessDeniedException("Anda tidak memiliki akses untuk komentar ini!");
         }
     }
@@ -193,11 +191,6 @@ public class CommentServiceImpl implements CommentService {
         if (request == null || request.getContent() == null || request.getContent().trim().isEmpty()) {
             throw new IllegalArgumentException("Isi komentar tidak boleh kosong!");
         }
-    }
-
-    private User resolveUser(String username) {
-        return userRepository.findByUsername(username)
-                .orElseThrow(() -> new IllegalArgumentException("User tidak ditemukan!"));
     }
 
     private Comment newBaseComment(UUID readingId, UUID authorId, String content) {
