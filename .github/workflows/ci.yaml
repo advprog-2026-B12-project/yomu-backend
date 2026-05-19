@@ -5,18 +5,6 @@ on:
     branches: [ '**' ]
   pull_request:
     branches: [ '**' ]
-  workflow_dispatch:
-    inputs:
-      run_k6:
-        description: 'Run manual k6 Auth smoke test'
-        required: false
-        default: false
-        type: boolean
-      base_url:
-        description: 'Backend base URL for k6, for example https://staging.example.com'
-        required: false
-        default: ''
-        type: string
 
 permissions:
   contents: read
@@ -109,27 +97,3 @@ jobs:
           SPRING_DATASOURCE_PASSWORD: postgres
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: ./gradlew sonar --info
-
-  k6-auth-smoke:
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_k6 && inputs.base_url != '' }}
-    runs-on: ubuntu-latest
-    continue-on-error: true
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Set up k6
-        uses: grafana/setup-k6-action@v1
-
-      - name: Run Auth performance smoke test
-        env:
-          BASE_URL: ${{ inputs.base_url }}
-        run: k6 run performance/auth.k6.js
-
-      - name: Upload k6 summary
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-auth-k6-summary
-          path: k6-summary.json
-          if-no-files-found: warn
