@@ -4,9 +4,9 @@ public enum ReactionType {
     UPVOTE,
     DOWNVOTE,
     FIRE,
-    THINKING,
-    CLAP,
-    SURPRISED,
-    LOVE
+    ROCKET,
+    LAUGH,
+    PARTY,
+    THINKINGad
 }
 

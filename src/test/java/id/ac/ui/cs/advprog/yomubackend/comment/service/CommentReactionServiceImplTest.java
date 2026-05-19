@@ -90,9 +90,9 @@ class CommentReactionServiceImplTest {
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
         when(reactionRepository.findByCommentIdAndUserId(commentId, user.getId())).thenReturn(Optional.of(existing));
 
-        reactionService.addOrUpdateReaction("reader01", commentId, requestWithType(ReactionType.LOVE));
+        reactionService.addOrUpdateReaction("reader01", commentId, requestWithType(ReactionType.DOWNVOTE));
 
-        assertEquals(ReactionType.LOVE, existing.getReactionType());
+        assertEquals(ReactionType.DOWNVOTE, existing.getReactionType());
         verify(reactionRepository, never()).save(any(CommentReaction.class));
     }
 
@@ -135,14 +135,14 @@ class CommentReactionServiceImplTest {
         CommentReaction r2 = new CommentReaction();
         r2.setReactionType(ReactionType.UPVOTE);
         CommentReaction r3 = new CommentReaction();
-        r3.setReactionType(ReactionType.LOVE);
+        r3.setReactionType(ReactionType.DOWNVOTE);
 
         when(reactionRepository.findByCommentId(commentId)).thenReturn(List.of(r1, r2, r3));
 
         var counts = reactionService.getReactionCounts(commentId);
 
         assertEquals(2, counts.get(ReactionType.UPVOTE));
-        assertEquals(1, counts.get(ReactionType.LOVE));
+        assertEquals(1, counts.get(ReactionType.DOWNVOTE));
     }
 
     @Test
