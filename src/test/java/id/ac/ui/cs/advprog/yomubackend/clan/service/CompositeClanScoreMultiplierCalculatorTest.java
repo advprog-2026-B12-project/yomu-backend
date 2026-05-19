@@ -1,6 +1,5 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.service;
 
-import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserDailyMission;
 import id.ac.ui.cs.advprog.yomubackend.achievements.repository.UserDailyMissionRepository;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.Clan;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
@@ -17,17 +16,19 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.LongStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ClanScoreModifierServiceTest {
+class CompositeClanScoreMultiplierCalculatorTest {
 
     private static final Clock FIXED_CLOCK = Clock.fixed(
             Instant.parse("2026-05-07T12:00:00Z"),
@@ -42,11 +43,11 @@ class ClanScoreModifierServiceTest {
     @Mock
     private QuizAttemptRepository quizAttemptRepository;
 
-    private ClanScoreModifierService service;
+    private CompositeClanScoreMultiplierCalculator calculator;
 
     @BeforeEach
     void setUp() {
-        service = new ClanScoreModifierService(
+        calculator = new CompositeClanScoreMultiplierCalculator(
                 userDailyMissionRepository,
                 quizAttemptRepository,
                 FIXED_CLOCK
@@ -55,7 +56,7 @@ class ClanScoreModifierServiceTest {
 
     @Test
     void calculateMultiplier_shouldReturnNeutralMultiplier_whenClanHasNoMembers() {
-        double result = service.calculateMultiplier(List.of());
+        double result = calculator.calculateMultiplier(List.of());
 
         assertEquals(1.0, result);
     }
@@ -63,49 +64,77 @@ class ClanScoreModifierServiceTest {
     @Test
     void calculateMultiplier_shouldApplyDailyMissionBuff_whenCompletionRateMeetsThreshold() {
         List<ClanMember> members = members(10);
-        stubDailyMissionCompletionForFirstMembers(7);
-        when(quizAttemptRepository.findByUserIdAndCreatedAtBetween(
-                any(UUID.class),
+        stubDailyMissionCompletionForFirstMembers(5);
+        when(quizAttemptRepository.findByUserIdInAndCreatedAtBetween(
+                anyCollection(),
                 any(LocalDateTime.class),
                 any(LocalDateTime.class)
         )).thenReturn(List.of());
 
-        double result = service.calculateMultiplier(members);
+        double result = calculator.calculateMultiplier(members);
 
         assertEquals(1.2, result);
     }
 
     @Test
+    void calculateMultiplier_shouldNotApplyDailyMissionBuff_whenCompletionRateBelowThreshold() {
+        List<ClanMember> members = members(10);
+        stubDailyMissionCompletionForFirstMembers(4);
+        when(quizAttemptRepository.findByUserIdInAndCreatedAtBetween(
+                anyCollection(),
+                any(LocalDateTime.class),
+                any(LocalDateTime.class)
+        )).thenReturn(List.of());
+
+        double result = calculator.calculateMultiplier(members);
+
+        assertEquals(1.0, result);
+    }
+
+    @Test
     void calculateMultiplier_shouldApplyAccuracyDebuff_whenCurrentAccuracyDecreases() {
         List<ClanMember> members = List.of(member(1L));
-        when(userDailyMissionRepository.findByUserIdAndDateAssigned(any(UUID.class), eq(TODAY)))
-                .thenReturn(List.of());
+        stubDailyMissionCompletionForFirstMembers(0);
         stubAccuracyTrend(9, 10, 5, 10);
 
-        double result = service.calculateMultiplier(members);
+        double result = calculator.calculateMultiplier(members);
 
-        assertEquals(0.9, result);
+        assertEquals(0.8, result);
+    }
+
+    @Test
+    void calculateMultiplier_shouldApplyAccuracyDebuff_whenCurrentAccuracyIsBelowThreshold() {
+        List<ClanMember> members = List.of(member(1L));
+        stubDailyMissionCompletionForFirstMembers(0);
+        when(quizAttemptRepository.findByUserIdInAndCreatedAtBetween(
+                anyCollection(),
+                eq(CURRENT_WINDOW_START),
+                any(LocalDateTime.class)
+        )).thenReturn(List.of(attempt(4, 10)));
+
+        double result = calculator.calculateMultiplier(members);
+
+        assertEquals(0.8, result);
     }
 
     @Test
     void calculateMultiplier_shouldStackBuffAndDebuff_whenBothConditionsAreActive() {
         List<ClanMember> members = members(10);
-        stubDailyMissionCompletionForFirstMembers(7);
+        stubDailyMissionCompletionForFirstMembers(5);
         stubAccuracyTrend(9, 10, 5, 10);
 
-        double result = service.calculateMultiplier(members);
+        double result = calculator.calculateMultiplier(members);
 
-        assertEquals(1.08, result, 0.0001);
+        assertEquals(0.96, result, 0.0001);
     }
 
     private void stubDailyMissionCompletionForFirstMembers(int completedCount) {
-        when(userDailyMissionRepository.findByUserIdAndDateAssigned(any(UUID.class), eq(TODAY)))
+        when(userDailyMissionRepository.countByUserIdInAndDateAssignedAndIsCompletedTrue(anyCollection(), eq(TODAY)))
                 .thenAnswer(invocation -> {
-                    UUID userId = invocation.getArgument(0);
-                    if (userId.getLeastSignificantBits() <= completedCount) {
-                        return List.of(completedDailyMission());
-                    }
-                    return List.of();
+                    Collection<UUID> userIds = invocation.getArgument(0);
+                    return userIds.stream()
+                            .filter(userId -> userId.getLeastSignificantBits() <= completedCount)
+                            .count();
                 });
     }
 
@@ -114,8 +143,8 @@ class ClanScoreModifierServiceTest {
             int previousTotal,
             int currentScore,
             int currentTotal) {
-        when(quizAttemptRepository.findByUserIdAndCreatedAtBetween(
-                any(UUID.class),
+        when(quizAttemptRepository.findByUserIdInAndCreatedAtBetween(
+                anyCollection(),
                 any(LocalDateTime.class),
                 any(LocalDateTime.class)
         )).thenAnswer(invocation -> {
@@ -125,12 +154,6 @@ class ClanScoreModifierServiceTest {
             }
             return List.of(attempt(previousScore, previousTotal));
         });
-    }
-
-    private UserDailyMission completedDailyMission() {
-        UserDailyMission mission = new UserDailyMission();
-        mission.setIsCompleted(true);
-        return mission;
     }
 
     private QuizAttempt attempt(int score, int total) {

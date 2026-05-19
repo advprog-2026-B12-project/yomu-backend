@@ -2,6 +2,10 @@ package id.ac.ui.cs.advprog.yomubackend.quiz.service;
 
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizResultResponse;
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizSubmitRequest;
+import id.ac.ui.cs.advprog.yomubackend.quiz.completion.QuizCompletion;
+import id.ac.ui.cs.advprog.yomubackend.quiz.completion.QuizCompletionProcessor;
+import id.ac.ui.cs.advprog.yomubackend.quiz.exception.ReadingNotOpenedException;
+import id.ac.ui.cs.advprog.yomubackend.quiz.exception.QuizAlreadyCompletedException;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Option;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Question;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.QuizAttempt;
@@ -29,6 +33,10 @@ class QuizServiceImplTest {
     private ReadingService readingService;
     @Mock
     private QuizAttemptRepository quizAttemptRepository;
+    @Mock
+    private QuizCompletionProcessor quizCompletionProcessor;
+    @Mock
+    private ReadingProgressService readingProgressService;
 
     @InjectMocks
     private QuizServiceImpl quizService;
@@ -77,19 +85,27 @@ class QuizServiceImplTest {
 
         when(readingService.findById(readingId)).thenReturn(reading);
 
-        QuizResultResponse result = quizService.submit(request);
+        QuizResultResponse result = quizService.submit(userId, request);
 
         assertEquals(1, result.getScore());
         assertEquals(1, result.getTotal());
 
         ArgumentCaptor<QuizAttempt> captor = ArgumentCaptor.forClass(QuizAttempt.class);
         verify(quizAttemptRepository).save(captor.capture());
+        verify(readingProgressService).ensureOpened(userId, readingId);
         QuizAttempt saved = captor.getValue();
         assertEquals(userId, saved.getUserId());
         assertEquals(readingId, saved.getReadingId());
         assertEquals(1, saved.getScore());
         assertEquals(1, saved.getTotal());
         assertNotNull(saved.getCreatedAt());
+
+        ArgumentCaptor<QuizCompletion> completionCaptor = ArgumentCaptor.forClass(QuizCompletion.class);
+        verify(quizCompletionProcessor).processCompletion(completionCaptor.capture());
+        assertEquals(userId, completionCaptor.getValue().userId());
+        assertEquals(readingId, completionCaptor.getValue().readingId());
+        assertEquals(1, completionCaptor.getValue().score());
+        assertEquals(1, completionCaptor.getValue().total());
     }
 
     @Test
@@ -101,7 +117,7 @@ class QuizServiceImplTest {
 
         when(readingService.findById(readingId)).thenReturn(reading);
 
-        QuizResultResponse result = quizService.submit(request);
+        QuizResultResponse result = quizService.submit(userId, request);
 
         assertEquals(0, result.getScore());
         assertEquals(1, result.getTotal());
@@ -116,7 +132,7 @@ class QuizServiceImplTest {
 
         when(readingService.findById(readingId)).thenReturn(reading);
 
-        QuizResultResponse result = quizService.submit(request);
+        QuizResultResponse result = quizService.submit(userId, request);
 
         assertEquals(0, result.getScore());
         assertEquals(1, result.getTotal());
@@ -144,9 +160,74 @@ class QuizServiceImplTest {
 
         when(readingService.findById(readingId)).thenReturn(r);
 
-        QuizResultResponse result = quizService.submit(request);
+        QuizResultResponse result = quizService.submit(userId, request);
 
         assertEquals(0, result.getScore());
         assertEquals(1, result.getTotal());
+    }
+
+    @Test
+    void submit_withCompletedQuiz_throwsAlreadyCompletedException() {
+        QuizSubmitRequest request = new QuizSubmitRequest();
+        request.setUserId(userId);
+        request.setReadingId(readingId);
+        request.setAnswers(Map.of());
+
+        when(quizAttemptRepository.existsByUserIdAndReadingId(userId, readingId)).thenReturn(true);
+
+        assertThrows(QuizAlreadyCompletedException.class, () -> quizService.submit(userId, request));
+        verify(quizAttemptRepository, never()).save(any());
+        verify(readingProgressService, never()).ensureOpened(any(), any());
+        verify(quizCompletionProcessor, never()).processCompletion(any());
+    }
+
+    @Test
+    void submit_withoutOpeningReading_throwsReadingNotOpenedException() {
+        QuizSubmitRequest request = new QuizSubmitRequest();
+        request.setUserId(userId);
+        request.setReadingId(readingId);
+        request.setAnswers(Map.of());
+
+        doThrow(new ReadingNotOpenedException())
+                .when(readingProgressService).ensureOpened(userId, readingId);
+
+        assertThrows(ReadingNotOpenedException.class, () -> quizService.submit(userId, request));
+        verify(readingService, never()).findById(any());
+        verify(quizAttemptRepository, never()).save(any());
+        verify(quizCompletionProcessor, never()).processCompletion(any());
+    }
+
+    @Test
+    void hasCompleted_delegatesToRepository() {
+        when(quizAttemptRepository.existsByUserIdAndReadingId(userId, readingId)).thenReturn(true);
+
+        assertTrue(quizService.hasCompleted(userId, readingId));
+
+        verify(quizAttemptRepository).existsByUserIdAndReadingId(userId, readingId);
+    }
+
+    @Test
+    void submit_withoutUserId_throwsException() {
+        QuizSubmitRequest request = new QuizSubmitRequest();
+        request.setReadingId(readingId);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> quizService.submit(null, request)
+        );
+
+        assertEquals("User ID is required", exception.getMessage());
+    }
+
+    @Test
+    void submit_withoutReadingId_throwsException() {
+        QuizSubmitRequest request = new QuizSubmitRequest();
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> quizService.submit(userId, request)
+        );
+
+        assertEquals("Reading ID is required", exception.getMessage());
     }
 }

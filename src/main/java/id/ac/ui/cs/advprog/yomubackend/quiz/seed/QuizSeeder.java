@@ -24,6 +24,7 @@ public class QuizSeeder {
 
         Reading reading = new Reading();
         reading.setTitle("The Importance of Sleep");
+        reading.setCategory("Health");
         reading.setContent("Sleep improves memory, mood, and brain function.");
 
         Question q1 = new Question();

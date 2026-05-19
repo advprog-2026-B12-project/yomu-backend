@@ -9,7 +9,7 @@ public class BronzeScoreProvider implements ClanScoreProvider {
 
     @Override
     public String getDivision() {
-        return "BRONZE";
+        return LeagueDivision.BRONZE.value();
     }
 
     @Override

@@ -1,20 +1,25 @@
 package id.ac.ui.cs.advprog.yomubackend.quiz.controller;
 
+import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizResultResponse;
+import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizResponse;
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizSubmitRequest;
+import id.ac.ui.cs.advprog.yomubackend.quiz.dto.ReadingListItemResponse;
+import id.ac.ui.cs.advprog.yomubackend.quiz.exception.QuizAlreadyCompletedException;
+import id.ac.ui.cs.advprog.yomubackend.quiz.mapper.QuizResponseMapper;
+import id.ac.ui.cs.advprog.yomubackend.quiz.model.Option;
+import id.ac.ui.cs.advprog.yomubackend.quiz.model.Question;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Reading;
-import id.ac.ui.cs.advprog.yomubackend.quiz.repository.ReadingRepository;
 import id.ac.ui.cs.advprog.yomubackend.quiz.service.QuizService;
+import id.ac.ui.cs.advprog.yomubackend.quiz.service.QuizSessionService;
+import id.ac.ui.cs.advprog.yomubackend.quiz.service.ReadingProgressService;
 import id.ac.ui.cs.advprog.yomubackend.quiz.service.ReadingService;
-import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuizAttemptRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
-import org.springframework.http.HttpStatus;
 
 import java.util.List;
 import java.util.Map;
@@ -31,29 +36,70 @@ class QuizControllerTest {
     @Mock
     private QuizService quizService;
     @Mock
-    private ReadingRepository readingRepository;
+    private QuizSessionService quizSessionService;
     @Mock
-    private QuizAttemptRepository quizAttemptRepository;
+    private ReadingProgressService readingProgressService;
 
-    @InjectMocks
     private QuizController quizController;
 
     private UUID readingId;
+    private UUID userId;
     private Reading reading;
+    private User user;
 
     @BeforeEach
     void setUp() {
         readingId = UUID.randomUUID();
+        userId = UUID.randomUUID();
+
+        user = new User();
+        user.setId(userId);
+
+        Option correctOption = new Option();
+        correctOption.setId(UUID.randomUUID());
+        correctOption.setOptionText("Correct");
+        correctOption.setCorrect(true);
+
+        Option wrongOption = new Option();
+        wrongOption.setId(UUID.randomUUID());
+        wrongOption.setOptionText("Wrong");
+        wrongOption.setCorrect(false);
+
+        Question question = new Question();
+        question.setId(UUID.randomUUID());
+        question.setQuestionText("Question?");
+        question.setOptions(List.of(correctOption, wrongOption));
+
         reading = new Reading();
         reading.setId(readingId);
         reading.setTitle("Test Reading");
+        reading.setCategory("Science");
+        reading.setContent("Hidden Content");
+        reading.setQuestions(List.of(question));
+
+        quizController = new QuizController(
+                readingService,
+                quizService,
+                new QuizResponseMapper(),
+                quizSessionService,
+                readingProgressService
+        );
     }
 
     @Test
-    void getQuiz_returnsReading() {
+    void getQuiz_returnsQuizWithoutReadingContentOrCorrectAnswers() {
         when(readingService.findById(readingId)).thenReturn(reading);
-        Reading result = quizController.getQuiz(readingId);
-        assertEquals(reading, result);
+
+        QuizResponse result = quizController.getQuiz(readingId, user);
+
+        assertEquals(readingId, result.getId());
+        assertEquals("Test Reading", result.getTitle());
+        assertEquals("Science", result.getCategory());
+        assertEquals(1, result.getQuestions().size());
+        assertEquals(2, result.getQuestions().getFirst().getOptions().size());
+        verify(quizService).ensureNotCompleted(userId, readingId);
+        verify(readingProgressService).ensureOpened(userId, readingId);
+        verify(quizSessionService).start(userId, readingId);
         verify(readingService).findById(readingId);
     }
 
@@ -61,52 +107,47 @@ class QuizControllerTest {
     void submit_returnsQuizResultResponse() {
         QuizSubmitRequest request = new QuizSubmitRequest();
         QuizResultResponse response = new QuizResultResponse(3, 5);
-        when(quizService.submit(request)).thenReturn(response);
-        ResponseEntity<?> result = quizController.submit(request);
+        when(quizService.submit(userId, request)).thenReturn(response);
+        ResponseEntity<?> result = quizController.submit(request, user);
         assertEquals(200, result.getStatusCode().value());
         assertEquals(response, result.getBody());
-        verify(quizService).submit(request);
+        verify(quizService).submit(userId, request);
     }
 
     @Test
     void getAll_returnsAllReadings() {
         List<Reading> readings = List.of(reading);
-        when(readingRepository.findAll()).thenReturn(readings);
-        List<Reading> result = quizController.getAll();
-        assertEquals(readings, result);
-        verify(readingRepository).findAll();
+        when(readingService.findAll()).thenReturn(readings);
+        when(quizService.hasCompleted(userId, readingId)).thenReturn(true);
+
+        List<ReadingListItemResponse> result = quizController.getAll(user);
+
+        assertEquals(1, result.size());
+        assertTrue(result.getFirst().isCompleted());
+        verify(readingService).findAll();
     }
 
     @Test
-    void submit_whenQuizAlreadyCompleted_returnsConflict() {
+    void submit_whenQuizAlreadyCompleted_throwsException() {
         QuizSubmitRequest request = new QuizSubmitRequest();
 
-        when(quizService.submit(request))
-                .thenThrow(new IllegalStateException("Quiz already completed"));
+        when(quizService.submit(userId, request))
+                .thenThrow(new QuizAlreadyCompletedException());
 
-        ResponseEntity<?> result = quizController.submit(request);
+        assertThrows(QuizAlreadyCompletedException.class, () -> quizController.submit(request, user));
 
-        assertEquals(HttpStatus.CONFLICT, result.getStatusCode());
-
-        Map<String, String> body = (Map<String, String>) result.getBody();
-
-        assertEquals("Quiz already completed", body.get("error"));
-
-        verify(quizService).submit(request);
+        verify(quizService).submit(userId, request);
     }
 
     @Test
     void getQuizStatus_returnsCompletionStatus() {
-        when(quizAttemptRepository
-                .existsByUserIdAndReadingId(readingId, readingId))
-                .thenReturn(true);
+        when(quizService.hasCompleted(userId, readingId)).thenReturn(true);
 
         Map<String, Boolean> result =
-                quizController.getQuizStatus(readingId, readingId);
+                quizController.getQuizStatus(readingId, user);
 
         assertTrue(result.get("completed"));
 
-        verify(quizAttemptRepository)
-                .existsByUserIdAndReadingId(readingId, readingId);
+        verify(quizService).hasCompleted(userId, readingId);
     }
 }

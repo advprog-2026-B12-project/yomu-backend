@@ -15,11 +15,13 @@ class ReadingResponseTest {
         ReadingResponse response = ReadingResponse.builder()
                 .id(id)
                 .title("Title")
+                .category("News & Media")
                 .content("Content")
                 .build();
 
         assertEquals(id, response.getId());
         assertEquals("Title", response.getTitle());
+        assertEquals("News & Media", response.getCategory());
         assertEquals("Content", response.getContent());
     }
 }

@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.yomubackend.quiz.controller.admin;
 
+import id.ac.ui.cs.advprog.yomubackend.quiz.mapper.QuizResponseMapper;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Reading;
 import id.ac.ui.cs.advprog.yomubackend.quiz.service.ReadingService;
 import org.junit.jupiter.api.Test;
@@ -16,13 +17,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AdminReadingControllerTest {
 
     ReadingService service = mock(ReadingService.class);
-    MockMvc mvc = MockMvcBuilders.standaloneSetup(new AdminReadingController(service)).build();
+    MockMvc mvc = MockMvcBuilders.standaloneSetup(new AdminReadingController(service, new QuizResponseMapper())).build();
 
     @Test
     void testCreateReading() throws Exception {
         Reading r = new Reading();
         r.setId(UUID.randomUUID());
         r.setTitle("Title");
+        r.setCategory("News & Media");
         r.setContent("Content");
 
         when(service.create(any())).thenReturn(r);
@@ -30,10 +32,11 @@ class AdminReadingControllerTest {
         mvc.perform(post("/api/admin/readings")
                         .contentType("application/json")
                         .content("""
-                    {"title":"Title","content":"Content"}
+                    {"title":"Title","category":"News & Media","content":"Content"}
                     """))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.title").value("Title"));
+                .andExpect(jsonPath("$.title").value("Title"))
+                .andExpect(jsonPath("$.category").value("News & Media"));
     }
 
     @Test
@@ -42,13 +45,38 @@ class AdminReadingControllerTest {
         Reading r = new Reading();
         r.setId(UUID.randomUUID());
         r.setTitle("Title");
+        r.setCategory("News & Media");
         r.setContent("Content");
 
         when(service.findAll()).thenReturn(List.of(r));
 
         mvc.perform(get("/api/admin/readings"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].title").value("Title"));
+                .andExpect(jsonPath("$[0].title").value("Title"))
+                .andExpect(jsonPath("$[0].category").value("News & Media"));
+    }
+
+    @Test
+    void testUpdateReading() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        Reading updated = new Reading();
+        updated.setId(id);
+        updated.setTitle("Updated");
+        updated.setCategory("Science");
+        updated.setContent("Updated Content");
+
+        when(service.update(eq(id), any())).thenReturn(updated);
+
+        mvc.perform(put("/api/admin/readings/" + id)
+                        .contentType("application/json")
+                        .content("""
+                    {"title":"Updated","category":"Science","content":"Updated Content"}
+                    """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Updated"))
+                .andExpect(jsonPath("$.category").value("Science"))
+                .andExpect(jsonPath("$.content").value("Updated Content"));
     }
 
     @Test
