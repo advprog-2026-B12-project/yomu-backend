@@ -170,7 +170,7 @@ class DailyMissionServiceTest {
         UserDailyMission udm = new UserDailyMission();
         UserDailyMissionResponse response = new UserDailyMissionResponse();
 
-        when(userDailyMissionRepository.findByUserId(dummyUserId)).thenReturn(List.of(udm));
+        when(userDailyMissionRepository.findByUserIdAndDateAssigned(eq(dummyUserId), any(LocalDate.class))).thenReturn(List.of(udm));
         when(userDailyMissionMapper.toResponse(udm)).thenReturn(response);
 
         List<UserDailyMissionResponse> result = dailyMissionService.getUserDailyMissions(dummyUserId);

@@ -40,4 +40,16 @@ public class CompositeClanScoreMultiplierCalculator implements ClanScoreMultipli
                 .mapToDouble(modifier -> modifier.calculateMultiplier(members))
                 .reduce(NEUTRAL_MULTIPLIER, (left, right) -> left * right);
     }
+
+    @Override
+    public List<String> getActiveModifierNames(List<ClanMember> members) {
+        if (members == null || members.isEmpty()) {
+            return List.of();
+        }
+
+        return modifiers.stream()
+                .filter(modifier -> modifier.calculateMultiplier(members) != NEUTRAL_MULTIPLIER)
+                .map(ClanScoreModifier::getModifierName)
+                .toList();
+    }
 }

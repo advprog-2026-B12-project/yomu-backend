@@ -39,6 +39,21 @@ public class AchievementController {
         return new ResponseEntity<>(achievementMapper.toResponse(savedAchievement), HttpStatus.CREATED);
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<AchievementResponse> updateAchievement(@PathVariable UUID id,
+                                                                  @RequestBody AchievementRequest request) {
+        Achievement updated = achievementService.updateAchievement(id, achievementMapper.toEntity(request));
+        return ResponseEntity.ok(achievementMapper.toResponse(updated));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteAchievement(@PathVariable UUID id) {
+        achievementService.deleteAchievement(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping
     public ResponseEntity<List<AchievementResponse>> getAllAchievements() {
         List<AchievementResponse> responses = achievementService.getAllAchievements().stream()
@@ -52,13 +67,18 @@ public class AchievementController {
         return ResponseEntity.ok(achievementService.getUserAchievements(userId));
     }
 
+    @GetMapping("/user/{userId}/public")
+    public ResponseEntity<List<UserAchievementResponse>> getPublicAchievements(@PathVariable UUID userId) {
+        return ResponseEntity.ok(achievementService.getPublicAchievements(userId));
+    }
+
     @GetMapping("/user/{userId}/progress")
     public ResponseEntity<List<AchievementProgressResponse>> getUserAchievementProgress(@PathVariable UUID userId) {
         return ResponseEntity.ok(achievementService.getUserAchievementProgress(userId));
     }
 
     @PostMapping("/trigger")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PELAJAR')")
     @Transactional
     public ResponseEntity<EventTriggerResponse> triggerEvent(@RequestBody EventTriggerRequest request) {
         String eventType = AchievementEventUtils.validateAndNormalize(request.getEventType());

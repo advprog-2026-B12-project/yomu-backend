@@ -10,6 +10,7 @@ public interface ClanManagementService {
     ClanResponse createClan(UUID userId, String name, String description);
     List<ClanResponse> getAllClans();
     ClanResponse getClanById(Long clanId);
+    ClanResponse getMyClan(UUID userId);
     void deleteClan(UUID requesterUserId, Long clanId);
     List<ClanMemberResponse> getMembers(Long clanId);
 }

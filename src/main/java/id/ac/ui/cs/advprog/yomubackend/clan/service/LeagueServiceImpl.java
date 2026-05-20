@@ -1,5 +1,18 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import id.ac.ui.cs.advprog.yomubackend.clan.completion.ClanPromotion;
 import id.ac.ui.cs.advprog.yomubackend.clan.completion.ClanPromotionProcessor;
 import id.ac.ui.cs.advprog.yomubackend.clan.dto.LeaderboardEntryResponse;
@@ -13,18 +26,6 @@ import id.ac.ui.cs.advprog.yomubackend.clan.league.MemberStat;
 import id.ac.ui.cs.advprog.yomubackend.clan.league.MemberStatProvider;
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberRepository;
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 public class LeagueServiceImpl implements LeagueService {
@@ -69,8 +70,11 @@ public class LeagueServiceImpl implements LeagueService {
         for (Clan clan : clans) {
             List<ClanMember> members = membersByClanId.getOrDefault(clan.getId(), List.of());
             int score = calculateClanScore(clan, members);
+            double multiplier = multiplierCalculator.calculateMultiplier(members);
+            List<String> activeModifiers = multiplierCalculator.getActiveModifierNames(members);
             leaderboard.add(new LeaderboardEntryResponse(
-                    0, clan.getId(), clan.getName(), clan.getDivision(), members.size(), score));
+                    0, clan.getId(), clan.getName(), clan.getDivision(), members.size(),
+                    score, multiplier, activeModifiers));
         }
 
         leaderboard.sort(Comparator.comparingInt(LeaderboardEntryResponse::getScore).reversed());
@@ -140,7 +144,9 @@ public class LeagueServiceImpl implements LeagueService {
                     row.getClanName(),
                     row.getDivision(),
                     row.getMemberCount(),
-                    row.getScore()
+                    row.getScore(),
+                    row.getScoreMultiplier(),
+                    row.getActiveModifiers()
             ));
         }
 

@@ -13,6 +13,8 @@ public class UserDailyMissionMapper {
         response.setUserId(entity.getUserId());
         response.setMissionId(entity.getDailyMission().getId());
         response.setMissionName(entity.getDailyMission().getName());
+        response.setMissionDescription(entity.getDailyMission().getDescription());
+        response.setMilestone(entity.getDailyMission().getMilestone());
         response.setDateAssigned(entity.getDateAssigned());
         response.setCurrentProgress(entity.getCurrentProgress());
         response.setIsCompleted(entity.getIsCompleted());

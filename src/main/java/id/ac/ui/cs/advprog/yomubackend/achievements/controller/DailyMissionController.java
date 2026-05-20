@@ -6,10 +6,12 @@ import id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserDailyMissionResponse
 import id.ac.ui.cs.advprog.yomubackend.achievements.mapper.DailyMissionMapper;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.DailyMission;
 import id.ac.ui.cs.advprog.yomubackend.achievements.service.DailyMissionService;
+import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,6 +24,15 @@ public class DailyMissionController {
 
     private final DailyMissionService dailyMissionService;
     private final DailyMissionMapper dailyMissionMapper;
+
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<DailyMissionResponse>> getAllDailyMissions() {
+        List<DailyMissionResponse> responses = dailyMissionService.getAllDailyMissions().stream()
+                .map(dailyMissionMapper::toResponse)
+                .toList();
+        return ResponseEntity.ok(responses);
+    }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -46,6 +57,13 @@ public class DailyMissionController {
                 .map(dailyMissionMapper::toResponse)
                 .toList();
         return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('PELAJAR')")
+    public ResponseEntity<List<UserDailyMissionResponse>> getTodayMissionsWithProgress(
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(dailyMissionService.getTodayMissionsWithProgress(user.getId()));
     }
 
     @GetMapping("/user/{userId}")
