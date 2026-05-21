@@ -24,7 +24,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/clans")
-@PreAuthorize("hasRole('PELAJAR')")
+@PreAuthorize("hasRole('PELAJAR') or hasRole('ADMIN')")
 public class ClanController {
 
     private final ClanManagementService clanManagementService;

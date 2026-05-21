@@ -51,7 +51,7 @@ public class DailyMissionController {
     }
 
     @GetMapping("/active")
-    @PreAuthorize("hasRole('PELAJAR')")
+    @PreAuthorize("hasRole('PELAJAR') or hasRole('ADMIN')")
     public ResponseEntity<List<DailyMissionResponse>> getActiveDailyMissions() {
         List<DailyMissionResponse> responses = dailyMissionService.getActiveDailyMissions().stream()
                 .map(dailyMissionMapper::toResponse)
@@ -60,14 +60,14 @@ public class DailyMissionController {
     }
 
     @GetMapping("/me")
-    @PreAuthorize("hasRole('PELAJAR')")
+    @PreAuthorize("hasRole('PELAJAR') or hasRole('ADMIN')")
     public ResponseEntity<List<UserDailyMissionResponse>> getTodayMissionsWithProgress(
             @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(dailyMissionService.getTodayMissionsWithProgress(user.getId()));
     }
 
     @GetMapping("/user/{userId}")
-    @PreAuthorize("hasRole('PELAJAR')")
+    @PreAuthorize("hasRole('PELAJAR') or hasRole('ADMIN')")
     public ResponseEntity<List<UserDailyMissionResponse>> getUserDailyMissions(@PathVariable UUID userId) {
         return ResponseEntity.ok(dailyMissionService.getUserDailyMissions(userId));
     }

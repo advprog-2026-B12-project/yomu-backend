@@ -32,7 +32,7 @@ public class LeagueController {
     }
 
     @GetMapping("/leaderboard/me")
-    @PreAuthorize("hasRole('PELAJAR')")
+    @PreAuthorize("hasRole('PELAJAR') or hasRole('ADMIN')")
     public ResponseEntity<List<LeaderboardEntryResponse>> getMyLeaderboard(
             @AuthenticationPrincipal User user) {
         return ResponseEntity.ok(leagueService.getLeaderboardForUser(user.getId()));
