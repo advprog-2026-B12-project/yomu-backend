@@ -1,7 +1,8 @@
 package id.ac.ui.cs.advprog.yomubackend.discussion.listener;
 
 import id.ac.ui.cs.advprog.yomubackend.discussion.repository.CommentRepository;
-import id.ac.ui.cs.advprog.yomubackend.shared.events.UserDeletedEvent;
+import id.ac.ui.cs.advprog.yomubackend.shared.events.auth.UserDeletedEvent;
+
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

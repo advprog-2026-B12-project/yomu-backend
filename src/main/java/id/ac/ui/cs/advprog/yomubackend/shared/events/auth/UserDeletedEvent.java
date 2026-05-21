@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.yomubackend.shared.events;
+package id.ac.ui.cs.advprog.yomubackend.shared.events.auth;
 
 import java.util.UUID;
 

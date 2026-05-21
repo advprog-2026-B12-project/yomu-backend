@@ -2,7 +2,7 @@ package id.ac.ui.cs.advprog.yomubackend.user.service;
 
 import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import id.ac.ui.cs.advprog.yomubackend.auth.repository.UserRepository;
-import id.ac.ui.cs.advprog.yomubackend.shared.events.UserDeletedEvent;
+import id.ac.ui.cs.advprog.yomubackend.shared.events.auth.UserDeletedEvent;
 import id.ac.ui.cs.advprog.yomubackend.user.dto.UpdateProfileRequest;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;

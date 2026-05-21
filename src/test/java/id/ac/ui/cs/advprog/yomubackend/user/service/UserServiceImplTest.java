@@ -223,7 +223,7 @@ class UserServiceImplTest {
 
         verify(userRepository, times(1)).delete(user);
         verify(eventPublisher, times(1))
-                .publishEvent(any(id.ac.ui.cs.advprog.yomubackend.shared.events.UserDeletedEvent.class));
+                .publishEvent(any(id.ac.ui.cs.advprog.yomubackend.shared.events.auth.UserDeletedEvent.class));
     }
 
     @Test

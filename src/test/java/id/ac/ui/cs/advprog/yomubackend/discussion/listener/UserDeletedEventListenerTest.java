@@ -1,7 +1,8 @@
 package id.ac.ui.cs.advprog.yomubackend.discussion.listener;
 
 import id.ac.ui.cs.advprog.yomubackend.discussion.repository.CommentRepository;
-import id.ac.ui.cs.advprog.yomubackend.shared.events.UserDeletedEvent;
+import id.ac.ui.cs.advprog.yomubackend.shared.events.auth.UserDeletedEvent;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
