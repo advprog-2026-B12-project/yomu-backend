@@ -16,9 +16,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.server.ResponseStatusException;
+
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementRequest;
 
 import java.util.List;
 import java.util.UUID;
@@ -183,5 +187,61 @@ class AchievementControllerTest {
                 .andExpect(jsonPath("$.unlockedAchievements").isEmpty())
                 .andExpect(jsonPath("$.completedDailyMissions").isArray())
                 .andExpect(jsonPath("$.completedDailyMissions").isEmpty());
+    }
+
+    @Test
+    void testCreateAchievement_NullPointsAndMilestone_UsesDefaults() throws Exception {
+        AchievementRequest request = new AchievementRequest();
+        request.setName("Test Achievement");
+        request.setEventType("READING_COMPLETED");
+        // points and milestone are null -> mapToEntity defaults to 0 and 1
+
+        Achievement saved = new Achievement();
+        saved.setId(UUID.randomUUID());
+        saved.setName("Test Achievement");
+        saved.setPoints(0);
+        saved.setMilestone(1);
+        saved.setEventType("READING_COMPLETED");
+
+        AchievementResponse savedResponse = new AchievementResponse();
+        savedResponse.setId(saved.getId());
+        savedResponse.setName("Test Achievement");
+
+        when(achievementMapper.toEntity(any())).thenReturn(saved);
+        when(achievementMapper.toResponse(any())).thenReturn(savedResponse);
+        when(achievementService.createAchievement(any(Achievement.class))).thenReturn(saved);
+
+        mockMvc.perform(post("/api/achievements")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("Test Achievement"));
+    }
+
+    @Test
+    void testCreateAchievement_InvalidEventType_ReturnsBadRequest() throws Exception {
+        AchievementRequest request = new AchievementRequest();
+        request.setName("Test");
+        request.setEventType("INVALID_EVENT");
+        request.setPoints(5);
+        request.setMilestone(3);
+
+        when(achievementMapper.toEntity(any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid eventType"));
+
+        mockMvc.perform(post("/api/achievements")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testTriggerEvent_InvalidEventType_ReturnsBadRequest() throws Exception {
+        String body = "{\"userId\":\"" + dummyUserId + "\", \"eventType\":\"INVALID_EVENT\"}";
+
+        mockMvc.perform(post("/api/achievements/trigger")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
     }
 }
