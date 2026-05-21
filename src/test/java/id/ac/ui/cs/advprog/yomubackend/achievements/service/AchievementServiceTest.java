@@ -160,4 +160,47 @@ class AchievementServiceTest {
         assertEquals(0, result.get(1).getCurrentProgress());
         assertFalse(result.get(1).getIsUnlocked());
     }
+
+    // ── AchievementEvent constant ─────────────────────────────────────────────
+
+    @Test
+    void achievementEvent_isSupported_nullReturnsFalse() {
+        assertFalse(AchievementEvent.isSupported(null));
+    }
+
+    @Test
+    void achievementEvent_isSupported_validReturnsTrue() {
+        assertTrue(AchievementEvent.isSupported(AchievementEvent.READING_COMPLETED));
+    }
+
+    @Test
+    void achievementEvent_isSupported_unknownReturnsFalse() {
+        assertFalse(AchievementEvent.isSupported("UNKNOWN_EVENT"));
+    }
+
+    @Test
+    void achievementEvent_isSupported_mixedCaseReturnsTrue() {
+        assertTrue(AchievementEvent.isSupported("reading_completed"));
+    }
+
+    @Test
+    void achievementEvent_normalize_nullReturnsNull() {
+        assertNull(AchievementEvent.normalize(null));
+    }
+
+    @Test
+    void achievementEvent_normalize_lowercaseReturnsUpperCase() {
+        assertEquals("READING_COMPLETED", AchievementEvent.normalize("reading_completed"));
+    }
+
+    @Test
+    void achievementEvent_supportedEvents_containsAllFive() {
+        java.util.Set<String> events = AchievementEvent.supportedEvents();
+        assertNotNull(events);
+        assertEquals(5, events.size());
+        assertTrue(events.contains(AchievementEvent.QUIZ_FINISHED));
+        assertTrue(events.contains(AchievementEvent.PERFECT_QUIZ_SCORE));
+        assertTrue(events.contains(AchievementEvent.CLAN_PROMOTION));
+        assertTrue(events.contains(AchievementEvent.LOGIN_STREAK));
+    }
 }

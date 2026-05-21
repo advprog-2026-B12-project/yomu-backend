@@ -224,4 +224,15 @@ class CommentControllerTest {
 
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
     }
+
+    @Test
+    void getComments_WithNullAuth_PassesNullUsernameToService() {
+        SecurityContextHolder.clearContext();
+        when(commentService.getCommentsByReadingId(readingId, null)).thenReturn(Collections.emptyList());
+
+        ResponseEntity<?> response = commentController.getCommentsByReadingId(readingId);
+
+        assertEquals(HttpStatus.OK.value(), response.getStatusCode().value());
+        verify(commentService).getCommentsByReadingId(readingId, null);
+    }
 }

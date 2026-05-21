@@ -105,6 +105,10 @@ jacocoTestCoverageVerification {
     }
 }
 
+tasks.named('check') {
+    dependsOn jacocoTestCoverageVerification
+}
+
 sonar {
     properties {
         property "sonar.projectKey", "advprog-2026-B12-project_yomu-backend"
