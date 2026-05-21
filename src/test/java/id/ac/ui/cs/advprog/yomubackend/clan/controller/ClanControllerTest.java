@@ -49,7 +49,7 @@ class ClanControllerTest {
         PreAuthorize preAuthorize = ClanController.class.getAnnotation(PreAuthorize.class);
 
         assertNotNull(preAuthorize);
-        assertEquals("hasRole('PELAJAR')", preAuthorize.value());
+        assertEquals("hasRole('PELAJAR') or hasRole('ADMIN')", preAuthorize.value());
     }
 
     @Test
