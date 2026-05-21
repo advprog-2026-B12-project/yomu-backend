@@ -203,4 +203,128 @@ class AchievementServiceTest {
         assertTrue(events.contains(AchievementEvent.CLAN_PROMOTION));
         assertTrue(events.contains(AchievementEvent.LOGIN_STREAK));
     }
+
+    @Test
+    void testUpdateAchievement_ShouldUpdateFields() {
+        Achievement updated = new Achievement();
+        updated.setName("Updated Name");
+        updated.setDescription("Updated Desc");
+        updated.setIconUrl("http://icon.url");
+        updated.setPoints(20);
+        updated.setMilestone(5);
+        updated.setEventType(AchievementEvent.QUIZ_FINISHED);
+
+        when(achievementRepository.findById(dummyAchievement.getId())).thenReturn(java.util.Optional.of(dummyAchievement));
+        when(achievementRepository.save(any(Achievement.class))).thenReturn(dummyAchievement);
+
+        Achievement result = achievementService.updateAchievement(dummyAchievement.getId(), updated);
+
+        assertNotNull(result);
+        verify(achievementRepository).save(dummyAchievement);
+    }
+
+    @Test
+    void testUpdateAchievement_ShouldThrow_WhenNotFound() {
+        UUID randomId = UUID.randomUUID();
+        when(achievementRepository.findById(randomId)).thenReturn(java.util.Optional.empty());
+
+        id.ac.ui.cs.advprog.yomubackend.achievements.exception.AchievementNotFoundException ex =
+                assertThrows(
+                        id.ac.ui.cs.advprog.yomubackend.achievements.exception.AchievementNotFoundException.class,
+                        () -> achievementService.updateAchievement(randomId, new Achievement())
+                );
+        assertTrue(ex.getMessage().contains(randomId.toString()));
+    }
+
+    @Test
+    void testDeleteAchievement_ShouldDelete_WhenExists() {
+        when(achievementRepository.existsById(dummyAchievement.getId())).thenReturn(true);
+
+        achievementService.deleteAchievement(dummyAchievement.getId());
+
+        verify(achievementRepository).deleteById(dummyAchievement.getId());
+    }
+
+    @Test
+    void testDeleteAchievement_ShouldThrow_WhenNotFound() {
+        UUID randomId = UUID.randomUUID();
+        when(achievementRepository.existsById(randomId)).thenReturn(false);
+
+        assertThrows(
+                id.ac.ui.cs.advprog.yomubackend.achievements.exception.AchievementNotFoundException.class,
+                () -> achievementService.deleteAchievement(randomId)
+        );
+    }
+
+    @Test
+    void testGetPublicAchievements_ShouldReturnOnlyDisplayed() {
+        UserAchievement ua = new UserAchievement();
+        ua.setUserId(dummyUserId);
+        ua.setAchievement(dummyAchievement);
+        ua.setIsDisplayed(true);
+
+        id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserAchievementResponse uaResponse =
+                new id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserAchievementResponse();
+        uaResponse.setUserId(dummyUserId);
+        uaResponse.setIsDisplayed(true);
+
+        when(userAchievementRepository.findByUserIdAndIsDisplayedTrue(dummyUserId)).thenReturn(List.of(ua));
+        when(userAchievementMapper.toResponse(ua)).thenReturn(uaResponse);
+
+        List<id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserAchievementResponse> result =
+                achievementService.getPublicAchievements(dummyUserId);
+
+        assertEquals(1, result.size());
+        assertTrue(result.get(0).getIsDisplayed());
+    }
+
+    @Test
+    void testToggleDisplayAchievement_WhenIsDisplayedIsTrue_SetsToFalse() {
+        UserAchievement ua = new UserAchievement();
+        ua.setId(UUID.randomUUID());
+        ua.setIsDisplayed(true);
+        ua.setAchievement(dummyAchievement);
+
+        id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserAchievementResponse uaResponse =
+                new id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserAchievementResponse();
+        uaResponse.setIsDisplayed(false);
+
+        when(userAchievementRepository.findById(ua.getId())).thenReturn(java.util.Optional.of(ua));
+        when(userAchievementRepository.save(any(UserAchievement.class))).thenReturn(ua);
+        when(userAchievementMapper.toResponse(ua)).thenReturn(uaResponse);
+
+        id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserAchievementResponse result =
+                achievementService.toggleDisplayAchievement(ua.getId());
+
+        assertFalse(result.getIsDisplayed());
+    }
+
+    @Test
+    void testToggleDisplayAchievement_WhenIsDisplayedIsNull_SetsToTrue() {
+        UserAchievement ua = new UserAchievement();
+        ua.setId(UUID.randomUUID());
+        ua.setIsDisplayed(null);
+        ua.setAchievement(dummyAchievement);
+
+        id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserAchievementResponse uaResponse =
+                new id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserAchievementResponse();
+        uaResponse.setIsDisplayed(true);
+
+        when(userAchievementRepository.findById(ua.getId())).thenReturn(java.util.Optional.of(ua));
+        when(userAchievementRepository.save(any(UserAchievement.class))).thenReturn(ua);
+        when(userAchievementMapper.toResponse(ua)).thenReturn(uaResponse);
+
+        id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserAchievementResponse result =
+                achievementService.toggleDisplayAchievement(ua.getId());
+
+        assertTrue(result.getIsDisplayed());
+    }
+
+    @Test
+    void testAchievementNotFoundException_MessageContainsId() {
+        UUID id = UUID.randomUUID();
+        id.ac.ui.cs.advprog.yomubackend.achievements.exception.AchievementNotFoundException ex =
+                new id.ac.ui.cs.advprog.yomubackend.achievements.exception.AchievementNotFoundException(id);
+        assertTrue(ex.getMessage().contains(id.toString()));
+    }
 }

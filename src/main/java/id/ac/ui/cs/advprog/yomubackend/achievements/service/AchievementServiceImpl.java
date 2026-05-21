@@ -104,7 +104,7 @@ public class AchievementServiceImpl implements AchievementService {
     public UserAchievementResponse toggleDisplayAchievement(UUID userAchievementId) {
         UserAchievement userAchievement = userAchievementRepository.findById(userAchievementId)
                 .orElseThrow(() -> new UserAchievementNotFoundException(userAchievementId));
-        userAchievement.setIsDisplayed(!userAchievement.getIsDisplayed());
+        userAchievement.setIsDisplayed(!Boolean.TRUE.equals(userAchievement.getIsDisplayed()));
         return userAchievementMapper.toResponse(userAchievementRepository.save(userAchievement));
     }
 }

@@ -29,6 +29,7 @@ import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -243,5 +244,38 @@ class AchievementControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testUpdateAchievement_ShouldReturn200() throws Exception {
+        UUID id = dummyAchievement.getId();
+        when(achievementMapper.toEntity(any())).thenReturn(dummyAchievement);
+        when(achievementMapper.toResponse(any())).thenReturn(dummyAchievementResponse);
+        when(achievementService.updateAchievement(eq(id), any(Achievement.class))).thenReturn(dummyAchievement);
+
+        mockMvc.perform(put("/api/achievements/" + id)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(dummyAchievement)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.name").value("Kutu Buku"));
+    }
+
+    @Test
+    void testDeleteAchievement_ShouldReturn204() throws Exception {
+        UUID id = dummyAchievement.getId();
+        org.mockito.Mockito.doNothing().when(achievementService).deleteAchievement(id);
+
+        mockMvc.perform(delete("/api/achievements/" + id))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void testGetPublicAchievements_ShouldReturn200() throws Exception {
+        when(achievementService.getPublicAchievements(dummyUserId))
+                .thenReturn(List.of(dummyUserAchievementResponse));
+
+        mockMvc.perform(get("/api/achievements/user/" + dummyUserId + "/public"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].currentProgress").value(5));
     }
 }

@@ -241,6 +241,7 @@ class DailyMissionServiceTest {
         assertTrue(result.isEmpty());
     }
     
+    @Test
     void testProcessDailyEvent_ShouldSkip_WhenMissionAlreadyCompleted() {
         when(dailyMissionRepository.findByEventTypeAndIsActiveTrue(AchievementEvent.READING_COMPLETED))
                 .thenReturn(List.of(dummyMission));
@@ -269,5 +270,86 @@ class DailyMissionServiceTest {
         dailyMissionService.rotateDailyMissions();
 
         verify(dailyMissionRepository, never()).saveAll(any());
+    }
+
+    @Test
+    void testGetTodayMissionsWithProgress_WithExistingProgress() {
+        UserDailyMission existing = new UserDailyMission();
+        existing.setUserId(dummyUserId);
+        existing.setDailyMission(dummyMission);
+        existing.setDateAssigned(LocalDate.now());
+        existing.setCurrentProgress(2);
+        existing.setIsCompleted(false);
+
+        UserDailyMissionResponse response = new UserDailyMissionResponse();
+        response.setCurrentProgress(2);
+
+        when(dailyMissionRepository.findByIsActiveTrue()).thenReturn(List.of(dummyMission));
+        when(userDailyMissionRepository.findByUserIdAndDailyMissionIdAndDateAssigned(
+                eq(dummyUserId), eq(dummyMission.getId()), any(LocalDate.class)))
+                .thenReturn(Optional.of(existing));
+        when(userDailyMissionMapper.toResponse(existing)).thenReturn(response);
+
+        List<UserDailyMissionResponse> result = dailyMissionService.getTodayMissionsWithProgress(dummyUserId);
+
+        assertEquals(1, result.size());
+        assertEquals(2, result.get(0).getCurrentProgress());
+    }
+
+    @Test
+    void testGetTodayMissionsWithProgress_WithNoProgress_CreatesEmpty() {
+        UserDailyMissionResponse response = new UserDailyMissionResponse();
+        response.setCurrentProgress(0);
+
+        when(dailyMissionRepository.findByIsActiveTrue()).thenReturn(List.of(dummyMission));
+        when(userDailyMissionRepository.findByUserIdAndDailyMissionIdAndDateAssigned(
+                eq(dummyUserId), eq(dummyMission.getId()), any(LocalDate.class)))
+                .thenReturn(Optional.empty());
+        when(userDailyMissionMapper.toResponse(any(UserDailyMission.class))).thenReturn(response);
+
+        List<UserDailyMissionResponse> result = dailyMissionService.getTodayMissionsWithProgress(dummyUserId);
+
+        assertEquals(1, result.size());
+        assertEquals(0, result.get(0).getCurrentProgress());
+    }
+
+    @Test
+    void testUpdateDailyMission_ShouldNotChangeIsActive_WhenIsActiveIsNull() {
+        DailyMission existing = new DailyMission();
+        existing.setId(UUID.randomUUID());
+        existing.setName("Old");
+        existing.setIsActive(true);
+
+        DailyMission updatedData = new DailyMission();
+        updatedData.setName("New");
+        updatedData.setMilestone(2);
+        updatedData.setIsActive(null);
+
+        when(dailyMissionRepository.findById(existing.getId())).thenReturn(Optional.of(existing));
+        when(dailyMissionRepository.save(any(DailyMission.class))).thenReturn(existing);
+
+        DailyMission result = dailyMissionService.updateDailyMission(existing.getId(), updatedData);
+
+        assertTrue(result.getIsActive());
+    }
+
+    @Test
+    void testUpdateDailyMission_ShouldSetIsActive_WhenProvided() {
+        DailyMission existing = new DailyMission();
+        existing.setId(UUID.randomUUID());
+        existing.setName("Old");
+        existing.setIsActive(false);
+
+        DailyMission updatedData = new DailyMission();
+        updatedData.setName("New");
+        updatedData.setMilestone(2);
+        updatedData.setIsActive(true);
+
+        when(dailyMissionRepository.findById(existing.getId())).thenReturn(Optional.of(existing));
+        when(dailyMissionRepository.save(any(DailyMission.class))).thenReturn(existing);
+
+        DailyMission result = dailyMissionService.updateDailyMission(existing.getId(), updatedData);
+
+        assertTrue(result.getIsActive());
     }
 }

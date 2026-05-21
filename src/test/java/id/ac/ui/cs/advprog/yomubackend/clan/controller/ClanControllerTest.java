@@ -251,6 +251,22 @@ class ClanControllerTest {
     }
 
     @Test
+    void getMyClan_shouldReturnOkWithClanResponse_whenUserIsInClan() {
+        ClanResponse clanResponse = new ClanResponse(1L, "Alpha", "desc", LEADER_ID, "BRONZE", 3L,
+                Instant.parse("2026-01-01T00:00:00Z"));
+        User user = user(LEADER_ID);
+
+        when(clanManagementService.getMyClan(LEADER_ID)).thenReturn(clanResponse);
+
+        ResponseEntity<ClanResponse> response = clanController.getMyClan(user);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(LEADER_ID, response.getBody().getLeaderUserId());
+        verify(clanManagementService).getMyClan(LEADER_ID);
+    }
+
+    @Test
     void deleteClan_shouldUseAuthenticatedUserAndReturnSuccessMessage() {
         User user = user(LEADER_ID);
 
