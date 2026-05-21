@@ -222,6 +222,8 @@ class UserServiceImplTest {
         userService.deleteAccount("ahmadFaiq41");
 
         verify(userRepository, times(1)).delete(user);
+        verify(eventPublisher, times(1))
+                .publishEvent(any(id.ac.ui.cs.advprog.yomubackend.shared.events.UserDeletedEvent.class));
     }
 
     @Test
