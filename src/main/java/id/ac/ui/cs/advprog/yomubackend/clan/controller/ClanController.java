@@ -44,6 +44,11 @@ public class ClanController {
         return ResponseEntity.ok(clanManagementService.getAllClans());
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<ClanResponse> getMyClan(@AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(clanManagementService.getMyClan(user.getId()));
+    }
+
     @GetMapping("/{clanId}")
     public ResponseEntity<ClanResponse> getClanById(@PathVariable Long clanId) {
         return ResponseEntity.ok(clanManagementService.getClanById(clanId));

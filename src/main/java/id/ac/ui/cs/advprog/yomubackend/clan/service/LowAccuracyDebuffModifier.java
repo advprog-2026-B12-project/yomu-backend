@@ -34,6 +34,11 @@ public class LowAccuracyDebuffModifier implements ClanScoreModifier {
     }
 
     @Override
+    public String getModifierName() {
+        return "Low Accuracy Penalty";
+    }
+
+    @Override
     public double calculateMultiplier(List<ClanMember> members) {
         if (members == null || members.isEmpty()) {
             return NEUTRAL_MULTIPLIER;

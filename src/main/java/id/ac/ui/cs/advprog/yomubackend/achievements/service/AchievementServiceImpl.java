@@ -2,6 +2,7 @@ package id.ac.ui.cs.advprog.yomubackend.achievements.service;
 
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementProgressResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserAchievementResponse;
+import id.ac.ui.cs.advprog.yomubackend.achievements.exception.AchievementNotFoundException;
 import id.ac.ui.cs.advprog.yomubackend.achievements.exception.UserAchievementNotFoundException;
 import id.ac.ui.cs.advprog.yomubackend.achievements.mapper.AchievementProgressMapper;
 import id.ac.ui.cs.advprog.yomubackend.achievements.mapper.UserAchievementMapper;
@@ -41,6 +42,27 @@ public class AchievementServiceImpl implements AchievementService {
     }
 
     @Override
+    public Achievement updateAchievement(UUID id, Achievement updated) {
+        Achievement existing = achievementRepository.findById(id)
+                .orElseThrow(() -> new AchievementNotFoundException(id));
+        existing.setName(updated.getName());
+        existing.setDescription(updated.getDescription());
+        existing.setIconUrl(updated.getIconUrl());
+        existing.setPoints(updated.getPoints());
+        existing.setMilestone(updated.getMilestone());
+        existing.setEventType(updated.getEventType());
+        return achievementRepository.save(existing);
+    }
+
+    @Override
+    public void deleteAchievement(UUID id) {
+        if (!achievementRepository.existsById(id)) {
+            throw new AchievementNotFoundException(id);
+        }
+        achievementRepository.deleteById(id);
+    }
+
+    @Override
     public List<Achievement> getAllAchievements() {
         return achievementRepository.findAll();
     }
@@ -49,6 +71,14 @@ public class AchievementServiceImpl implements AchievementService {
     @Transactional(readOnly = true)
     public List<UserAchievementResponse> getUserAchievements(UUID userId) {
         return userAchievementRepository.findByUserId(userId).stream()
+                .map(userAchievementMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UserAchievementResponse> getPublicAchievements(UUID userId) {
+        return userAchievementRepository.findByUserIdAndIsDisplayedTrue(userId).stream()
                 .map(userAchievementMapper::toResponse)
                 .toList();
     }
@@ -74,7 +104,7 @@ public class AchievementServiceImpl implements AchievementService {
     public UserAchievementResponse toggleDisplayAchievement(UUID userAchievementId) {
         UserAchievement userAchievement = userAchievementRepository.findById(userAchievementId)
                 .orElseThrow(() -> new UserAchievementNotFoundException(userAchievementId));
-        userAchievement.setIsDisplayed(!userAchievement.getIsDisplayed());
+        userAchievement.setIsDisplayed(!Boolean.TRUE.equals(userAchievement.getIsDisplayed()));
         return userAchievementMapper.toResponse(userAchievementRepository.save(userAchievement));
     }
 }

@@ -8,6 +8,7 @@ import id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserDailyMissionResponse
 import id.ac.ui.cs.advprog.yomubackend.achievements.mapper.DailyMissionMapper;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.DailyMission;
 import id.ac.ui.cs.advprog.yomubackend.achievements.service.DailyMissionService;
+import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,6 +17,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.method.annotation.AuthenticationPrincipalArgumentResolver;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.server.ResponseStatusException;
@@ -53,7 +57,9 @@ class DailyMissionControllerTest {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.standaloneSetup(dailyMissionController).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(dailyMissionController)
+                .setCustomArgumentResolvers(new AuthenticationPrincipalArgumentResolver())
+                .build();
         objectMapper = new ObjectMapper();
 
         dummyUserId = UUID.randomUUID();
@@ -190,5 +196,34 @@ class DailyMissionControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void testGetAllDailyMissions_ShouldReturn200() throws Exception {
+        when(dailyMissionService.getAllDailyMissions()).thenReturn(List.of(dummyMission));
+        when(dailyMissionMapper.toResponse(any())).thenReturn(dummyMissionResponse);
+
+        mockMvc.perform(get("/api/daily-missions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].name").value("Membaca 3 Artikel"));
+    }
+
+    @Test
+    void testGetTodayMissionsWithProgress_ShouldReturn200() throws Exception {
+        User user = new User();
+        user.setId(dummyUserId);
+
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(user, null, List.of())
+        );
+
+        when(dailyMissionService.getTodayMissionsWithProgress(dummyUserId))
+                .thenReturn(List.of(dummyUserMissionResponse));
+
+        mockMvc.perform(get("/api/daily-missions/me"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].currentProgress").value(1));
+
+        SecurityContextHolder.clearContext();
     }
 }

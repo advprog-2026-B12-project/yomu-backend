@@ -9,6 +9,7 @@ import id.ac.ui.cs.advprog.yomubackend.clan.exception.ClanNameBlankException;
 import id.ac.ui.cs.advprog.yomubackend.clan.exception.ClanNotFoundException;
 import id.ac.ui.cs.advprog.yomubackend.clan.exception.UnauthorizedClanActionException;
 import id.ac.ui.cs.advprog.yomubackend.clan.exception.UserAlreadyInClanException;
+import id.ac.ui.cs.advprog.yomubackend.clan.exception.UserNotInClanException;
 import id.ac.ui.cs.advprog.yomubackend.clan.mapper.ClanMapper;
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanJoinRequestRepository;
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberRepository;
@@ -260,6 +261,29 @@ class ClanManagementServiceImplTest {
 
         assertEquals("Clan not found", ex.getMessage());
         verify(clanMemberRepository, never()).findByClan(any());
+    }
+
+    @Test
+    void getMyClan_shouldReturnClanResponse_whenUserIsInClan() {
+        ClanMember membership = new ClanMember();
+        membership.setClan(clan);
+        membership.setUserId(LEADER_ID);
+        membership.setRole(ClanMember.Role.LEADER);
+
+        when(clanMemberRepository.findByUserId(LEADER_ID)).thenReturn(Optional.of(membership));
+        when(clanMemberRepository.countByClan(clan)).thenReturn(1L);
+
+        ClanResponse result = service.getMyClan(LEADER_ID);
+
+        assertNotNull(result);
+        assertEquals(clan.getId(), result.getId());
+    }
+
+    @Test
+    void getMyClan_shouldThrowUserNotInClanException_whenUserHasNoClan() {
+        when(clanMemberRepository.findByUserId(OTHER_ID)).thenReturn(Optional.empty());
+
+        assertThrows(UserNotInClanException.class, () -> service.getMyClan(OTHER_ID));
     }
 
     private ClanMember member(UUID userId, ClanMember.Role role) {

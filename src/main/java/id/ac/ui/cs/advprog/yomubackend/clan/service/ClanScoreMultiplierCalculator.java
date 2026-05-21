@@ -6,4 +6,5 @@ import java.util.List;
 
 public interface ClanScoreMultiplierCalculator {
     double calculateMultiplier(List<ClanMember> members);
+    List<String> getActiveModifierNames(List<ClanMember> members);
 }
