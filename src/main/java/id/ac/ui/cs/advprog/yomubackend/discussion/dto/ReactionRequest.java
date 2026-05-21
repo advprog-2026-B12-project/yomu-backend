@@ -1,6 +1,6 @@
-package id.ac.ui.cs.advprog.yomubackend.comment.dto;
+package id.ac.ui.cs.advprog.yomubackend.discussion.dto;
 
-import id.ac.ui.cs.advprog.yomubackend.comment.entity.ReactionType;
+import id.ac.ui.cs.advprog.yomubackend.discussion.entity.ReactionType;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 

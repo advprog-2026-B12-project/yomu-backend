@@ -1,8 +1,5 @@
-package id.ac.ui.cs.advprog.yomubackend.comment.controller;
+package id.ac.ui.cs.advprog.yomubackend.discussion.controller;
 
-import id.ac.ui.cs.advprog.yomubackend.comment.dto.CommentRequest;
-import id.ac.ui.cs.advprog.yomubackend.comment.dto.CommentResponse;
-import id.ac.ui.cs.advprog.yomubackend.comment.service.CommentService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
@@ -10,6 +7,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+
+import id.ac.ui.cs.advprog.yomubackend.discussion.dto.CommentRequest;
+import id.ac.ui.cs.advprog.yomubackend.discussion.dto.CommentResponse;
+import id.ac.ui.cs.advprog.yomubackend.discussion.service.CommentService;
 
 import java.util.List;
 import java.util.Map;

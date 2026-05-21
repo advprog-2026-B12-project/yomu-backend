@@ -1,7 +1,5 @@
-package id.ac.ui.cs.advprog.yomubackend.comment.dto;
+package id.ac.ui.cs.advprog.yomubackend.discussion.dto;
 
-import id.ac.ui.cs.advprog.yomubackend.comment.entity.Comment;
-import id.ac.ui.cs.advprog.yomubackend.comment.entity.ReactionType;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -10,6 +8,9 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import id.ac.ui.cs.advprog.yomubackend.discussion.entity.Comment;
+import id.ac.ui.cs.advprog.yomubackend.discussion.entity.ReactionType;
 
 @Data
 public class CommentResponse {

@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.yomubackend.comment.dto;
+package id.ac.ui.cs.advprog.yomubackend.discussion.dto;
 
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -7,6 +7,8 @@ import jakarta.validation.ValidatorFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import id.ac.ui.cs.advprog.yomubackend.discussion.dto.CommentRequest;
 
 import java.util.Set;
 

@@ -1,11 +1,11 @@
-package id.ac.ui.cs.advprog.yomubackend.comment.entity;
+package id.ac.ui.cs.advprog.yomubackend.discussion.entity;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import id.ac.ui.cs.advprog.yomubackend.comment.entity.Comment;
-import id.ac.ui.cs.advprog.yomubackend.comment.entity.CommentReaction;
-import id.ac.ui.cs.advprog.yomubackend.comment.entity.ReactionType;
+import id.ac.ui.cs.advprog.yomubackend.discussion.entity.Comment;
+import id.ac.ui.cs.advprog.yomubackend.discussion.entity.CommentReaction;
+import id.ac.ui.cs.advprog.yomubackend.discussion.entity.ReactionType;
 
 import java.time.LocalDateTime;
 import java.util.UUID;

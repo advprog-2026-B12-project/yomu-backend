@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.yomubackend.comment.dto;
+package id.ac.ui.cs.advprog.yomubackend.discussion.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;

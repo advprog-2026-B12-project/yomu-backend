@@ -1,4 +1,4 @@
-package id.ac.ui.cs.advprog.yomubackend.comment.service;
+package id.ac.ui.cs.advprog.yomubackend.discussion.service;
 
 import java.util.UUID;
 

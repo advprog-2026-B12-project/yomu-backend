@@ -1,13 +1,14 @@
-package id.ac.ui.cs.advprog.yomubackend.comment.service;
+package id.ac.ui.cs.advprog.yomubackend.discussion.service;
 
-import id.ac.ui.cs.advprog.yomubackend.comment.dto.ReactionRequest;
-import id.ac.ui.cs.advprog.yomubackend.comment.entity.Comment;
-import id.ac.ui.cs.advprog.yomubackend.comment.entity.CommentReaction;
-import id.ac.ui.cs.advprog.yomubackend.comment.entity.ReactionType;
-import id.ac.ui.cs.advprog.yomubackend.comment.repository.CommentReactionRepository;
-import id.ac.ui.cs.advprog.yomubackend.comment.repository.CommentRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import id.ac.ui.cs.advprog.yomubackend.discussion.dto.ReactionRequest;
+import id.ac.ui.cs.advprog.yomubackend.discussion.entity.Comment;
+import id.ac.ui.cs.advprog.yomubackend.discussion.entity.CommentReaction;
+import id.ac.ui.cs.advprog.yomubackend.discussion.entity.ReactionType;
+import id.ac.ui.cs.advprog.yomubackend.discussion.repository.CommentReactionRepository;
+import id.ac.ui.cs.advprog.yomubackend.discussion.repository.CommentRepository;
 
 import java.time.LocalDateTime;
 import java.util.EnumMap;

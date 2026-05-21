@@ -1,11 +1,14 @@
-package id.ac.ui.cs.advprog.yomubackend.comment.service;
+package id.ac.ui.cs.advprog.yomubackend.discussion.service;
 
 import id.ac.ui.cs.advprog.yomubackend.auth.model.Role;
 import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
-import id.ac.ui.cs.advprog.yomubackend.comment.dto.CommentRequest;
-import id.ac.ui.cs.advprog.yomubackend.comment.dto.CommentResponse;
-import id.ac.ui.cs.advprog.yomubackend.comment.entity.Comment;
-import id.ac.ui.cs.advprog.yomubackend.comment.repository.CommentRepository;
+import id.ac.ui.cs.advprog.yomubackend.discussion.dto.CommentRequest;
+import id.ac.ui.cs.advprog.yomubackend.discussion.dto.CommentResponse;
+import id.ac.ui.cs.advprog.yomubackend.discussion.entity.Comment;
+import id.ac.ui.cs.advprog.yomubackend.discussion.repository.CommentRepository;
+import id.ac.ui.cs.advprog.yomubackend.discussion.service.CommentReactionService;
+import id.ac.ui.cs.advprog.yomubackend.discussion.service.CommentServiceImpl;
+import id.ac.ui.cs.advprog.yomubackend.discussion.service.UserLookup;
 import id.ac.ui.cs.advprog.yomubackend.quiz.repository.ReadingRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

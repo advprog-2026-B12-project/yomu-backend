@@ -1,10 +1,10 @@
-package id.ac.ui.cs.advprog.yomubackend.comment.service;
-
-import id.ac.ui.cs.advprog.yomubackend.comment.dto.CommentRequest;
-import id.ac.ui.cs.advprog.yomubackend.comment.dto.CommentResponse;
+package id.ac.ui.cs.advprog.yomubackend.discussion.service;
 
 import java.util.List;
 import java.util.UUID;
+
+import id.ac.ui.cs.advprog.yomubackend.discussion.dto.CommentRequest;
+import id.ac.ui.cs.advprog.yomubackend.discussion.dto.CommentResponse;
 
 public interface CommentService {
 

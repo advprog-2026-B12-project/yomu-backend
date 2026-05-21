@@ -1,9 +1,9 @@
-package id.ac.ui.cs.advprog.yomubackend.comment.service;
+package id.ac.ui.cs.advprog.yomubackend.discussion.service;
 
-import id.ac.ui.cs.advprog.yomubackend.comment.dto.CommentRequest;
-import id.ac.ui.cs.advprog.yomubackend.comment.dto.CommentResponse;
-import id.ac.ui.cs.advprog.yomubackend.comment.entity.Comment;
-import id.ac.ui.cs.advprog.yomubackend.comment.repository.CommentRepository;
+import id.ac.ui.cs.advprog.yomubackend.discussion.dto.CommentRequest;
+import id.ac.ui.cs.advprog.yomubackend.discussion.dto.CommentResponse;
+import id.ac.ui.cs.advprog.yomubackend.discussion.entity.Comment;
+import id.ac.ui.cs.advprog.yomubackend.discussion.repository.CommentRepository;
 import id.ac.ui.cs.advprog.yomubackend.quiz.repository.ReadingRepository;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
