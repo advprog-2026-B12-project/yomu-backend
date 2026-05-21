@@ -1,7 +1,8 @@
 package id.ac.ui.cs.advprog.yomubackend.auth.service;
 
 import id.ac.ui.cs.advprog.yomubackend.auth.repository.UserRepository;
-import id.ac.ui.cs.advprog.yomubackend.comment.service.UserLookup;
+import id.ac.ui.cs.advprog.yomubackend.discussion.service.UserLookup;
+
 import org.springframework.stereotype.Component;
 
 import java.util.UUID;
