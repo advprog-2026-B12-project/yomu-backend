@@ -81,16 +81,6 @@ public class QuizController {
         return Map.of("completed", quizService.hasCompleted(userId, readingId));
     }
 
-    @Deprecated
-    @GetMapping("/status/{userId}/{readingId}")
-    public Map<String, Boolean> getQuizStatusForUser(
-            @PathVariable UUID userId,
-            @PathVariable UUID readingId,
-            @AuthenticationPrincipal User user
-    ) {
-        return Map.of("completed", quizService.hasCompleted(requireAuthenticatedUser(user), readingId));
-    }
-
     private UUID requireAuthenticatedUser(User user) {
         return ControllerUtils.requireUserId(user);
     }

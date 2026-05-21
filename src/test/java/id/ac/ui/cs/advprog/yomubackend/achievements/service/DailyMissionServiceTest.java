@@ -144,11 +144,21 @@ class DailyMissionServiceTest {
     @Test
     void testDeleteDailyMission_ShouldCallDelete() {
         UUID id = UUID.randomUUID();
+        when(dailyMissionRepository.existsById(id)).thenReturn(true);
         doNothing().when(dailyMissionRepository).deleteById(id);
 
         dailyMissionService.deleteDailyMission(id);
 
         verify(dailyMissionRepository, times(1)).deleteById(id);
+    }
+
+    @Test
+    void testDeleteDailyMission_NotFound_ShouldThrow() {
+        UUID id = UUID.randomUUID();
+        when(dailyMissionRepository.existsById(id)).thenReturn(false);
+
+        assertThrows(DailyMissionNotFoundException.class,
+                () -> dailyMissionService.deleteDailyMission(id));
     }
 
     @Test

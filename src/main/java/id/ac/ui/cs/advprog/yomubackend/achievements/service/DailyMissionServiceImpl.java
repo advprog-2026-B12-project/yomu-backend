@@ -151,6 +151,9 @@ public class DailyMissionServiceImpl implements DailyMissionService {
 
     @Override
     public void deleteDailyMission(UUID id) {
+        if (!dailyMissionRepository.existsById(id)) {
+            throw new DailyMissionNotFoundException(id);
+        }
         dailyMissionRepository.deleteById(id);
     }
 }
