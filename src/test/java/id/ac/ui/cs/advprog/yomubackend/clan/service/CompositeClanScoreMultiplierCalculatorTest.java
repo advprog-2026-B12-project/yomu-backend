@@ -62,6 +62,49 @@ class CompositeClanScoreMultiplierCalculatorTest {
     }
 
     @Test
+    void calculateMultiplier_shouldReturnNeutralMultiplier_whenMembersIsNull() {
+        double result = calculator.calculateMultiplier(null);
+
+        assertEquals(1.0, result);
+    }
+
+    @Test
+    void getActiveModifierNames_shouldReturnEmpty_whenNoMembers() {
+        assertEquals(List.of(), calculator.getActiveModifierNames(List.of()));
+    }
+
+    @Test
+    void getActiveModifierNames_shouldReturnEmpty_whenMembersIsNull() {
+        assertEquals(List.of(), calculator.getActiveModifierNames(null));
+    }
+
+    @Test
+    void getActiveModifierNames_shouldReturnBuffName_whenBuffActive() {
+        List<ClanMember> members = members(10);
+        stubDailyMissionCompletionForFirstMembers(5);
+        when(quizAttemptRepository.findByUserIdInAndCreatedAtBetween(
+                anyCollection(), any(LocalDateTime.class), any(LocalDateTime.class)))
+                .thenReturn(List.of());
+
+        List<String> names = calculator.getActiveModifierNames(members);
+
+        assertTrue(names.contains("Productivity Buff"));
+    }
+
+    @Test
+    void getActiveModifierNames_shouldReturnDebuffName_whenDebuffActive() {
+        List<ClanMember> members = List.of(member(1L));
+        stubDailyMissionCompletionForFirstMembers(0);
+        when(quizAttemptRepository.findByUserIdInAndCreatedAtBetween(
+                anyCollection(), eq(CURRENT_WINDOW_START), any(LocalDateTime.class)))
+                .thenReturn(List.of(attempt(4, 10)));
+
+        List<String> names = calculator.getActiveModifierNames(members);
+
+        assertTrue(names.contains("Low Accuracy Penalty"));
+    }
+
+    @Test
     void calculateMultiplier_shouldApplyDailyMissionBuff_whenCompletionRateMeetsThreshold() {
         List<ClanMember> members = members(10);
         stubDailyMissionCompletionForFirstMembers(5);

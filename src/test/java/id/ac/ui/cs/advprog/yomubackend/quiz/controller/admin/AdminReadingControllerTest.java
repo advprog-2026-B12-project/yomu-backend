@@ -88,4 +88,22 @@ class AdminReadingControllerTest {
 
         verify(service).delete(id);
     }
+
+    @Test
+    void testGetById() throws Exception {
+        UUID id = UUID.randomUUID();
+
+        Reading r = new Reading();
+        r.setId(id);
+        r.setTitle("Detail Title");
+        r.setCategory("Science");
+        r.setContent("Detail Content");
+
+        when(service.findById(id)).thenReturn(r);
+
+        mvc.perform(get("/api/admin/readings/" + id))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Detail Title"))
+                .andExpect(jsonPath("$.category").value("Science"));
+    }
 }

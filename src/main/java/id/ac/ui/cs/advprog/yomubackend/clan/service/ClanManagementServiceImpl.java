@@ -9,6 +9,7 @@ import id.ac.ui.cs.advprog.yomubackend.clan.exception.ClanNameBlankException;
 import id.ac.ui.cs.advprog.yomubackend.clan.exception.ClanNotFoundException;
 import id.ac.ui.cs.advprog.yomubackend.clan.exception.UnauthorizedClanActionException;
 import id.ac.ui.cs.advprog.yomubackend.clan.exception.UserAlreadyInClanException;
+import id.ac.ui.cs.advprog.yomubackend.clan.exception.UserNotInClanException;
 import id.ac.ui.cs.advprog.yomubackend.clan.league.LeagueDivision;
 import id.ac.ui.cs.advprog.yomubackend.clan.mapper.ClanMapper;
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanJoinRequestRepository;
@@ -70,6 +71,14 @@ public class ClanManagementServiceImpl implements ClanManagementService {
     @Transactional(readOnly = true)
     public ClanResponse getClanById(Long clanId) {
         return toClanResponse(findClanById(clanId));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public ClanResponse getMyClan(UUID userId) {
+        ClanMember membership = clanMemberRepository.findByUserId(userId)
+                .orElseThrow(() -> new UserNotInClanException("User is not in any clan"));
+        return toClanResponse(membership.getClan());
     }
 
     @Override

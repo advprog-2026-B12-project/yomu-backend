@@ -21,4 +21,10 @@ public class QuizExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT)
                 .body(Map.of("error", e.getMessage()));
     }
+
+    @ExceptionHandler({ReadingNotOpenedException.class, QuizAlreadyStartedException.class})
+    public ResponseEntity<Map<String, String>> handleConflict(RuntimeException e) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("error", e.getMessage()));
+    }
 }

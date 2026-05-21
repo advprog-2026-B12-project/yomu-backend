@@ -12,6 +12,8 @@ public class UserDailyMissionResponse {
     private UUID userId;
     private UUID missionId;
     private String missionName;
+    private String missionDescription;
+    private Integer milestone;
     private LocalDate dateAssigned;
     private Integer currentProgress;
     private Boolean isCompleted;

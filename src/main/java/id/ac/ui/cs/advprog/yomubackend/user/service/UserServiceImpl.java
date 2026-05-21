@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserServiceImpl implements UserService {
@@ -62,5 +63,11 @@ public class UserServiceImpl implements UserService {
                 .orElseThrow(() -> new IllegalArgumentException("User tidak ditemukan!"));
         userRepository.delete(user);
         eventPublisher.publishEvent(new UserDeletedEvent(user.getId()));
+    }
+
+    @Override
+    public User getUserById(UUID userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User tidak ditemukan!"));
     }
 }

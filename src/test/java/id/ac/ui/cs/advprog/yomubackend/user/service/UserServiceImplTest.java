@@ -238,6 +238,28 @@ class UserServiceImplTest {
     }
 
     @Test
+    void getUserById_Success() {
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        User result = userService.getUserById(user.getId());
+
+        assertNotNull(result);
+        assertEquals(user.getId(), result.getId());
+        assertEquals("ahmadFaiq41", result.getUsername());
+    }
+
+    @Test
+    void getUserById_NotFound_ThrowsException() {
+        UUID randomId = UUID.randomUUID();
+        when(userRepository.findById(randomId)).thenReturn(Optional.empty());
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> userService.getUserById(randomId));
+
+        assertEquals("User tidak ditemukan!", ex.getMessage());
+    }
+
+    @Test
     void updateProfile_BlankOldPassword_ThrowsException() {
         UpdateProfileRequest request = new UpdateProfileRequest();
         request.setOldPassword("   "); // not null, but blank

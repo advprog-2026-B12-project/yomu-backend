@@ -9,8 +9,11 @@ import java.util.UUID;
 
 public interface AchievementService {
     Achievement createAchievement(Achievement achievement);
+    Achievement updateAchievement(UUID id, Achievement achievement);
+    void deleteAchievement(UUID id);
     List<Achievement> getAllAchievements();
     List<UserAchievementResponse> getUserAchievements(UUID userId);
+    List<UserAchievementResponse> getPublicAchievements(UUID userId);
     List<AchievementProgressResponse> getUserAchievementProgress(UUID userId);
     UserAchievementResponse toggleDisplayAchievement(UUID userAchievementId);
 }

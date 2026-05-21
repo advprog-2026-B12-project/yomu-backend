@@ -9,6 +9,7 @@ import id.ac.ui.cs.advprog.yomubackend.auth.dto.GoogleSsoResult;
 import id.ac.ui.cs.advprog.yomubackend.auth.dto.UserDto;
 import id.ac.ui.cs.advprog.yomubackend.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.yomubackend.security.JwtService;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -22,13 +23,16 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final GoogleIdTokenVerifier googleIdTokenVerifier;
+    private final MeterRegistry meterRegistry;
 
     public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
-                           JwtService jwtService, GoogleIdTokenVerifier googleIdTokenVerifier) {
+                           JwtService jwtService, GoogleIdTokenVerifier googleIdTokenVerifier,
+                           MeterRegistry meterRegistry) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.googleIdTokenVerifier = googleIdTokenVerifier;
+        this.meterRegistry = meterRegistry;
     }
 
     @Override
@@ -48,7 +52,9 @@ public class AuthServiceImpl implements AuthService {
         String hashedPassword = passwordEncoder.encode(request.getPassword());
         newUser.setPassword(hashedPassword);
 
-        return userRepository.save(newUser);
+        User saved = userRepository.save(newUser);
+        meterRegistry.counter("auth.register.success").increment();
+        return saved;
     }
 
     @Override
@@ -60,17 +66,23 @@ public class AuthServiceImpl implements AuthService {
             optionalUser = userRepository.findByUsername(usernameOrEmail);
         }
 
-        User user = optionalUser
-                .filter(u -> passwordEncoder.matches(password, u.getPassword()))
-                .orElseThrow(() -> new IllegalArgumentException("Username/email atau password salah!"));
+        try {
+            User user = optionalUser
+                    .filter(u -> passwordEncoder.matches(password, u.getPassword()))
+                    .orElseThrow(() -> new IllegalArgumentException("Username/email atau password salah!"));
 
-        String token = generateTokenFor(user);
-        UserDto userDto = buildUserDto(user);
-        return LoginResponse.builder()
-                .message("Login berhasil")
-                .token(token)
-                .user(userDto)
-                .build();
+            String token = generateTokenFor(user);
+            UserDto userDto = buildUserDto(user);
+            meterRegistry.counter("auth.login.success").increment();
+            return LoginResponse.builder()
+                    .message("Login berhasil")
+                    .token(token)
+                    .user(userDto)
+                    .build();
+        } catch (IllegalArgumentException e) {
+            meterRegistry.counter("auth.login.failure").increment();
+            throw e;
+        }
     }
 
     @Override
