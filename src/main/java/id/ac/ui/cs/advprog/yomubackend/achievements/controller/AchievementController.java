@@ -63,6 +63,7 @@ public class AchievementController {
     }
 
     @GetMapping("/user/{userId}")
+    @PreAuthorize("hasRole('ADMIN') or authentication.principal.id == #userId")
     public ResponseEntity<List<UserAchievementResponse>> getUserAchievements(@PathVariable UUID userId) {
         return ResponseEntity.ok(achievementService.getUserAchievements(userId));
     }
@@ -73,6 +74,7 @@ public class AchievementController {
     }
 
     @GetMapping("/user/{userId}/progress")
+    @PreAuthorize("hasRole('ADMIN') or authentication.principal.id == #userId")
     public ResponseEntity<List<AchievementProgressResponse>> getUserAchievementProgress(@PathVariable UUID userId) {
         return ResponseEntity.ok(achievementService.getUserAchievementProgress(userId));
     }
@@ -95,7 +97,7 @@ public class AchievementController {
     }
 
     @PutMapping("/display/{userAchievementId}")
-    @PreAuthorize("hasRole('PELAJAR')")
+    @PreAuthorize("hasRole('PELAJAR') or hasRole('ADMIN')")
     public ResponseEntity<UserAchievementResponse> toggleDisplayAchievement(@PathVariable UUID userAchievementId) {
         return ResponseEntity.ok(achievementService.toggleDisplayAchievement(userAchievementId));
     }
