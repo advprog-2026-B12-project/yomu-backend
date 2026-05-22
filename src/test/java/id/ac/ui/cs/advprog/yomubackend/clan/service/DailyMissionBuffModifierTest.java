@@ -1,8 +1,8 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.service;
 
-import id.ac.ui.cs.advprog.yomubackend.achievements.repository.UserDailyMissionRepository;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.Clan;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
+import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberDailyMissionCompletionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,13 +29,13 @@ class DailyMissionBuffModifierTest {
     private static final LocalDate TODAY = LocalDate.of(2026, 5, 7);
 
     @Mock
-    private UserDailyMissionRepository userDailyMissionRepository;
+    private ClanMemberDailyMissionCompletionRepository completionRepository;
 
     private DailyMissionBuffModifier modifier;
 
     @BeforeEach
     void setUp() {
-        modifier = new DailyMissionBuffModifier(userDailyMissionRepository, FIXED_CLOCK);
+        modifier = new DailyMissionBuffModifier(completionRepository, FIXED_CLOCK);
     }
 
     @Test
@@ -46,6 +46,22 @@ class DailyMissionBuffModifierTest {
     @Test
     void calculateMultiplier_shouldReturnNeutral_whenMembersIsEmpty() {
         assertEquals(1.0, modifier.calculateMultiplier(List.of()));
+    }
+
+    @Test
+    void calculateMultiplier_shouldReturnBuff_whenCompletionRateMeetsThreshold() {
+        List<ClanMember> members = List.of(member(1L), member(2L));
+        when(completionRepository.countByUserIdInAndDateAssigned(anyCollection(), eq(TODAY))).thenReturn(1L);
+
+        assertEquals(1.2, modifier.calculateMultiplier(members));
+    }
+
+    @Test
+    void calculateMultiplier_shouldReturnNeutral_whenCompletionRateBelowThreshold() {
+        List<ClanMember> members = List.of(member(1L), member(2L), member(3L));
+        when(completionRepository.countByUserIdInAndDateAssigned(anyCollection(), eq(TODAY))).thenReturn(1L);
+
+        assertEquals(1.0, modifier.calculateMultiplier(members));
     }
 
     @Test

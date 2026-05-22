@@ -1,8 +1,8 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.service;
 
-import id.ac.ui.cs.advprog.yomubackend.achievements.repository.UserDailyMissionRepository;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
-import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuizAttemptRepository;
+import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberDailyMissionCompletionRepository;
+import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberQuizStatRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -21,12 +21,12 @@ public class CompositeClanScoreMultiplierCalculator implements ClanScoreMultipli
         this.modifiers = List.copyOf(modifiers);
     }
 
-    CompositeClanScoreMultiplierCalculator(UserDailyMissionRepository userDailyMissionRepository,
-                                           QuizAttemptRepository quizAttemptRepository,
+    CompositeClanScoreMultiplierCalculator(ClanMemberDailyMissionCompletionRepository completionRepository,
+                                           ClanMemberQuizStatRepository quizStatRepository,
                                            Clock clock) {
         this(List.of(
-                new DailyMissionBuffModifier(userDailyMissionRepository, clock),
-                new LowAccuracyDebuffModifier(quizAttemptRepository, clock)
+                new DailyMissionBuffModifier(completionRepository, clock),
+                new LowAccuracyDebuffModifier(quizStatRepository, clock)
         ));
     }
 

@@ -15,6 +15,7 @@ import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanJoinRequestRepository
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberRepository;
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -38,6 +39,7 @@ class ClanManagementServiceImplTest {
     @Mock private ClanRepository clanRepository;
     @Mock private ClanMemberRepository clanMemberRepository;
     @Mock private ClanJoinRequestRepository clanJoinRequestRepository;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private ClanManagementService service;
     private Clan clan;
@@ -48,7 +50,8 @@ class ClanManagementServiceImplTest {
                 clanRepository,
                 clanMemberRepository,
                 clanJoinRequestRepository,
-                new ClanMapper()
+                new ClanMapper(),
+                eventPublisher
         );
 
         clan = new Clan();

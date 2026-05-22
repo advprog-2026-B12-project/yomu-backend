@@ -5,7 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record ClanPromotionEvent(
-        UUID clanId,      
+        Long clanId,
         List<UUID> memberIds,
         String newDivision,
         LocalDateTime timestamp

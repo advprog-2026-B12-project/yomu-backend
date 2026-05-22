@@ -13,8 +13,6 @@ import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import id.ac.ui.cs.advprog.yomubackend.clan.completion.ClanPromotion;
-import id.ac.ui.cs.advprog.yomubackend.clan.completion.ClanPromotionProcessor;
 import id.ac.ui.cs.advprog.yomubackend.clan.dto.LeaderboardEntryResponse;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.Clan;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
@@ -26,6 +24,8 @@ import id.ac.ui.cs.advprog.yomubackend.clan.league.MemberStat;
 import id.ac.ui.cs.advprog.yomubackend.clan.league.MemberStatProvider;
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberRepository;
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanRepository;
+import id.ac.ui.cs.advprog.yomubackend.shared.events.clan.ClanPromotionEvent;
+import org.springframework.context.ApplicationEventPublisher;
 
 @Service
 public class LeagueServiceImpl implements LeagueService {
@@ -37,20 +37,20 @@ public class LeagueServiceImpl implements LeagueService {
     private final MemberStatProvider memberStatProvider;
     private final ClanScoreProviderResolver resolver;
     private final ClanScoreMultiplierCalculator multiplierCalculator;
-    private final ClanPromotionProcessor clanPromotionProcessor;
+    private final ApplicationEventPublisher eventPublisher;
 
     public LeagueServiceImpl(ClanRepository clanRepository,
                              ClanMemberRepository clanMemberRepository,
                              MemberStatProvider memberStatProvider,
                              ClanScoreProviderResolver resolver,
                              ClanScoreMultiplierCalculator multiplierCalculator,
-                             ClanPromotionProcessor clanPromotionProcessor) {
+                             ApplicationEventPublisher eventPublisher) {
         this.clanRepository = clanRepository;
         this.clanMemberRepository = clanMemberRepository;
         this.memberStatProvider = memberStatProvider;
         this.resolver = resolver;
         this.multiplierCalculator = multiplierCalculator;
-        this.clanPromotionProcessor = clanPromotionProcessor;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -123,8 +123,7 @@ public class LeagueServiceImpl implements LeagueService {
                 List<UUID> memberIds = clanMemberRepository.findByClan(clan).stream()
                         .map(ClanMember::getUserId)
                         .toList();
-                clanPromotionProcessor.processPromotion(
-                        new ClanPromotion(clan.getId(), memberIds, target.value(), now));
+                eventPublisher.publishEvent(new ClanPromotionEvent(clan.getId(), memberIds, target.value(), now));
             }
         });
     }
