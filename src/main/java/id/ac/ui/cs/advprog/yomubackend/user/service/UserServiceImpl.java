@@ -2,12 +2,9 @@ package id.ac.ui.cs.advprog.yomubackend.user.service;
 
 import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import id.ac.ui.cs.advprog.yomubackend.auth.repository.UserRepository;
-import id.ac.ui.cs.advprog.yomubackend.shared.events.auth.UserDeletedEvent;
 import id.ac.ui.cs.advprog.yomubackend.user.dto.UpdateProfileRequest;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -17,13 +14,10 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
-    private final ApplicationEventPublisher eventPublisher;
 
-    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
-            ApplicationEventPublisher eventPublisher) {
+    public UserServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
-        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -57,12 +51,11 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    @Transactional
     public void deleteAccount(String username) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("User tidak ditemukan!"));
+        // TODO: cascade delete behavior needs to be coordinated with other modules
         userRepository.delete(user);
-        eventPublisher.publishEvent(new UserDeletedEvent(user.getId()));
     }
 
     @Override

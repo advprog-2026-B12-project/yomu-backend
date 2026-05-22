@@ -2,8 +2,8 @@ package id.ac.ui.cs.advprog.yomubackend.quiz.service;
 
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizResultResponse;
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizSubmitRequest;
-import id.ac.ui.cs.advprog.yomubackend.shared.events.quiz.QuizFinishedEvent;
-import org.springframework.context.ApplicationEventPublisher;
+import id.ac.ui.cs.advprog.yomubackend.quiz.completion.QuizCompletion;
+import id.ac.ui.cs.advprog.yomubackend.quiz.completion.QuizCompletionProcessor;
 import id.ac.ui.cs.advprog.yomubackend.quiz.exception.ReadingNotOpenedException;
 import id.ac.ui.cs.advprog.yomubackend.quiz.exception.QuizAlreadyCompletedException;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Option;
@@ -34,7 +34,7 @@ class QuizServiceImplTest {
     @Mock
     private QuizAttemptRepository quizAttemptRepository;
     @Mock
-    private ApplicationEventPublisher eventPublisher;
+    private QuizCompletionProcessor quizCompletionProcessor;
     @Mock
     private ReadingProgressService readingProgressService;
 
@@ -100,14 +100,12 @@ class QuizServiceImplTest {
         assertEquals(1, saved.getTotal());
         assertNotNull(saved.getCreatedAt());
 
-        ArgumentCaptor<QuizFinishedEvent> eventCaptor = ArgumentCaptor.forClass(QuizFinishedEvent.class);
-        verify(eventPublisher).publishEvent(eventCaptor.capture());
-        QuizFinishedEvent publishedEvent = eventCaptor.getValue();
-        assertEquals(userId, publishedEvent.userId());
-        assertEquals(readingId, publishedEvent.readingId());
-        assertEquals(1, publishedEvent.score());
-        assertEquals(1, publishedEvent.total());
-        assertTrue(publishedEvent.isPerfectScore());
+        ArgumentCaptor<QuizCompletion> completionCaptor = ArgumentCaptor.forClass(QuizCompletion.class);
+        verify(quizCompletionProcessor).processCompletion(completionCaptor.capture());
+        assertEquals(userId, completionCaptor.getValue().userId());
+        assertEquals(readingId, completionCaptor.getValue().readingId());
+        assertEquals(1, completionCaptor.getValue().score());
+        assertEquals(1, completionCaptor.getValue().total());
     }
 
     @Test
@@ -180,7 +178,7 @@ class QuizServiceImplTest {
         assertThrows(QuizAlreadyCompletedException.class, () -> quizService.submit(userId, request));
         verify(quizAttemptRepository, never()).save(any());
         verify(readingProgressService, never()).ensureOpened(any(), any());
-        verify(eventPublisher, never()).publishEvent(any());
+        verify(quizCompletionProcessor, never()).processCompletion(any());
     }
 
     @Test
@@ -196,7 +194,7 @@ class QuizServiceImplTest {
         assertThrows(ReadingNotOpenedException.class, () -> quizService.submit(userId, request));
         verify(readingService, never()).findById(any());
         verify(quizAttemptRepository, never()).save(any());
-        verify(eventPublisher, never()).publishEvent(any());
+        verify(quizCompletionProcessor, never()).processCompletion(any());
     }
 
     @Test
@@ -215,7 +213,8 @@ class QuizServiceImplTest {
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> quizService.submit(null, request));
+                () -> quizService.submit(null, request)
+        );
 
         assertEquals("User ID is required", exception.getMessage());
     }
@@ -226,7 +225,8 @@ class QuizServiceImplTest {
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> quizService.submit(userId, request));
+                () -> quizService.submit(userId, request)
+        );
 
         assertEquals("Reading ID is required", exception.getMessage());
     }
