@@ -1,9 +1,12 @@
 package id.ac.ui.cs.advprog.yomubackend.discussion.repository;
 
-import org.springframework.data.jpa.repository.JpaRepository;
-
 import id.ac.ui.cs.advprog.yomubackend.discussion.entity.Comment;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,4 +17,10 @@ public interface CommentRepository extends JpaRepository<Comment, UUID> {
     List<Comment> findByParentId(UUID parentId);
 
     List<Comment> findByReadingIdOrderByCreatedAtAsc(UUID readingId);
+
+    @Modifying
+    @Query("UPDATE Comment c SET c.deleted = true, c.deletedAt = :deletedAt, c.deletedBy = :userId, c.updatedAt = :deletedAt "
+            +
+            "WHERE c.authorId = :userId AND c.deleted = false")
+    int softDeleteAllByAuthorId(@Param("userId") UUID userId, @Param("deletedAt") LocalDateTime deletedAt);
 }

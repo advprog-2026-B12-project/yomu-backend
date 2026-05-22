@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
@@ -26,6 +27,9 @@ class UserServiceImplTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -218,6 +222,8 @@ class UserServiceImplTest {
         userService.deleteAccount("ahmadFaiq41");
 
         verify(userRepository, times(1)).delete(user);
+        verify(eventPublisher, times(1))
+                .publishEvent(any(id.ac.ui.cs.advprog.yomubackend.shared.events.auth.UserDeletedEvent.class));
     }
 
     @Test
