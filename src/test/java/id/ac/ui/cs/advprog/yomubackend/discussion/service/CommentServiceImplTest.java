@@ -221,8 +221,9 @@ class CommentServiceImplTest {
 
         when(commentRepository.findByReadingIdOrderByCreatedAtAsc(readingId))
                 .thenReturn(List.of(top1, top2, reply1, reply2, nestedReply));
-        when(reactionService.getReactionCounts(any())).thenReturn(java.util.Collections.emptyMap());
-        when(reactionService.getUserReaction(eq(author.getId()), any())).thenReturn(null);
+        when(reactionService.getBulkReactionCounts(any())).thenReturn(java.util.Collections.emptyMap());
+        when(reactionService.getBulkUserReactions(eq(author.getId()), any()))
+                .thenReturn(java.util.Collections.emptyMap());
 
         List<CommentResponse> result = commentService.getCommentsByReadingId(readingId, author.getId());
 
@@ -243,7 +244,8 @@ class CommentServiceImplTest {
 
         when(commentRepository.findByReadingIdOrderByCreatedAtAsc(readingId))
                 .thenReturn(List.of(top, hidden));
-        when(reactionService.getReactionCounts(any())).thenReturn(java.util.Collections.emptyMap());
+        when(reactionService.getBulkReactionCounts(any())).thenReturn(java.util.Collections.emptyMap());
+        when(reactionService.getBulkUserReactions(any(), any())).thenReturn(java.util.Collections.emptyMap());
 
         List<CommentResponse> result = commentService.getCommentsByReadingId(readingId, null);
 
@@ -259,7 +261,8 @@ class CommentServiceImplTest {
 
         when(commentRepository.findByReadingIdOrderByCreatedAtAsc(readingId))
                 .thenReturn(List.of(top, replyAlive, replyDead));
-        when(reactionService.getReactionCounts(any())).thenReturn(java.util.Collections.emptyMap());
+        when(reactionService.getBulkReactionCounts(any())).thenReturn(java.util.Collections.emptyMap());
+        when(reactionService.getBulkUserReactions(any(), any())).thenReturn(java.util.Collections.emptyMap());
 
         List<CommentResponse> result = commentService.getCommentsByReadingId(readingId, null);
 

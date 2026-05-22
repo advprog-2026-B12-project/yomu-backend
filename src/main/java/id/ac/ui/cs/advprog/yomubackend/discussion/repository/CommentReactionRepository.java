@@ -14,5 +14,9 @@ public interface CommentReactionRepository extends JpaRepository<CommentReaction
 
         Optional<CommentReaction> findByCommentIdAndUserId(UUID commentId, UUID userId);
 
+        List<CommentReaction> findByCommentIdIn(List<UUID> commentIds);
+
+        List<CommentReaction> findByUserIdAndCommentIdIn(UUID userId, List<UUID> commentIds);
+
         void deleteByCommentIdAndUserId(UUID commentId, UUID userId);
 }

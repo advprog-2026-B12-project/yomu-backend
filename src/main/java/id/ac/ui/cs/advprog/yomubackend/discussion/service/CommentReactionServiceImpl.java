@@ -15,6 +15,7 @@ import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.Collections;
 
 @Service
 public class CommentReactionServiceImpl implements CommentReactionService {
@@ -74,4 +75,38 @@ public class CommentReactionServiceImpl implements CommentReactionService {
                 .map(CommentReaction::getReactionType)
                 .orElse(null);
     }
+    @Override
+    @Transactional(readOnly = true)
+    public Map<UUID, Map<ReactionType, Integer>> getBulkReactionCounts(List<UUID> commentIds) {
+        if (commentIds == null || commentIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<CommentReaction> reactions = reactionRepository.findByCommentIdIn(commentIds);
+        Map<UUID, Map<ReactionType, Integer>> result = new java.util.HashMap<>();
+
+        for (CommentReaction r : reactions) {
+            UUID cId = r.getComment().getId();
+            result.computeIfAbsent(cId, k -> new EnumMap<>(ReactionType.class))
+                  .merge(r.getReactionType(), 1, Integer::sum);
+        }
+        return result;
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Map<UUID, ReactionType> getBulkUserReactions(UUID userId, List<UUID> commentIds) {
+        if (userId == null || commentIds == null || commentIds.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        List<CommentReaction> reactions = reactionRepository.findByUserIdAndCommentIdIn(userId, commentIds);
+        Map<UUID, ReactionType> result = new java.util.HashMap<>();
+
+        for (CommentReaction r : reactions) {
+            result.put(r.getComment().getId(), r.getReactionType());
+        }
+        return result;
+    }
+
 }
