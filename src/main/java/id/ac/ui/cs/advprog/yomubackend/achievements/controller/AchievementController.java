@@ -6,15 +6,11 @@ import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserAchievementResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.mapper.AchievementMapper;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.Achievement;
-import id.ac.ui.cs.advprog.yomubackend.achievements.service.AchievementEventService;
 import id.ac.ui.cs.advprog.yomubackend.achievements.service.AchievementService;
-import id.ac.ui.cs.advprog.yomubackend.achievements.service.DailyMissionService;
-import id.ac.ui.cs.advprog.yomubackend.achievements.util.AchievementEventUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,8 +22,6 @@ import java.util.UUID;
 public class AchievementController {
 
     private final AchievementService achievementService;
-    private final AchievementEventService achievementEventService;
-    private final DailyMissionService dailyMissionService;
     private final AchievementMapper achievementMapper;
 
     @PostMapping

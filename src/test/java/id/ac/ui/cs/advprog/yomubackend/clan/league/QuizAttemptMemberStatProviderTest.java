@@ -1,12 +1,13 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.league;
 
-import id.ac.ui.cs.advprog.yomubackend.quiz.model.QuizAttempt;
-import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuizAttemptRepository;
+import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMemberQuizStat;
+import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberQuizStatRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -19,14 +20,14 @@ class QuizAttemptMemberStatProviderTest {
     private static final UUID USER_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     @Mock
-    private QuizAttemptRepository quizAttemptRepository;
+    private ClanMemberQuizStatRepository clanMemberQuizStatRepository;
 
     @Test
-    void getStatForUser_shouldAggregateQuizAttempts() {
-        QuizAttemptMemberStatProvider provider = new QuizAttemptMemberStatProvider(quizAttemptRepository);
+    void getStatForUser_shouldAggregateQuizStats() {
+        QuizAttemptMemberStatProvider provider = new QuizAttemptMemberStatProvider(clanMemberQuizStatRepository);
 
-        when(quizAttemptRepository.findByUserId(USER_ID))
-                .thenReturn(List.of(attempt(8, 10), attempt(6, 10)));
+        when(clanMemberQuizStatRepository.findByUserId(USER_ID))
+                .thenReturn(List.of(stat(8, 10), stat(6, 10)));
 
         MemberStat result = provider.getStatForUser(USER_ID);
 
@@ -37,10 +38,10 @@ class QuizAttemptMemberStatProviderTest {
     }
 
     @Test
-    void getStatForUser_shouldReturnZeroStat_whenUserHasNoQuizAttempts() {
-        QuizAttemptMemberStatProvider provider = new QuizAttemptMemberStatProvider(quizAttemptRepository);
+    void getStatForUser_shouldReturnZeroStat_whenUserHasNoQuizStats() {
+        QuizAttemptMemberStatProvider provider = new QuizAttemptMemberStatProvider(clanMemberQuizStatRepository);
 
-        when(quizAttemptRepository.findByUserId(USER_ID)).thenReturn(List.of());
+        when(clanMemberQuizStatRepository.findByUserId(USER_ID)).thenReturn(List.of());
 
         MemberStat result = provider.getStatForUser(USER_ID);
 
@@ -50,11 +51,13 @@ class QuizAttemptMemberStatProviderTest {
         assertEquals(0.0, result.accuracy());
     }
 
-    private QuizAttempt attempt(int score, int total) {
-        QuizAttempt attempt = new QuizAttempt();
-        attempt.setUserId(USER_ID);
-        attempt.setScore(score);
-        attempt.setTotal(total);
-        return attempt;
+    private ClanMemberQuizStat stat(int score, int total) {
+        ClanMemberQuizStat stat = new ClanMemberQuizStat();
+        stat.setUserId(USER_ID);
+        stat.setReadingId(UUID.randomUUID());
+        stat.setScore(score);
+        stat.setTotal(total);
+        stat.setCompletedAt(LocalDateTime.now());
+        return stat;
     }
 }

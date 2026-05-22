@@ -13,7 +13,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 import java.util.UUID;
 
-@Component
+@Component("achievementsQuizFinishedEventListener")
 public class QuizFinishedEventListener {
 
     private final AchievementEventService achievementEventService;

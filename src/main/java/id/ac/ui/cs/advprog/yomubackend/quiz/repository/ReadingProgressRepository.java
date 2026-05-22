@@ -7,5 +7,6 @@ import java.util.UUID;
 
 public interface ReadingProgressRepository extends JpaRepository<ReadingProgress, UUID> {
     boolean existsByUserIdAndReadingId(UUID userId, UUID readingId);
+    void deleteByUserId(UUID userId);
     void deleteByReadingId(UUID readingId);
 }

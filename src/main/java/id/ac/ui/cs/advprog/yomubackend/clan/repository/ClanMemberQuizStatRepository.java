@@ -11,6 +11,7 @@ import java.util.UUID;
 
 @Repository
 public interface ClanMemberQuizStatRepository extends JpaRepository<ClanMemberQuizStat, Long> {
+    List<ClanMemberQuizStat> findByUserId(UUID userId);
     List<ClanMemberQuizStat> findByUserIdInAndCompletedAtBetween(Collection<UUID> userIds, LocalDateTime start, LocalDateTime end);
     void deleteByReadingId(UUID readingId);
     void deleteByUserId(UUID userId);
