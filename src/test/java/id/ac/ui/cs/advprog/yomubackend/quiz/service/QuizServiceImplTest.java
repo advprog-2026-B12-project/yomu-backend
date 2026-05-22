@@ -79,7 +79,6 @@ class QuizServiceImplTest {
     @Test
     void submit_withCorrectAnswer_returnsScoreOne() {
         QuizSubmitRequest request = new QuizSubmitRequest();
-        request.setUserId(userId);
         request.setReadingId(readingId);
         request.setAnswers(Map.of(question.getId().toString(), correctOptionId.toString()));
 
@@ -113,7 +112,6 @@ class QuizServiceImplTest {
     @Test
     void submit_withWrongAnswer_returnsScoreZero() {
         QuizSubmitRequest request = new QuizSubmitRequest();
-        request.setUserId(userId);
         request.setReadingId(readingId);
         request.setAnswers(Map.of(question.getId().toString(), wrongOption.getId().toString()));
 
@@ -128,7 +126,6 @@ class QuizServiceImplTest {
     @Test
     void submit_withNoAnswerProvided_returnsScoreZero() {
         QuizSubmitRequest request = new QuizSubmitRequest();
-        request.setUserId(userId);
         request.setReadingId(readingId);
         request.setAnswers(Map.of()); // no answer for the question
 
@@ -156,7 +153,6 @@ class QuizServiceImplTest {
         r.setQuestions(List.of(q));
 
         QuizSubmitRequest request = new QuizSubmitRequest();
-        request.setUserId(userId);
         request.setReadingId(readingId);
         request.setAnswers(Map.of(q.getId().toString(), opt.getId().toString()));
 
@@ -171,7 +167,6 @@ class QuizServiceImplTest {
     @Test
     void submit_withCompletedQuiz_throwsAlreadyCompletedException() {
         QuizSubmitRequest request = new QuizSubmitRequest();
-        request.setUserId(userId);
         request.setReadingId(readingId);
         request.setAnswers(Map.of());
 
@@ -186,7 +181,6 @@ class QuizServiceImplTest {
     @Test
     void submit_withoutOpeningReading_throwsReadingNotOpenedException() {
         QuizSubmitRequest request = new QuizSubmitRequest();
-        request.setUserId(userId);
         request.setReadingId(readingId);
         request.setAnswers(Map.of());
 

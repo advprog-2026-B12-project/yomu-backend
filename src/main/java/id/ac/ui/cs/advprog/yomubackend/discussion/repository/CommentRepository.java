@@ -12,6 +12,10 @@ import java.util.UUID;
 
 public interface CommentRepository extends JpaRepository<Comment, UUID> {
 
+    @Modifying
+    @Query("DELETE FROM Comment c WHERE c.readingId = :readingId")
+    void deleteAllByReadingId(@Param("readingId") UUID readingId);
+
     List<Comment> findByReadingIdAndParentIsNull(UUID readingId);
 
     List<Comment> findByParentId(UUID parentId);

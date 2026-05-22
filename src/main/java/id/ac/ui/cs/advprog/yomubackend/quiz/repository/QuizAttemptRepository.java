@@ -12,6 +12,7 @@ public interface QuizAttemptRepository extends JpaRepository<QuizAttempt, UUID> 
     List<QuizAttempt> findByUserId(UUID userId);
 
     boolean existsByUserIdAndReadingId(UUID userId, UUID readingId);
+    void deleteByUserId(UUID userId);
     void deleteByReadingId(UUID readingId);
 
     List<QuizAttempt> findByUserIdAndCreatedAtBetween(UUID userId, LocalDateTime start, LocalDateTime end);

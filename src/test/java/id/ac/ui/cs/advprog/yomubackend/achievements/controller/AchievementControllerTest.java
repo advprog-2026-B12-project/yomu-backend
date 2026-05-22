@@ -6,9 +6,7 @@ import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserAchievementResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.mapper.AchievementMapper;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.Achievement;
-import id.ac.ui.cs.advprog.yomubackend.achievements.service.AchievementEventService;
 import id.ac.ui.cs.advprog.yomubackend.achievements.service.AchievementService;
-import id.ac.ui.cs.advprog.yomubackend.achievements.service.DailyMissionService;
 import tools.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +26,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -42,12 +39,6 @@ class AchievementControllerTest {
 
     @Mock
     private AchievementService achievementService;
-
-    @Mock
-    private AchievementEventService achievementEventService;
-
-    @Mock
-    private DailyMissionService dailyMissionService;
 
     @Mock
     private AchievementMapper achievementMapper;

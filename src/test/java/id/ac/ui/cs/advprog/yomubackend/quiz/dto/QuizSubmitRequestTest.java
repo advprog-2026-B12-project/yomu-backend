@@ -10,15 +10,12 @@ class QuizSubmitRequestTest {
     @Test
     void testGettersAndSetters() {
         QuizSubmitRequest request = new QuizSubmitRequest();
-        UUID userId = UUID.randomUUID();
         UUID readingId = UUID.randomUUID();
         Map<String, String> answers = Map.of("q1", "a1");
 
-        request.setUserId(userId);
         request.setReadingId(readingId);
         request.setAnswers(answers);
 
-        assertEquals(userId, request.getUserId());
         assertEquals(readingId, request.getReadingId());
         assertEquals(answers, request.getAnswers());
     }
