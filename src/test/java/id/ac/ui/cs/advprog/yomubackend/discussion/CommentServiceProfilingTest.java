@@ -29,21 +29,12 @@ class CommentServiceProfilingTest {
 
     @BeforeEach
     void setUp() {
-        // Reduced to 50 top-level and 5 replies (550 comments total) to prevent the
-        // test
-        // from hanging for 10+ minutes when testing the N+1 problem against a real
-        // Docker database.
-        // Even with this amount, the N+1 problem will be clearly visible in the
-        // profiling results.
         testReadingId = dataGenerator.generateTestData(50, 5);
     }
 
     @AfterEach
     void tearDown() {
         if (testReadingId != null) {
-            // Delete generated comments from the database to avoid polluting it
-            // We reverse the list to delete nested replies (children) first before their
-            // parents
             List<Comment> comments = commentRepository.findByReadingIdOrderByCreatedAtAsc(testReadingId);
             Collections.reverse(comments);
             commentRepository.deleteAll(comments);
@@ -56,13 +47,12 @@ class CommentServiceProfilingTest {
 
         System.gc();
         try {
-            Thread.sleep(500); // Give GC time to run for a cleaner baseline
+            Thread.sleep(500);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
 
-        int iterations = 20; // 20 iterations is enough to see the average time reliably without taking too
-                             // long
+        int iterations = 20;
         long start = System.nanoTime();
         for (int i = 0; i < iterations; i++) {
             commentService.getCommentsByReadingId(testReadingId, null);

@@ -8,8 +8,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-import id.ac.ui.cs.advprog.yomubackend.discussion.dto.CommentRequest;
-
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
