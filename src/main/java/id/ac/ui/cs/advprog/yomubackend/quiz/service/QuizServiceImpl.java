@@ -2,8 +2,8 @@ package id.ac.ui.cs.advprog.yomubackend.quiz.service;
 
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizResultResponse;
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizSubmitRequest;
-import id.ac.ui.cs.advprog.yomubackend.quiz.completion.QuizCompletion;
-import id.ac.ui.cs.advprog.yomubackend.quiz.completion.QuizCompletionProcessor;
+import id.ac.ui.cs.advprog.yomubackend.shared.events.quiz.QuizFinishedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import id.ac.ui.cs.advprog.yomubackend.quiz.exception.QuizAlreadyCompletedException;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Option;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Question;
@@ -23,16 +23,16 @@ public class QuizServiceImpl implements QuizService {
 
     private final ReadingService readingService;
     private final QuizAttemptRepository quizAttemptRepository;
-    private final QuizCompletionProcessor quizCompletionProcessor;
+    private final ApplicationEventPublisher eventPublisher;
     private final ReadingProgressService readingProgressService;
 
     public QuizServiceImpl(ReadingService readingService,
             QuizAttemptRepository quizAttemptRepository,
-            QuizCompletionProcessor quizCompletionProcessor,
+            ApplicationEventPublisher eventPublisher,
             ReadingProgressService readingProgressService) {
         this.readingService = readingService;
         this.quizAttemptRepository = quizAttemptRepository;
-        this.quizCompletionProcessor = quizCompletionProcessor;
+        this.eventPublisher = eventPublisher;
         this.readingProgressService = readingProgressService;
     }
 
@@ -58,11 +58,12 @@ public class QuizServiceImpl implements QuizService {
         attempt.setCreatedAt(completedAt);
 
         quizAttemptRepository.save(attempt);
-        quizCompletionProcessor.processCompletion(new QuizCompletion(
+        eventPublisher.publishEvent(new QuizFinishedEvent(
                 userId,
                 reading.getId(),
                 correctAnswers,
                 totalQuestions,
+                correctAnswers == totalQuestions,
                 completedAt));
 
         return new QuizResultResponse(correctAnswers, totalQuestions);
