@@ -50,6 +50,16 @@ public class AdminOptionController {
                 .toList();
     }
 
+    @PutMapping("/{optionId}")
+    public OptionResponse update(@PathVariable UUID optionId, @RequestBody OptionRequest request) {
+        Option updated = optionService.update(optionId, request);
+        return OptionResponse.builder()
+                .id(updated.getId())
+                .optionText(updated.getOptionText())
+                .isCorrect(updated.isCorrect())
+                .build();
+    }
+
     @DeleteMapping("/{optionId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void delete(@PathVariable UUID optionId) {

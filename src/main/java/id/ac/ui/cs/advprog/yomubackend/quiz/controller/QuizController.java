@@ -2,6 +2,7 @@ package id.ac.ui.cs.advprog.yomubackend.quiz.controller;
 
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizResultResponse;
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizSubmitRequest;
+import id.ac.ui.cs.advprog.yomubackend.quiz.model.QuizAttempt;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Reading;
 import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuizAttemptRepository;
 import id.ac.ui.cs.advprog.yomubackend.quiz.repository.ReadingRepository;
@@ -11,9 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
-import java.util.List;
-import java.util.UUID;
-import java.util.Map;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api/quiz")
@@ -53,13 +52,19 @@ public class QuizController {
     }
 
     @GetMapping("/status/{userId}/{readingId}")
-    public Map<String, Boolean> getQuizStatus(
+    public Map<String, Object> getQuizStatus(
             @PathVariable UUID userId,
             @PathVariable UUID readingId
     ) {
-        boolean completed =
-                quizAttemptRepository.existsByUserIdAndReadingId(userId, readingId);
+        Optional<QuizAttempt> attempt = quizAttemptRepository
+                .findByUserIdAndReadingId(userId, readingId);
 
-        return Map.of("completed", completed);
+        Map<String, Object> result = new HashMap<>();
+        result.put("completed", attempt.isPresent());
+        attempt.ifPresent(a -> {
+            result.put("score", a.getScore());
+            result.put("total", a.getTotal());
+        });
+        return result;
     }
 }

@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class QuestionServiceImpl implements QuestionService {
@@ -35,7 +36,8 @@ public class QuestionServiceImpl implements QuestionService {
     }
 
     @Override
+    @Transactional
     public void delete(UUID questionId) {
-        questionRepository.deleteById(questionId);
+        questionRepository.deleteQuestionById(questionId);
     }
 }

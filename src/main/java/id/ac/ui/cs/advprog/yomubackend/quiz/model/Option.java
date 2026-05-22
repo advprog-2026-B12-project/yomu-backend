@@ -20,7 +20,6 @@ public class Option {
     private String optionText;
 
     @Column(nullable = false)
-//    @JsonProperty("isCorrect")
     private boolean isCorrect;
 
     @JsonBackReference

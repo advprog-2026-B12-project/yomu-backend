@@ -1,10 +1,13 @@
 package id.ac.ui.cs.advprog.yomubackend.quiz.service;
 
+import id.ac.ui.cs.advprog.yomubackend.quiz.dto.OptionRequest;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Option;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Question;
 import id.ac.ui.cs.advprog.yomubackend.quiz.repository.OptionRepository;
 import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuestionRepository;
+import org.checkerframework.checker.nullness.qual.MonotonicNonNull;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -35,7 +38,17 @@ public class OptionServiceImpl implements OptionService {
     }
 
     @Override
+    public Option update(UUID optionId, OptionRequest request) {
+        Option existing = optionRepository.findById(optionId)
+                .orElseThrow(() -> new IllegalArgumentException("Option not found"));
+        existing.setOptionText(request.getOptionText());
+        existing.setCorrect(request.isCorrect());
+        return optionRepository.save(existing);
+    }
+
+    @Override
+    @Transactional
     public void delete(UUID optionId) {
-        optionRepository.deleteById(optionId);
+        optionRepository.deleteOptionById(optionId);
     }
 }
