@@ -12,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import id.ac.ui.cs.advprog.yomubackend.discussion.controller.CommentReactionController;
 import id.ac.ui.cs.advprog.yomubackend.discussion.dto.ReactionRequest;
 import id.ac.ui.cs.advprog.yomubackend.discussion.entity.ReactionType;
@@ -35,29 +36,26 @@ class CommentReactionControllerTest {
     private CommentReactionController reactionController;
 
     private final UUID commentId = UUID.randomUUID();
-    private final String username = "reader01";
+    private final UUID userId = UUID.randomUUID();
+    private User user;
 
     @BeforeEach
-    void setUpAuthentication() {
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(username, "N/A"));
-    }
-
-    @AfterEach
-    void clearAuthentication() {
-        SecurityContextHolder.clearContext();
+    void setUp() {
+        user = new User();
+        user.setId(userId);
+        user.setUsername("reader01");
     }
 
     @Test
     void addOrUpdateReaction_Success_ReturnsCreated() {
         ReactionRequest req = new ReactionRequest();
         req.setReactionType(ReactionType.UPVOTE);
-        doNothing().when(reactionService).addOrUpdateReaction(eq(username), eq(commentId), any(ReactionRequest.class));
+        doNothing().when(reactionService).addOrUpdateReaction(eq(userId), eq(commentId), any(ReactionRequest.class));
 
-        ResponseEntity<?> response = reactionController.addOrUpdateReaction(commentId, req);
+        ResponseEntity<?> response = reactionController.addOrUpdateReaction(commentId, req, user);
 
         assertEquals(HttpStatus.CREATED.value(), response.getStatusCode().value());
-        verify(reactionService, times(1)).addOrUpdateReaction(eq(username), eq(commentId), any(ReactionRequest.class));
+        verify(reactionService, times(1)).addOrUpdateReaction(eq(userId), eq(commentId), any(ReactionRequest.class));
     }
 
     @Test
@@ -65,9 +63,9 @@ class CommentReactionControllerTest {
         ReactionRequest req = new ReactionRequest();
         req.setReactionType(ReactionType.UPVOTE);
         doThrow(new IllegalArgumentException("Komentar tidak ditemukan!"))
-                .when(reactionService).addOrUpdateReaction(eq(username), eq(commentId), any(ReactionRequest.class));
+                .when(reactionService).addOrUpdateReaction(eq(userId), eq(commentId), any(ReactionRequest.class));
 
-        ResponseEntity<?> response = reactionController.addOrUpdateReaction(commentId, req);
+        ResponseEntity<?> response = reactionController.addOrUpdateReaction(commentId, req, user);
 
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
         assertEquals("Komentar tidak ditemukan!", ((Map<?, ?>) response.getBody()).get("error"));
@@ -75,34 +73,31 @@ class CommentReactionControllerTest {
 
     @Test
     void removeReaction_Success_ReturnsNoContent() {
-        doNothing().when(reactionService).removeReaction(username, commentId);
+        doNothing().when(reactionService).removeReaction(userId, commentId);
 
-        ResponseEntity<?> response = reactionController.removeReaction(commentId);
+        ResponseEntity<?> response = reactionController.removeReaction(commentId, user);
 
         assertEquals(HttpStatus.NO_CONTENT.value(), response.getStatusCode().value());
-        verify(reactionService, times(1)).removeReaction(username, commentId);
+        verify(reactionService, times(1)).removeReaction(userId, commentId);
     }
 
     @Test
     void removeReaction_ServiceThrows_ReturnsBadRequest() {
         doThrow(new IllegalArgumentException("User tidak ditemukan!"))
-                .when(reactionService).removeReaction(username, commentId);
+                .when(reactionService).removeReaction(userId, commentId);
 
-        ResponseEntity<?> response = reactionController.removeReaction(commentId);
+        ResponseEntity<?> response = reactionController.removeReaction(commentId, user);
 
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
     }
 
     @Test
-    void addOrUpdateReaction_WithNullAuth_PassesNullUsernameToService() {
-        SecurityContextHolder.clearContext();
+    void addOrUpdateReaction_WithNullAuth_ThrowsAccessDeniedException() {
         ReactionRequest req = new ReactionRequest();
         req.setReactionType(ReactionType.UPVOTE);
-        doNothing().when(reactionService).addOrUpdateReaction(null, commentId, req);
 
-        ResponseEntity<?> response = reactionController.addOrUpdateReaction(commentId, req);
-
-        assertEquals(HttpStatus.CREATED.value(), response.getStatusCode().value());
-        verify(reactionService).addOrUpdateReaction(null, commentId, req);
+        org.junit.jupiter.api.Assertions.assertThrows(
+                org.springframework.security.access.AccessDeniedException.class,
+                () -> reactionController.addOrUpdateReaction(commentId, req, null));
     }
 }

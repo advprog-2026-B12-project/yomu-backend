@@ -8,17 +8,17 @@ import id.ac.ui.cs.advprog.yomubackend.discussion.dto.CommentResponse;
 
 public interface CommentService {
 
-    CommentResponse createComment(String username, UUID readingId, CommentRequest request);
+        CommentResponse createComment(UUID userId, UUID readingId, CommentRequest request);
 
-    CommentResponse replyToComment(String username, UUID readingId, UUID parentCommentId,
-            CommentRequest request);
+        CommentResponse replyToComment(UUID userId, UUID readingId, UUID parentCommentId,
+                        CommentRequest request);
 
-    List<CommentResponse> getCommentsByReadingId(UUID readingId, String username);
+        List<CommentResponse> getCommentsByReadingId(UUID readingId, UUID userId);
 
-    CommentResponse updateComment(String username, UUID readingId, UUID commentId,
-            CommentRequest request);
+        CommentResponse updateComment(UUID userId, UUID readingId, UUID commentId,
+                        CommentRequest request);
 
-    void softDeleteComment(String username, UUID readingId, UUID commentId);
+        void softDeleteComment(UUID userId, UUID readingId, UUID commentId);
 
-    void adminDeleteComment(String username, UUID commentId);
+        void adminDeleteComment(UUID userId, UUID commentId);
 }

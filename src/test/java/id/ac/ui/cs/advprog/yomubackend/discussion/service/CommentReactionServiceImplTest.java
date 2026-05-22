@@ -8,8 +8,6 @@ import id.ac.ui.cs.advprog.yomubackend.discussion.entity.CommentReaction;
 import id.ac.ui.cs.advprog.yomubackend.discussion.entity.ReactionType;
 import id.ac.ui.cs.advprog.yomubackend.discussion.repository.CommentReactionRepository;
 import id.ac.ui.cs.advprog.yomubackend.discussion.repository.CommentRepository;
-import id.ac.ui.cs.advprog.yomubackend.discussion.service.CommentReactionServiceImpl;
-import id.ac.ui.cs.advprog.yomubackend.discussion.service.UserLookup;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,9 +32,6 @@ class CommentReactionServiceImplTest {
 
     @Mock
     private CommentRepository commentRepository;
-
-    @Mock
-    private UserLookup userLookup;
 
     @InjectMocks
     private CommentReactionServiceImpl reactionService;
@@ -65,7 +60,6 @@ class CommentReactionServiceImplTest {
         Comment comment = new Comment();
         comment.setId(commentId);
 
-        when(userLookup.resolveUserId("reader01")).thenReturn(user.getId());
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
         when(reactionRepository.findByCommentIdAndUserId(commentId, user.getId())).thenReturn(Optional.empty());
         when(reactionRepository.save(any(CommentReaction.class))).thenAnswer(inv -> {
@@ -74,7 +68,7 @@ class CommentReactionServiceImplTest {
             return r;
         });
 
-        reactionService.addOrUpdateReaction("reader01", commentId, requestWithType(ReactionType.UPVOTE));
+        reactionService.addOrUpdateReaction(user.getId(), commentId, requestWithType(ReactionType.UPVOTE));
 
         verify(reactionRepository, times(1)).save(any(CommentReaction.class));
     }
@@ -88,11 +82,10 @@ class CommentReactionServiceImplTest {
         existing.setUserId(user.getId());
         existing.setReactionType(ReactionType.UPVOTE);
 
-        when(userLookup.resolveUserId("reader01")).thenReturn(user.getId());
         when(commentRepository.findById(commentId)).thenReturn(Optional.of(comment));
         when(reactionRepository.findByCommentIdAndUserId(commentId, user.getId())).thenReturn(Optional.of(existing));
 
-        reactionService.addOrUpdateReaction("reader01", commentId, requestWithType(ReactionType.DOWNVOTE));
+        reactionService.addOrUpdateReaction(user.getId(), commentId, requestWithType(ReactionType.DOWNVOTE));
 
         assertEquals(ReactionType.DOWNVOTE, existing.getReactionType());
         verify(reactionRepository, never()).save(any(CommentReaction.class));
@@ -100,11 +93,11 @@ class CommentReactionServiceImplTest {
 
     @Test
     void addOrUpdateReaction_CommentNotFound_ThrowsException() {
-        when(userLookup.resolveUserId("reader01")).thenReturn(user.getId());
         when(commentRepository.findById(commentId)).thenReturn(Optional.empty());
 
         assertThrows(IllegalArgumentException.class,
-                () -> reactionService.addOrUpdateReaction("reader01", commentId, requestWithType(ReactionType.UPVOTE)));
+                () -> reactionService.addOrUpdateReaction(user.getId(), commentId,
+                        requestWithType(ReactionType.UPVOTE)));
     }
 
     @Test
@@ -112,20 +105,18 @@ class CommentReactionServiceImplTest {
         CommentReaction existing = new CommentReaction();
         existing.setId(UUID.randomUUID());
 
-        when(userLookup.resolveUserId("reader01")).thenReturn(user.getId());
         when(reactionRepository.findByCommentIdAndUserId(commentId, user.getId())).thenReturn(Optional.of(existing));
 
-        reactionService.removeReaction("reader01", commentId);
+        reactionService.removeReaction(user.getId(), commentId);
 
         verify(reactionRepository, times(1)).delete(existing);
     }
 
     @Test
     void removeReaction_NonExisting_DoesNothing() {
-        when(userLookup.resolveUserId("reader01")).thenReturn(user.getId());
         when(reactionRepository.findByCommentIdAndUserId(commentId, user.getId())).thenReturn(Optional.empty());
 
-        reactionService.removeReaction("reader01", commentId);
+        reactionService.removeReaction(user.getId(), commentId);
 
         verify(reactionRepository, never()).delete(any());
     }
@@ -152,20 +143,18 @@ class CommentReactionServiceImplTest {
         CommentReaction r = new CommentReaction();
         r.setReactionType(ReactionType.FIRE);
 
-        when(userLookup.resolveUserId("reader01")).thenReturn(user.getId());
         when(reactionRepository.findByCommentIdAndUserId(commentId, user.getId())).thenReturn(Optional.of(r));
 
-        ReactionType result = reactionService.getUserReaction("reader01", commentId);
+        ReactionType result = reactionService.getUserReaction(user.getId(), commentId);
 
         assertEquals(ReactionType.FIRE, result);
     }
 
     @Test
     void getUserReaction_ReturnsNullWhenNotExists() {
-        when(userLookup.resolveUserId("reader01")).thenReturn(user.getId());
         when(reactionRepository.findByCommentIdAndUserId(commentId, user.getId())).thenReturn(Optional.empty());
 
-        ReactionType result = reactionService.getUserReaction("reader01", commentId);
+        ReactionType result = reactionService.getUserReaction(user.getId(), commentId);
 
         assertNull(result);
     }
