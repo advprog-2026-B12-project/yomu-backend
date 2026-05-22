@@ -238,7 +238,7 @@ class CommentServiceImplTest {
     }
 
     @Test
-    void getCommentsByReadingId_ExcludesSoftDeletedTopLevel() {
+    void getCommentsByReadingId_IncludesSoftDeletedTopLevelWithCensoredContent() {
         Comment top = buildComment(UUID.randomUUID(), "visible", null, false);
         Comment hidden = buildComment(UUID.randomUUID(), "gone", null, true);
 
@@ -249,12 +249,15 @@ class CommentServiceImplTest {
 
         List<CommentResponse> result = commentService.getCommentsByReadingId(readingId, null);
 
-        assertEquals(1, result.size());
+        assertEquals(2, result.size());
         assertEquals(top.getId(), result.get(0).getId());
+        assertEquals(hidden.getId(), result.get(1).getId());
+        assertEquals("Komentar telah dihapus", result.get(1).getContent());
+        assertTrue(result.get(1).isDeleted());
     }
 
     @Test
-    void getCommentsByReadingId_ExcludesSoftDeletedReplies() {
+    void getCommentsByReadingId_IncludesSoftDeletedRepliesWithCensoredContent() {
         Comment top = buildComment(UUID.randomUUID(), "visible", null, false);
         Comment replyAlive = buildComment(UUID.randomUUID(), "alive", top, false);
         Comment replyDead = buildComment(UUID.randomUUID(), "dead", top, true);
@@ -267,8 +270,11 @@ class CommentServiceImplTest {
         List<CommentResponse> result = commentService.getCommentsByReadingId(readingId, null);
 
         assertEquals(1, result.size());
-        assertEquals(1, result.get(0).getReplies().size());
+        assertEquals(2, result.get(0).getReplies().size());
         assertEquals(replyAlive.getId(), result.get(0).getReplies().get(0).getId());
+        assertEquals(replyDead.getId(), result.get(0).getReplies().get(1).getId());
+        assertEquals("Komentar telah dihapus", result.get(0).getReplies().get(1).getContent());
+        assertTrue(result.get(0).getReplies().get(1).isDeleted());
     }
 
     @Test
