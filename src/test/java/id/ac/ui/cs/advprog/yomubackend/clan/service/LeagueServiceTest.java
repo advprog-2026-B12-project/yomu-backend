@@ -1,8 +1,7 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.service;
 
-import id.ac.ui.cs.advprog.yomubackend.clan.completion.ClanPromotion;
-import id.ac.ui.cs.advprog.yomubackend.clan.completion.ClanPromotionProcessor;
 import id.ac.ui.cs.advprog.yomubackend.clan.dto.LeaderboardEntryResponse;
+import id.ac.ui.cs.advprog.yomubackend.shared.events.clan.ClanPromotionEvent;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.Clan;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
 import id.ac.ui.cs.advprog.yomubackend.clan.exception.UserNotInClanException;
@@ -13,6 +12,7 @@ import id.ac.ui.cs.advprog.yomubackend.clan.league.MemberStatProvider;
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberRepository;
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -60,7 +60,7 @@ class LeagueServiceTest {
     private ClanScoreMultiplierCalculator multiplierCalculator;
 
     @Mock
-    private ClanPromotionProcessor clanPromotionProcessor;
+    private ApplicationEventPublisher eventPublisher;
 
     private LeagueServiceImpl leagueService;
 
@@ -72,7 +72,7 @@ class LeagueServiceTest {
                 memberStatProvider,
                 resolver,
                 multiplierCalculator,
-                clanPromotionProcessor
+                eventPublisher
         );
         lenient().when(multiplierCalculator.calculateMultiplier(anyList())).thenReturn(1.0);
     }
@@ -409,9 +409,9 @@ class LeagueServiceTest {
 
         leagueService.triggerSeasonReset();
 
-        ArgumentCaptor<ClanPromotion> captor = ArgumentCaptor.forClass(ClanPromotion.class);
-        verify(clanPromotionProcessor, times(1)).processPromotion(captor.capture());
-        ClanPromotion captured = captor.getValue();
+        ArgumentCaptor<ClanPromotionEvent> captor = ArgumentCaptor.forClass(ClanPromotionEvent.class);
+        verify(eventPublisher, times(1)).publishEvent(captor.capture());
+        ClanPromotionEvent captured = captor.getValue();
         assertEquals(5L, captured.clanId());
         assertEquals("DIAMOND", captured.newDivision());
         assertEquals(List.of(userId(5L)), captured.memberIds());
@@ -429,7 +429,7 @@ class LeagueServiceTest {
         leagueService.triggerSeasonReset();
 
         assertEquals("BRONZE", bronzeOnly.getDivision());
-        verify(clanPromotionProcessor, never()).processPromotion(any());
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     private void stubAllProviders() {

@@ -22,7 +22,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/quiz")
-@PreAuthorize("hasRole('PELAJAR')")
+@PreAuthorize("hasRole('PELAJAR') or hasRole('ADMIN')")
 public class QuizController {
 
     private final ReadingService readingService;

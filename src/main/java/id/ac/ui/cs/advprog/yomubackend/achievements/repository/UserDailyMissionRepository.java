@@ -19,4 +19,5 @@ public interface UserDailyMissionRepository extends JpaRepository<UserDailyMissi
     List<UserDailyMission> findByUserId(UUID userId);
 
     long countByUserIdInAndDateAssignedAndIsCompletedTrue(Collection<UUID> userIds, LocalDate dateAssigned);
+    void deleteByUserId(UUID userId);
 }

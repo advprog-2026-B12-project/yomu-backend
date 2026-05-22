@@ -2,13 +2,13 @@ package id.ac.ui.cs.advprog.yomubackend.quiz.service;
 
 import id.ac.ui.cs.advprog.yomubackend.quiz.exception.ReadingNotFoundException;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Reading;
-import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuizAttemptRepository;
-import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuizSessionRepository;
-import id.ac.ui.cs.advprog.yomubackend.quiz.repository.ReadingProgressRepository;
 import id.ac.ui.cs.advprog.yomubackend.quiz.repository.ReadingRepository;
+import id.ac.ui.cs.advprog.yomubackend.shared.events.quiz.ReadingDeletedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -16,18 +16,12 @@ import java.util.UUID;
 public class ReadingServiceImpl implements ReadingService {
 
     private final ReadingRepository repository;
-    private final ReadingProgressRepository readingProgressRepository;
-    private final QuizSessionRepository quizSessionRepository;
-    private final QuizAttemptRepository quizAttemptRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ReadingServiceImpl(ReadingRepository repository,
-                              ReadingProgressRepository readingProgressRepository,
-                              QuizSessionRepository quizSessionRepository,
-                              QuizAttemptRepository quizAttemptRepository) {
+                              ApplicationEventPublisher eventPublisher) {
         this.repository = repository;
-        this.readingProgressRepository = readingProgressRepository;
-        this.quizSessionRepository = quizSessionRepository;
-        this.quizAttemptRepository = quizAttemptRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -52,10 +46,11 @@ public class ReadingServiceImpl implements ReadingService {
     @Override
     @Transactional
     public void delete(UUID id) {
-        readingProgressRepository.deleteByReadingId(id);
-        quizSessionRepository.deleteByReadingId(id);
-        quizAttemptRepository.deleteByReadingId(id);
+        if (!repository.existsById(id)) {
+            throw new ReadingNotFoundException(id);
+        }
         repository.deleteById(id);
+        eventPublisher.publishEvent(new ReadingDeletedEvent(id, LocalDateTime.now()));
     }
 
     @Override

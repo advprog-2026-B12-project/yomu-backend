@@ -2,13 +2,13 @@ package id.ac.ui.cs.advprog.yomubackend.quiz.service;
 
 import id.ac.ui.cs.advprog.yomubackend.quiz.exception.ReadingNotFoundException;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Reading;
-import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuizAttemptRepository;
-import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuizSessionRepository;
-import id.ac.ui.cs.advprog.yomubackend.quiz.repository.ReadingProgressRepository;
 import id.ac.ui.cs.advprog.yomubackend.quiz.repository.ReadingRepository;
+import id.ac.ui.cs.advprog.yomubackend.shared.events.quiz.ReadingDeletedEvent;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -17,15 +17,8 @@ import static org.mockito.Mockito.*;
 class ReadingServiceImplTest {
 
     private final ReadingRepository repository = mock(ReadingRepository.class);
-    private final ReadingProgressRepository readingProgressRepository = mock(ReadingProgressRepository.class);
-    private final QuizSessionRepository quizSessionRepository = mock(QuizSessionRepository.class);
-    private final QuizAttemptRepository quizAttemptRepository = mock(QuizAttemptRepository.class);
-    private final ReadingServiceImpl service = new ReadingServiceImpl(
-            repository,
-            readingProgressRepository,
-            quizSessionRepository,
-            quizAttemptRepository
-    );
+    private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
+    private final ReadingServiceImpl service = new ReadingServiceImpl(repository, eventPublisher);
 
     @Test
     void testCreateReading() {
@@ -65,7 +58,7 @@ class ReadingServiceImplTest {
         update.setCategory("New Category");
         update.setContent("New Content");
 
-        when(repository.findById(id)).thenReturn(java.util.Optional.of(existing));
+        when(repository.findById(id)).thenReturn(Optional.of(existing));
         when(repository.save(existing)).thenReturn(existing);
 
         Reading result = service.update(id, update);
@@ -79,13 +72,23 @@ class ReadingServiceImplTest {
     @Test
     void testDelete() {
         UUID id = UUID.randomUUID();
+        when(repository.existsById(id)).thenReturn(true);
 
         service.delete(id);
 
-        verify(readingProgressRepository).deleteByReadingId(id);
-        verify(quizSessionRepository).deleteByReadingId(id);
-        verify(quizAttemptRepository).deleteByReadingId(id);
         verify(repository).deleteById(id);
+        verify(eventPublisher).publishEvent(any(ReadingDeletedEvent.class));
+    }
+
+    @Test
+    void testDelete_NotFound() {
+        UUID id = UUID.randomUUID();
+        when(repository.existsById(id)).thenReturn(false);
+
+        assertThrows(ReadingNotFoundException.class, () -> service.delete(id));
+
+        verify(repository, never()).deleteById(any());
+        verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
@@ -96,7 +99,7 @@ class ReadingServiceImplTest {
         reading.setId(id);
         reading.setTitle("Test Reading");
 
-        when(repository.findById(id)).thenReturn(java.util.Optional.of(reading));
+        when(repository.findById(id)).thenReturn(Optional.of(reading));
 
         Reading result = service.findById(id);
 
@@ -111,7 +114,7 @@ class ReadingServiceImplTest {
     void testFindById_NotFound() {
         UUID id = UUID.randomUUID();
 
-        when(repository.findById(id)).thenReturn(java.util.Optional.empty());
+        when(repository.findById(id)).thenReturn(Optional.empty());
 
         ReadingNotFoundException exception = assertThrows(
                 ReadingNotFoundException.class,
