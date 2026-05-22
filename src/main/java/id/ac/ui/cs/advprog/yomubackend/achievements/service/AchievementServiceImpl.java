@@ -10,6 +10,8 @@ import id.ac.ui.cs.advprog.yomubackend.achievements.model.Achievement;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserAchievement;
 import id.ac.ui.cs.advprog.yomubackend.achievements.repository.AchievementRepository;
 import id.ac.ui.cs.advprog.yomubackend.achievements.repository.UserAchievementRepository;
+import io.micrometer.core.annotation.Timed;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,19 +27,24 @@ public class AchievementServiceImpl implements AchievementService {
     private final UserAchievementRepository userAchievementRepository;
     private final AchievementProgressMapper progressMapper;
     private final UserAchievementMapper userAchievementMapper;
+    private final MeterRegistry meterRegistry;
 
     public AchievementServiceImpl(AchievementRepository achievementRepository,
                                   UserAchievementRepository userAchievementRepository,
                                   AchievementProgressMapper progressMapper,
-                                  UserAchievementMapper userAchievementMapper) {
+                                  UserAchievementMapper userAchievementMapper,
+                                  MeterRegistry meterRegistry) {
         this.achievementRepository = achievementRepository;
         this.userAchievementRepository = userAchievementRepository;
         this.progressMapper = progressMapper;
         this.userAchievementMapper = userAchievementMapper;
+        this.meterRegistry = meterRegistry;
     }
 
     @Override
+    @Timed(value = "achievement.create.time", description = "Time taken to create an achievement")
     public Achievement createAchievement(Achievement achievement) {
+        meterRegistry.counter("achievement.created.total").increment();
         return achievementRepository.save(achievement);
     }
 
@@ -85,6 +92,7 @@ public class AchievementServiceImpl implements AchievementService {
 
     @Override
     @Transactional(readOnly = true)
+    @Timed(value = "achievement.progress.get.time", description = "Time taken to get user achievement progress")
     public List<AchievementProgressResponse> getUserAchievementProgress(UUID userId) {
         List<Achievement> achievements = achievementRepository.findAll();
         List<UserAchievement> userAchievements = userAchievementRepository.findByUserId(userId);
