@@ -11,21 +11,25 @@ class QuizResponseTest {
     void testGettersAndSetters() {
         QuizResponse response = new QuizResponse();
         UUID id = UUID.randomUUID();
-        List<QuestionResponse> questions = List.of(
-                QuestionResponse.builder()
+        List<QuizQuestionResponse> questions = List.of(
+                QuizQuestionResponse.builder()
                         .id(UUID.randomUUID())
                         .questionText("Sample question")
+                        .options(List.of(QuizOptionResponse.builder()
+                                .id(UUID.randomUUID())
+                                .optionText("Sample option")
+                                .build()))
                         .build()
         );
 
         response.setId(id);
         response.setTitle("Title");
-        response.setContent("Content");
+        response.setCategory("Science");
         response.setQuestions(questions);
 
         assertEquals(id, response.getId());
         assertEquals("Title", response.getTitle());
-        assertEquals("Content", response.getContent());
+        assertEquals("Science", response.getCategory());
         assertEquals(questions, response.getQuestions());
     }
 

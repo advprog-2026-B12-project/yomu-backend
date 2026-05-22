@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.controller;
 
+import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import id.ac.ui.cs.advprog.yomubackend.clan.dto.ApiMessageResponse;
 import id.ac.ui.cs.advprog.yomubackend.clan.dto.LeaderboardEntryResponse;
 import id.ac.ui.cs.advprog.yomubackend.clan.service.LeagueService;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -174,6 +176,25 @@ class LeagueControllerTest {
         assertEquals("Division must not be blank", thrown.getMessage());
 
         verify(leagueService, times(1)).getLeaderboardByDivision(division);
+        verifyNoMoreInteractions(leagueService);
+    }
+
+    @Test
+    void getMyLeaderboard_shouldUseAuthenticatedUser() {
+        User user = new User();
+        UUID userId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+        user.setId(userId);
+        List<LeaderboardEntryResponse> expected = List.of(entry1);
+
+        when(leagueService.getLeaderboardForUser(userId)).thenReturn(expected);
+
+        ResponseEntity<List<LeaderboardEntryResponse>> response =
+                leagueController.getMyLeaderboard(user);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertSame(expected, response.getBody());
+        verify(leagueService).getLeaderboardForUser(userId);
         verifyNoMoreInteractions(leagueService);
     }
 

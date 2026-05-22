@@ -11,7 +11,7 @@ public class SilverScoreProvider implements ClanScoreProvider {
 
     @Override
     public String getDivision() {
-        return "SILVER";
+        return LeagueDivision.SILVER.value();
     }
 
     @Override

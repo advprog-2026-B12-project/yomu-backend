@@ -1,14 +1,19 @@
 package id.ac.ui.cs.advprog.yomubackend.quiz.controller;
 
+import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizResultResponse;
+import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizResponse;
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizSubmitRequest;
+import id.ac.ui.cs.advprog.yomubackend.quiz.dto.ReadingListItemResponse;
+import id.ac.ui.cs.advprog.yomubackend.quiz.mapper.QuizResponseMapper;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Reading;
-import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuizAttemptRepository;
-import id.ac.ui.cs.advprog.yomubackend.quiz.repository.ReadingRepository;
 import id.ac.ui.cs.advprog.yomubackend.quiz.service.QuizService;
+import id.ac.ui.cs.advprog.yomubackend.quiz.service.QuizSessionService;
+import id.ac.ui.cs.advprog.yomubackend.quiz.service.ReadingProgressService;
 import id.ac.ui.cs.advprog.yomubackend.quiz.service.ReadingService;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import java.util.List;
@@ -17,49 +22,66 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/quiz")
+@PreAuthorize("hasRole('PELAJAR')")
 public class QuizController {
 
     private final ReadingService readingService;
     private final QuizService quizService;
-    private final ReadingRepository readingRepository;
-    private final QuizAttemptRepository quizAttemptRepository;
+    private final QuizResponseMapper responseMapper;
+    private final QuizSessionService quizSessionService;
+    private final ReadingProgressService readingProgressService;
 
     public QuizController(ReadingService readingService,
-                          QuizService quizService, ReadingRepository readingRepository, QuizAttemptRepository quizAttemptRepository) {
+                          QuizService quizService,
+                          QuizResponseMapper responseMapper,
+                          QuizSessionService quizSessionService,
+                          ReadingProgressService readingProgressService) {
         this.readingService = readingService;
         this.quizService = quizService;
-        this.readingRepository = readingRepository;
-        this.quizAttemptRepository = quizAttemptRepository;
+        this.responseMapper = responseMapper;
+        this.quizSessionService = quizSessionService;
+        this.readingProgressService = readingProgressService;
     }
 
     @GetMapping("/{readingId}")
-    public Reading getQuiz(@PathVariable UUID readingId) {
-        return readingService.findById(readingId);
+    public QuizResponse getQuiz(@PathVariable UUID readingId,
+                                @AuthenticationPrincipal User user) {
+        UUID userId = requireAuthenticatedUser(user);
+        quizService.ensureNotCompleted(userId, readingId);
+        readingProgressService.ensureOpened(userId, readingId);
+        Reading reading = readingService.findById(readingId);
+        quizSessionService.start(userId, readingId);
+        return responseMapper.toQuizResponse(reading);
     }
 
     @PostMapping("/submit")
-    public ResponseEntity<?> submit(@RequestBody QuizSubmitRequest request) {
-        try {
-            return ResponseEntity.ok(quizService.submit(request));
-        } catch (IllegalStateException e) {
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<QuizResultResponse> submit(@RequestBody QuizSubmitRequest request,
+                                                     @AuthenticationPrincipal User user) {
+        UUID userId = requireAuthenticatedUser(user);
+        return ResponseEntity.ok(quizService.submit(userId, request));
     }
 
     @GetMapping("/all")
-    public List<Reading> getAll() {
-        return readingRepository.findAll();
+    public List<ReadingListItemResponse> getAll(@AuthenticationPrincipal User user) {
+        UUID userId = requireAuthenticatedUser(user);
+        return readingService.findAll().stream()
+                .map(reading -> responseMapper.toReadingListItem(
+                        reading,
+                        quizService.hasCompleted(userId, reading.getId())
+                ))
+                .toList();
     }
 
-    @GetMapping("/status/{userId}/{readingId}")
+    @GetMapping("/status/{readingId}")
     public Map<String, Boolean> getQuizStatus(
-            @PathVariable UUID userId,
-            @PathVariable UUID readingId
+            @PathVariable UUID readingId,
+            @AuthenticationPrincipal User user
     ) {
-        boolean completed =
-                quizAttemptRepository.existsByUserIdAndReadingId(userId, readingId);
+        UUID userId = requireAuthenticatedUser(user);
+        return Map.of("completed", quizService.hasCompleted(userId, readingId));
+    }
 
-        return Map.of("completed", completed);
+    private UUID requireAuthenticatedUser(User user) {
+        return ControllerUtils.requireUserId(user);
     }
 }

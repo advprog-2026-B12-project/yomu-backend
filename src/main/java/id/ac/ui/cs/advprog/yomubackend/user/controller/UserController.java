@@ -2,6 +2,7 @@ package id.ac.ui.cs.advprog.yomubackend.user.controller;
 
 import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import id.ac.ui.cs.advprog.yomubackend.user.dto.UpdateProfileRequest;
+import id.ac.ui.cs.advprog.yomubackend.user.dto.UserProfileResponse;
 import id.ac.ui.cs.advprog.yomubackend.user.service.UserService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -9,6 +10,8 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 import java.util.Map;
 
@@ -47,6 +50,16 @@ public class UserController {
             ));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/{userId}")
+    public ResponseEntity<?> getUserProfile(@PathVariable UUID userId) {
+        try {
+            User user = userService.getUserById(userId);
+            return ResponseEntity.ok(new UserProfileResponse(user.getId(), user.getUsername(), user.getDisplayName()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.notFound().build();
         }
     }
 

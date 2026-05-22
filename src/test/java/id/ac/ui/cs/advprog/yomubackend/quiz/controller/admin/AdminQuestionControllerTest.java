@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.yomubackend.quiz.controller.admin;
 
+import id.ac.ui.cs.advprog.yomubackend.quiz.mapper.QuizResponseMapper;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Question;
 import id.ac.ui.cs.advprog.yomubackend.quiz.service.QuestionService;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class AdminQuestionControllerTest {
 
     QuestionService service = mock(QuestionService.class);
-    MockMvc mvc = MockMvcBuilders.standaloneSetup(new AdminQuestionController(service)).build();
+    MockMvc mvc = MockMvcBuilders.standaloneSetup(new AdminQuestionController(service, new QuizResponseMapper())).build();
 
     @Test
     void testCreateQuestion() throws Exception {
@@ -49,6 +50,27 @@ class AdminQuestionControllerTest {
         mvc.perform(get("/api/admin/questions/reading/" + UUID.randomUUID()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].questionText").value("Question"));
+    }
+
+    @Test
+    void testUpdateQuestion() throws Exception {
+        UUID questionId = UUID.randomUUID();
+
+        Question updated = new Question();
+        updated.setId(questionId);
+        updated.setQuestionText("Updated question?");
+
+        when(service.update(eq(questionId), any())).thenReturn(updated);
+
+        String body = """
+                {"questionText": "Updated question?"}
+                """;
+
+        mvc.perform(put("/api/admin/questions/" + questionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.questionText").value("Updated question?"));
     }
 
     @Test

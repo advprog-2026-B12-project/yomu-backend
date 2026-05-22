@@ -8,6 +8,8 @@ import id.ac.ui.cs.advprog.yomubackend.auth.dto.LoginResponse;
 import id.ac.ui.cs.advprog.yomubackend.auth.dto.GoogleSsoResult;
 import id.ac.ui.cs.advprog.yomubackend.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.yomubackend.security.JwtService;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,6 +29,7 @@ import id.ac.ui.cs.advprog.yomubackend.auth.model.Role;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
@@ -45,6 +48,12 @@ class AuthServiceImplTest {
     @Mock
     private GoogleIdTokenVerifier googleIdTokenVerifier;
 
+    @Mock
+    private MeterRegistry meterRegistry;
+
+    @Mock
+    private Counter mockCounter;
+
     @InjectMocks
     private AuthServiceImpl authService;
 
@@ -53,6 +62,9 @@ class AuthServiceImplTest {
 
     @BeforeEach
     void setUp() {
+        // lenient: not every test exercises a counter-incrementing code path
+        lenient().when(meterRegistry.counter(anyString())).thenReturn(mockCounter);
+
         registerRequest = new RegisterRequest();
         registerRequest.setUsername("ahmad.faiq41");
         registerRequest.setEmail("faiq@kampus.id");

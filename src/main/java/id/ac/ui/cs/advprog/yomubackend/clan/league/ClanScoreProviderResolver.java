@@ -21,7 +21,8 @@ public class ClanScoreProviderResolver {
     }
 
     public ClanScoreProvider resolve(String division) {
-        ClanScoreProvider provider = providerMap.get(division.toUpperCase());
+        LeagueDivision leagueDivision = LeagueDivision.from(division);
+        ClanScoreProvider provider = providerMap.get(leagueDivision.value());
 
         if (provider == null) {
             throw new IllegalArgumentException("Unknown division: " + division);

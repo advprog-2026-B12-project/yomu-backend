@@ -3,6 +3,8 @@ package id.ac.ui.cs.advprog.yomubackend.clan.dto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 @AllArgsConstructor
 public class LeaderboardEntryResponse {
@@ -12,4 +14,6 @@ public class LeaderboardEntryResponse {
     private String division;
     private long memberCount;
     private int score;
+    private double scoreMultiplier;
+    private List<String> activeModifiers;
 }

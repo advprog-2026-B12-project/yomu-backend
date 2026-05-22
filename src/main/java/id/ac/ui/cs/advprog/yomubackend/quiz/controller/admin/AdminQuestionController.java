@@ -2,6 +2,7 @@ package id.ac.ui.cs.advprog.yomubackend.quiz.controller.admin;
 
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuestionRequest;
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuestionResponse;
+import id.ac.ui.cs.advprog.yomubackend.quiz.mapper.QuizResponseMapper;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Question;
 import id.ac.ui.cs.advprog.yomubackend.quiz.service.QuestionService;
 import org.springframework.http.HttpStatus;
@@ -17,9 +18,11 @@ import java.util.UUID;
 public class AdminQuestionController {
 
     private final QuestionService questionService;
+    private final QuizResponseMapper responseMapper;
 
-    public AdminQuestionController(QuestionService questionService) {
+    public AdminQuestionController(QuestionService questionService, QuizResponseMapper responseMapper) {
         this.questionService = questionService;
+        this.responseMapper = responseMapper;
     }
 
     @PostMapping("/{readingId}")
@@ -28,22 +31,21 @@ public class AdminQuestionController {
                                    @RequestBody QuestionRequest request) {
         Question question = new Question();
         question.setQuestionText(request.getQuestionText());
+        return responseMapper.toQuestionResponse(questionService.create(readingId, question));
+    }
 
-        Question saved = questionService.create(readingId, question);
-
-        return QuestionResponse.builder()
-                .id(saved.getId())
-                .questionText(saved.getQuestionText())
-                .build();
+    @PutMapping("/{questionId}")
+    public QuestionResponse update(@PathVariable UUID questionId,
+                                   @RequestBody QuestionRequest request) {
+        Question question = new Question();
+        question.setQuestionText(request.getQuestionText());
+        return responseMapper.toQuestionResponse(questionService.update(questionId, question));
     }
 
     @GetMapping("/reading/{readingId}")
     public List<QuestionResponse> getByReading(@PathVariable UUID readingId) {
         return questionService.findByReading(readingId).stream()
-                .map(q -> QuestionResponse.builder()
-                        .id(q.getId())
-                        .questionText(q.getQuestionText())
-                        .build())
+                .map(responseMapper::toQuestionResponse)
                 .toList();
     }
 

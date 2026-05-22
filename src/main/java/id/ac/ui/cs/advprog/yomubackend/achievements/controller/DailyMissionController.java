@@ -1,20 +1,21 @@
 package id.ac.ui.cs.advprog.yomubackend.achievements.controller;
 
-import id.ac.ui.cs.advprog.yomubackend.achievements.constant.AchievementEvent;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.DailyMissionRequest;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.DailyMissionResponse;
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserDailyMissionResponse;
+import id.ac.ui.cs.advprog.yomubackend.achievements.mapper.DailyMissionMapper;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.DailyMission;
-import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserDailyMission;
 import id.ac.ui.cs.advprog.yomubackend.achievements.service.DailyMissionService;
+import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/daily-missions")
@@ -22,73 +23,59 @@ import java.util.stream.Collectors;
 public class DailyMissionController {
 
     private final DailyMissionService dailyMissionService;
+    private final DailyMissionMapper dailyMissionMapper;
 
-    @PostMapping
-    public ResponseEntity<DailyMissionResponse> createDailyMission(@RequestBody DailyMissionRequest request) {
-        DailyMission mission = mapToEntity(request);
-        DailyMission savedMission = dailyMissionService.createDailyMission(mission);
-        return new ResponseEntity<>(mapToResponse(savedMission), HttpStatus.CREATED);
-    }
-
-    @PutMapping("/{id}")
-    public ResponseEntity<DailyMissionResponse> updateDailyMission(
-            @PathVariable UUID id,
-            @RequestBody DailyMissionRequest request) {
-        DailyMission missionDetails = mapToEntity(request);
-        DailyMission updatedMission = dailyMissionService.updateDailyMission(id, missionDetails);
-        return ResponseEntity.ok(mapToResponse(updatedMission));
-    }
-
-    @GetMapping("/active")
-    public ResponseEntity<List<DailyMissionResponse>> getActiveDailyMissions() {
-        List<DailyMissionResponse> responses = dailyMissionService.getActiveDailyMissions().stream()
-                .map(this::mapToResponse)
+    @GetMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<DailyMissionResponse>> getAllDailyMissions() {
+        List<DailyMissionResponse> responses = dailyMissionService.getAllDailyMissions().stream()
+                .map(dailyMissionMapper::toResponse)
                 .toList();
         return ResponseEntity.ok(responses);
     }
 
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<DailyMissionResponse> createDailyMission(@RequestBody DailyMissionRequest request) {
+        DailyMission savedMission = dailyMissionService.createDailyMission(dailyMissionMapper.toEntity(request));
+        return new ResponseEntity<>(dailyMissionMapper.toResponse(savedMission), HttpStatus.CREATED);
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<DailyMissionResponse> updateDailyMission(
+            @PathVariable UUID id,
+            @RequestBody DailyMissionRequest request) {
+        DailyMission updatedMission = dailyMissionService.updateDailyMission(id, dailyMissionMapper.toEntity(request));
+        return ResponseEntity.ok(dailyMissionMapper.toResponse(updatedMission));
+    }
+
+    @GetMapping("/active")
+    @PreAuthorize("hasRole('PELAJAR')")
+    public ResponseEntity<List<DailyMissionResponse>> getActiveDailyMissions() {
+        List<DailyMissionResponse> responses = dailyMissionService.getActiveDailyMissions().stream()
+                .map(dailyMissionMapper::toResponse)
+                .toList();
+        return ResponseEntity.ok(responses);
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('PELAJAR')")
+    public ResponseEntity<List<UserDailyMissionResponse>> getTodayMissionsWithProgress(
+            @AuthenticationPrincipal User user) {
+        return ResponseEntity.ok(dailyMissionService.getTodayMissionsWithProgress(user.getId()));
+    }
+
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<UserDailyMission>> getUserDailyMissions(@PathVariable UUID userId) {
+    @PreAuthorize("hasRole('PELAJAR')")
+    public ResponseEntity<List<UserDailyMissionResponse>> getUserDailyMissions(@PathVariable UUID userId) {
         return ResponseEntity.ok(dailyMissionService.getUserDailyMissions(userId));
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteDailyMission(@PathVariable UUID id) {
         dailyMissionService.deleteDailyMission(id);
         return ResponseEntity.noContent().build();
-    }
-
-    private DailyMission mapToEntity(DailyMissionRequest request) {
-        DailyMission mission = new DailyMission();
-        mission.setName(request.getName());
-        mission.setDescription(request.getDescription());
-        mission.setMilestone(request.getMilestone() != null ? request.getMilestone() : 1);
-        mission.setEventType(validateAndNormalizeEventType(request.getEventType()));
-        mission.setIsActive(request.getIsActive());
-        return mission;
-    }
-
-    private String validateAndNormalizeEventType(String eventType) {
-        String normalizedEvent = AchievementEvent.normalize(eventType);
-        if (!AchievementEvent.isSupported(normalizedEvent)) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "Invalid eventType. Supported values: " + AchievementEvent.supportedEvents()
-            );
-        }
-        return normalizedEvent;
-    }
-
-    private DailyMissionResponse mapToResponse(DailyMission entity) {
-        DailyMissionResponse response = new DailyMissionResponse();
-        response.setId(entity.getId());
-        response.setName(entity.getName());
-        response.setDescription(entity.getDescription());
-        response.setMilestone(entity.getMilestone());
-        response.setEventType(entity.getEventType());
-        response.setIsActive(entity.getIsActive());
-        response.setCreatedAt(entity.getCreatedAt());
-        response.setUpdatedAt(entity.getUpdatedAt());
-        return response;
     }
 }

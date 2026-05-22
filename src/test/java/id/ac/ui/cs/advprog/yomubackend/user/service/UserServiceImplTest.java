@@ -9,6 +9,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;
@@ -26,6 +27,9 @@ class UserServiceImplTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private UserServiceImpl userService;
@@ -218,6 +222,8 @@ class UserServiceImplTest {
         userService.deleteAccount("ahmadFaiq41");
 
         verify(userRepository, times(1)).delete(user);
+        verify(eventPublisher, times(1))
+                .publishEvent(any(id.ac.ui.cs.advprog.yomubackend.shared.events.auth.UserDeletedEvent.class));
     }
 
     @Test
@@ -229,6 +235,28 @@ class UserServiceImplTest {
 
         assertEquals("User tidak ditemukan!", ex.getMessage());
         verify(userRepository, never()).delete(any(User.class));
+    }
+
+    @Test
+    void getUserById_Success() {
+        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
+
+        User result = userService.getUserById(user.getId());
+
+        assertNotNull(result);
+        assertEquals(user.getId(), result.getId());
+        assertEquals("ahmadFaiq41", result.getUsername());
+    }
+
+    @Test
+    void getUserById_NotFound_ThrowsException() {
+        UUID randomId = UUID.randomUUID();
+        when(userRepository.findById(randomId)).thenReturn(Optional.empty());
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> userService.getUserById(randomId));
+
+        assertEquals("User tidak ditemukan!", ex.getMessage());
     }
 
     @Test

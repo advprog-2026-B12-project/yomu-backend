@@ -19,10 +19,13 @@ public class Reading {
     @Column(nullable = false)
     private String title;
 
+    @Column(nullable = false)
+    private String category;
+
     @Column(nullable = false, columnDefinition = "TEXT")
     private String content;
 
     @JsonManagedReference
-    @OneToMany(mappedBy = "reading", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "reading", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Question> questions;
 }
