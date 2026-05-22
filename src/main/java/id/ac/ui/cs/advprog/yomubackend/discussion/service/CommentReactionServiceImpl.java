@@ -21,20 +21,16 @@ public class CommentReactionServiceImpl implements CommentReactionService {
 
     private final CommentReactionRepository reactionRepository;
     private final CommentRepository commentRepository;
-    private final UserLookup userLookup;
 
     public CommentReactionServiceImpl(CommentReactionRepository reactionRepository,
-            CommentRepository commentRepository,
-            UserLookup userLookup) {
+            CommentRepository commentRepository) {
         this.reactionRepository = reactionRepository;
         this.commentRepository = commentRepository;
-        this.userLookup = userLookup;
     }
 
     @Override
     @Transactional
-    public void addOrUpdateReaction(String username, UUID commentId, ReactionRequest request) {
-        UUID userId = userLookup.resolveUserId(username);
+    public void addOrUpdateReaction(UUID userId, UUID commentId, ReactionRequest request) {
         Comment comment = commentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("Komentar tidak ditemukan!"));
 
@@ -55,8 +51,7 @@ public class CommentReactionServiceImpl implements CommentReactionService {
 
     @Override
     @Transactional
-    public void removeReaction(String username, UUID commentId) {
-        UUID userId = userLookup.resolveUserId(username);
+    public void removeReaction(UUID userId, UUID commentId) {
         reactionRepository.findByCommentIdAndUserId(commentId, userId)
                 .ifPresent(reactionRepository::delete);
     }
@@ -74,8 +69,7 @@ public class CommentReactionServiceImpl implements CommentReactionService {
 
     @Override
     @Transactional(readOnly = true)
-    public ReactionType getUserReaction(String username, UUID commentId) {
-        UUID userId = userLookup.resolveUserId(username);
+    public ReactionType getUserReaction(UUID userId, UUID commentId) {
         return reactionRepository.findByCommentIdAndUserId(commentId, userId)
                 .map(CommentReaction::getReactionType)
                 .orElse(null);
