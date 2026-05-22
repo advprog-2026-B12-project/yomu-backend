@@ -3,6 +3,8 @@ package id.ac.ui.cs.advprog.yomubackend.achievements.controller;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementProgressResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementRequest;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.AchievementResponse;
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.EventTriggerRequest;
+import id.ac.ui.cs.advprog.yomubackend.achievements.dto.EventTriggerResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.dto.UserAchievementResponse;
 import id.ac.ui.cs.advprog.yomubackend.achievements.mapper.AchievementMapper;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.Achievement;
@@ -75,6 +77,23 @@ public class AchievementController {
     @PreAuthorize("hasRole('ADMIN') or authentication.principal.id == #userId")
     public ResponseEntity<List<AchievementProgressResponse>> getUserAchievementProgress(@PathVariable UUID userId) {
         return ResponseEntity.ok(achievementService.getUserAchievementProgress(userId));
+    }
+
+    @PostMapping("/trigger")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PELAJAR')")
+    @Transactional
+    public ResponseEntity<EventTriggerResponse> triggerEvent(@RequestBody EventTriggerRequest request) {
+        String eventType = AchievementEventUtils.validateAndNormalize(request.getEventType());
+        List<AchievementProgressResponse> unlockedAchievements =
+                achievementEventService.processEvent(request.getUserId(), eventType);
+        List<String> completedDailyMissions =
+                dailyMissionService.processDailyEvent(request.getUserId(), eventType);
+
+        EventTriggerResponse response = new EventTriggerResponse();
+        response.setUnlockedAchievements(unlockedAchievements);
+        response.setCompletedDailyMissions(completedDailyMissions);
+
+        return ResponseEntity.ok(response);
     }
 
     @PutMapping("/display/{userAchievementId}")

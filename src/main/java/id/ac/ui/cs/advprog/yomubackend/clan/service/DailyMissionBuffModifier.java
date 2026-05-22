@@ -1,7 +1,7 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.service;
 
+import id.ac.ui.cs.advprog.yomubackend.achievements.repository.UserDailyMissionRepository;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
-import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberDailyMissionCompletionRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -17,17 +17,17 @@ public class DailyMissionBuffModifier implements ClanScoreModifier {
     private static final double DAILY_MISSION_BUFF_MULTIPLIER = 1.2;
     private static final double NEUTRAL_MULTIPLIER = 1.0;
 
-    private final ClanMemberDailyMissionCompletionRepository completionRepository;
+    private final UserDailyMissionRepository userDailyMissionRepository;
     private final Clock clock;
 
     @Autowired
-    public DailyMissionBuffModifier(ClanMemberDailyMissionCompletionRepository completionRepository) {
-        this(completionRepository, Clock.systemDefaultZone());
+    public DailyMissionBuffModifier(UserDailyMissionRepository userDailyMissionRepository) {
+        this(userDailyMissionRepository, Clock.systemDefaultZone());
     }
 
-    DailyMissionBuffModifier(ClanMemberDailyMissionCompletionRepository completionRepository,
+    DailyMissionBuffModifier(UserDailyMissionRepository userDailyMissionRepository,
                              Clock clock) {
-        this.completionRepository = completionRepository;
+        this.userDailyMissionRepository = userDailyMissionRepository;
         this.clock = clock;
     }
 
@@ -44,7 +44,8 @@ public class DailyMissionBuffModifier implements ClanScoreModifier {
 
         LocalDate today = LocalDate.now(clock);
         List<UUID> memberIds = members.stream().map(ClanMember::getUserId).toList();
-        long completedCount = completionRepository.countByUserIdInAndDateAssigned(memberIds, today);
+        long completedCount = userDailyMissionRepository
+                .countByUserIdInAndDateAssignedAndIsCompletedTrue(memberIds, today);
 
         double completionRate = (double) completedCount / members.size();
         return completionRate >= DAILY_MISSION_COMPLETION_THRESHOLD

@@ -14,5 +14,4 @@ public interface ClanJoinRequestRepository extends JpaRepository<ClanJoinRequest
     List<ClanJoinRequest> findByClanAndStatus(Clan clan, ClanJoinRequest.Status status);
     List<ClanJoinRequest> findByUserIdAndStatus(UUID userId, ClanJoinRequest.Status status);
     void deleteByClan(Clan clan);
-    void deleteByUserId(UUID userId);
 }

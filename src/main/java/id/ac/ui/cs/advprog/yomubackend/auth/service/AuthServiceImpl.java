@@ -2,7 +2,6 @@ package id.ac.ui.cs.advprog.yomubackend.auth.service;
 
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
 import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import id.ac.ui.cs.advprog.yomubackend.auth.event.UserLoggedInEvent;
 import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import id.ac.ui.cs.advprog.yomubackend.auth.dto.RegisterRequest;
 import id.ac.ui.cs.advprog.yomubackend.auth.dto.LoginResponse;
@@ -11,11 +10,9 @@ import id.ac.ui.cs.advprog.yomubackend.auth.dto.UserDto;
 import id.ac.ui.cs.advprog.yomubackend.auth.repository.UserRepository;
 import id.ac.ui.cs.advprog.yomubackend.security.JwtService;
 import io.micrometer.core.instrument.MeterRegistry;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.Optional;
 
@@ -27,17 +24,15 @@ public class AuthServiceImpl implements AuthService {
     private final JwtService jwtService;
     private final GoogleIdTokenVerifier googleIdTokenVerifier;
     private final MeterRegistry meterRegistry;
-    private final ApplicationEventPublisher eventPublisher;
 
     public AuthServiceImpl(UserRepository userRepository, PasswordEncoder passwordEncoder,
                            JwtService jwtService, GoogleIdTokenVerifier googleIdTokenVerifier,
-                           MeterRegistry meterRegistry, ApplicationEventPublisher eventPublisher) {
+                           MeterRegistry meterRegistry) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.googleIdTokenVerifier = googleIdTokenVerifier;
         this.meterRegistry = meterRegistry;
-        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -79,7 +74,6 @@ public class AuthServiceImpl implements AuthService {
             String token = generateTokenFor(user);
             UserDto userDto = buildUserDto(user);
             meterRegistry.counter("auth.login.success").increment();
-            eventPublisher.publishEvent(new UserLoggedInEvent(user.getId(), LocalDateTime.now()));
             return LoginResponse.builder()
                     .message("Login berhasil")
                     .token(token)
@@ -117,7 +111,6 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private GoogleSsoResult buildGoogleLoginResponse(User user) {
-        eventPublisher.publishEvent(new UserLoggedInEvent(user.getId(), LocalDateTime.now()));
         return GoogleSsoResult.builder()
                 .needsRegistration(false)
                 .message("Login berhasil")

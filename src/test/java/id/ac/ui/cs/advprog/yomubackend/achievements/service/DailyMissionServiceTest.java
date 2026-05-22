@@ -8,7 +8,6 @@ import id.ac.ui.cs.advprog.yomubackend.achievements.model.DailyMission;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserDailyMission;
 import id.ac.ui.cs.advprog.yomubackend.achievements.repository.DailyMissionRepository;
 import id.ac.ui.cs.advprog.yomubackend.achievements.repository.UserDailyMissionRepository;
-import org.springframework.context.ApplicationEventPublisher;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,9 +37,6 @@ class DailyMissionServiceTest {
 
     @Mock
     private UserDailyMissionMapper userDailyMissionMapper;
-
-    @Mock
-    private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private DailyMissionServiceImpl dailyMissionService;

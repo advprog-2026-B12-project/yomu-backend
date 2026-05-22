@@ -15,12 +15,9 @@ import id.ac.ui.cs.advprog.yomubackend.clan.mapper.ClanMapper;
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanJoinRequestRepository;
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberRepository;
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanRepository;
-import id.ac.ui.cs.advprog.yomubackend.shared.events.clan.ClanDeletedEvent;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,18 +28,15 @@ public class ClanManagementServiceImpl implements ClanManagementService {
     private final ClanMemberRepository clanMemberRepository;
     private final ClanJoinRequestRepository clanJoinRequestRepository;
     private final ClanMapper clanMapper;
-    private final ApplicationEventPublisher eventPublisher;
 
     public ClanManagementServiceImpl(ClanRepository clanRepository,
                                      ClanMemberRepository clanMemberRepository,
                                      ClanJoinRequestRepository clanJoinRequestRepository,
-                                     ClanMapper clanMapper,
-                                     ApplicationEventPublisher eventPublisher) {
+                                     ClanMapper clanMapper) {
         this.clanRepository = clanRepository;
         this.clanMemberRepository = clanMemberRepository;
         this.clanJoinRequestRepository = clanJoinRequestRepository;
         this.clanMapper = clanMapper;
-        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -99,7 +93,6 @@ public class ClanManagementServiceImpl implements ClanManagementService {
         clanMemberRepository.deleteByClan(clan);
         clanJoinRequestRepository.deleteByClan(clan);
         clanRepository.delete(clan);
-        eventPublisher.publishEvent(new ClanDeletedEvent(clan.getId(), clan.getLeaderUserId(), LocalDateTime.now()));
     }
 
     @Override

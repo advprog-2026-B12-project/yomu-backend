@@ -1,6 +1,6 @@
 package id.ac.ui.cs.advprog.yomubackend.quiz.service;
 
-import org.springframework.context.ApplicationEventPublisher;
+import id.ac.ui.cs.advprog.yomubackend.quiz.completion.QuizCompletionProcessor;
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizSubmitRequest;
 import id.ac.ui.cs.advprog.yomubackend.quiz.exception.QuizAlreadyCompletedException;
 import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuizAttemptRepository;
@@ -26,7 +26,7 @@ class QuizServiceImplAlreadyAttemptedTest {
     private QuizAttemptRepository quizAttemptRepository;
 
     @Mock
-    private ApplicationEventPublisher eventPublisher;
+    private QuizCompletionProcessor quizCompletionProcessor;
 
     @Mock
     private ReadingProgressService readingProgressService;
