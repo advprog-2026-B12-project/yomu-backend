@@ -1,6 +1,7 @@
 package id.ac.ui.cs.advprog.yomubackend.achievements.repository;
 
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserDailyMission;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,10 +13,13 @@ import java.util.UUID;
 
 @Repository
 public interface UserDailyMissionRepository extends JpaRepository<UserDailyMission, UUID> {
+    @EntityGraph(attributePaths = {"dailyMission"})
     List<UserDailyMission> findByUserIdAndDateAssigned(UUID userId, LocalDate dateAssigned);
 
+    @EntityGraph(attributePaths = {"dailyMission"})
     Optional<UserDailyMission> findByUserIdAndDailyMissionIdAndDateAssigned(UUID userId, UUID missionId, LocalDate dateAssigned);
 
+    @EntityGraph(attributePaths = {"dailyMission"})
     List<UserDailyMission> findByUserId(UUID userId);
 
     long countByUserIdInAndDateAssignedAndIsCompletedTrue(Collection<UUID> userIds, LocalDate dateAssigned);
