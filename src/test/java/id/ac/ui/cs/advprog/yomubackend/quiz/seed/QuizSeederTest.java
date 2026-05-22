@@ -18,7 +18,7 @@ class QuizSeederTest {
 
         seeder.seed();
 
-        verify(repository, never()).save(any());
+        verify(repository, never()).saveAll(any());
     }
 
     @Test
@@ -27,21 +27,29 @@ class QuizSeederTest {
 
         seeder.seed();
 
-        verify(repository).save(any(Reading.class));
+        verify(repository).saveAll(any());
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void testSeed_DataContent() {
         when(repository.count()).thenReturn(0L);
 
         seeder.seed();
 
-        var captor = org.mockito.ArgumentCaptor.forClass(Reading.class);
-        verify(repository).save(captor.capture());
+        var captor = org.mockito.ArgumentCaptor.forClass(Iterable.class);
+        verify(repository).saveAll(captor.capture());
 
-        Reading saved = captor.getValue();
+        var saved = (java.util.List<Reading>) captor.getValue();
+        assertEquals(4, saved.size());
 
-        assertEquals("The Importance of Sleep", saved.getTitle());
-        assertEquals(2, saved.getQuestions().size());
+        var titles = saved.stream().map(Reading::getTitle).toList();
+        assertTrue(titles.contains("Maraknya Hoaks di Era Digital"));
+        assertTrue(titles.contains("Timnas Indonesia Melaju ke Babak Final"));
+        assertTrue(titles.contains("Kecerdasan Buatan dalam Kehidupan Sehari-hari"));
+        assertTrue(titles.contains("Pentingnya Literasi Informasi di Era Modern"));
+
+        var categories = saved.stream().map(Reading::getCategory).distinct().sorted().toList();
+        assertEquals(java.util.List.of("BERITA", "BUDAYA", "OLAHRAGA", "TEKNOLOGI"), categories);
     }
 }

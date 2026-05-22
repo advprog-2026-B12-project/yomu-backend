@@ -20,7 +20,7 @@ import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/readings")
-@PreAuthorize("hasRole('PELAJAR')")
+@PreAuthorize("hasRole('PELAJAR') or hasRole('ADMIN')")
 public class ReadingController {
 
     private final ReadingService readingService;

@@ -6,6 +6,7 @@ import id.ac.ui.cs.advprog.yomubackend.clan.exception.ClanLeaderCannotLeaveExcep
 import id.ac.ui.cs.advprog.yomubackend.clan.exception.UserNotInClanException;
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -24,13 +25,14 @@ class ClanMemberServiceImplTest {
     private static final UUID MEMBER_ID = UUID.fromString("00000000-0000-0000-0000-000000000002");
 
     @Mock private ClanMemberRepository clanMemberRepository;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     private ClanMemberService service;
     private Clan clan;
 
     @BeforeEach
     void setUp() {
-        service = new ClanMemberServiceImpl(clanMemberRepository);
+        service = new ClanMemberServiceImpl(clanMemberRepository, eventPublisher);
 
         clan = new Clan();
         clan.setId(1L);
