@@ -7,6 +7,8 @@ import id.ac.ui.cs.advprog.yomubackend.achievements.model.DailyMission;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserDailyMission;
 import id.ac.ui.cs.advprog.yomubackend.achievements.repository.DailyMissionRepository;
 import id.ac.ui.cs.advprog.yomubackend.achievements.repository.UserDailyMissionRepository;
+import id.ac.ui.cs.advprog.yomubackend.shared.events.achievements.DailyMissionCompletedEvent;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,13 +26,16 @@ public class DailyMissionServiceImpl implements DailyMissionService {
     private final DailyMissionRepository dailyMissionRepository;
     private final UserDailyMissionRepository userDailyMissionRepository;
     private final UserDailyMissionMapper userDailyMissionMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     public DailyMissionServiceImpl(DailyMissionRepository dailyMissionRepository,
                                    UserDailyMissionRepository userDailyMissionRepository,
-                                   UserDailyMissionMapper userDailyMissionMapper) {
+                                   UserDailyMissionMapper userDailyMissionMapper,
+                                   ApplicationEventPublisher eventPublisher) {
         this.dailyMissionRepository = dailyMissionRepository;
         this.userDailyMissionRepository = userDailyMissionRepository;
         this.userDailyMissionMapper = userDailyMissionMapper;
+        this.eventPublisher = eventPublisher;
     }
 
     @Override
@@ -63,6 +68,7 @@ public class DailyMissionServiceImpl implements DailyMissionService {
                 userProgress.setIsCompleted(true);
                 userProgress.setCompletedAt(LocalDateTime.now());
                 completedMissionNames.add(mission.getName());
+                eventPublisher.publishEvent(new DailyMissionCompletedEvent(userId, today));
             }
 
             userDailyMissionRepository.save(userProgress);

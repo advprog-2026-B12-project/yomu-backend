@@ -1,10 +1,10 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.service;
 
-import id.ac.ui.cs.advprog.yomubackend.achievements.repository.UserDailyMissionRepository;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.Clan;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
-import id.ac.ui.cs.advprog.yomubackend.quiz.model.QuizAttempt;
-import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuizAttemptRepository;
+import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMemberQuizStat;
+import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberDailyMissionCompletionRepository;
+import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberQuizStatRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,18 +38,18 @@ class CompositeClanScoreMultiplierCalculatorTest {
     private static final LocalDateTime CURRENT_WINDOW_START = LocalDateTime.of(2026, 4, 30, 12, 0);
 
     @Mock
-    private UserDailyMissionRepository userDailyMissionRepository;
+    private ClanMemberDailyMissionCompletionRepository completionRepository;
 
     @Mock
-    private QuizAttemptRepository quizAttemptRepository;
+    private ClanMemberQuizStatRepository quizStatRepository;
 
     private CompositeClanScoreMultiplierCalculator calculator;
 
     @BeforeEach
     void setUp() {
         calculator = new CompositeClanScoreMultiplierCalculator(
-                userDailyMissionRepository,
-                quizAttemptRepository,
+                completionRepository,
+                quizStatRepository,
                 FIXED_CLOCK
         );
     }
@@ -82,7 +82,7 @@ class CompositeClanScoreMultiplierCalculatorTest {
     void getActiveModifierNames_shouldReturnBuffName_whenBuffActive() {
         List<ClanMember> members = members(10);
         stubDailyMissionCompletionForFirstMembers(5);
-        when(quizAttemptRepository.findByUserIdInAndCreatedAtBetween(
+        when(quizStatRepository.findByUserIdInAndCompletedAtBetween(
                 anyCollection(), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenReturn(List.of());
 
@@ -95,9 +95,9 @@ class CompositeClanScoreMultiplierCalculatorTest {
     void getActiveModifierNames_shouldReturnDebuffName_whenDebuffActive() {
         List<ClanMember> members = List.of(member(1L));
         stubDailyMissionCompletionForFirstMembers(0);
-        when(quizAttemptRepository.findByUserIdInAndCreatedAtBetween(
+        when(quizStatRepository.findByUserIdInAndCompletedAtBetween(
                 anyCollection(), eq(CURRENT_WINDOW_START), any(LocalDateTime.class)))
-                .thenReturn(List.of(attempt(4, 10)));
+                .thenReturn(List.of(stat(4, 10)));
 
         List<String> names = calculator.getActiveModifierNames(members);
 
@@ -108,7 +108,7 @@ class CompositeClanScoreMultiplierCalculatorTest {
     void calculateMultiplier_shouldApplyDailyMissionBuff_whenCompletionRateMeetsThreshold() {
         List<ClanMember> members = members(10);
         stubDailyMissionCompletionForFirstMembers(5);
-        when(quizAttemptRepository.findByUserIdInAndCreatedAtBetween(
+        when(quizStatRepository.findByUserIdInAndCompletedAtBetween(
                 anyCollection(),
                 any(LocalDateTime.class),
                 any(LocalDateTime.class)
@@ -123,7 +123,7 @@ class CompositeClanScoreMultiplierCalculatorTest {
     void calculateMultiplier_shouldNotApplyDailyMissionBuff_whenCompletionRateBelowThreshold() {
         List<ClanMember> members = members(10);
         stubDailyMissionCompletionForFirstMembers(4);
-        when(quizAttemptRepository.findByUserIdInAndCreatedAtBetween(
+        when(quizStatRepository.findByUserIdInAndCompletedAtBetween(
                 anyCollection(),
                 any(LocalDateTime.class),
                 any(LocalDateTime.class)
@@ -149,11 +149,11 @@ class CompositeClanScoreMultiplierCalculatorTest {
     void calculateMultiplier_shouldApplyAccuracyDebuff_whenCurrentAccuracyIsBelowThreshold() {
         List<ClanMember> members = List.of(member(1L));
         stubDailyMissionCompletionForFirstMembers(0);
-        when(quizAttemptRepository.findByUserIdInAndCreatedAtBetween(
+        when(quizStatRepository.findByUserIdInAndCompletedAtBetween(
                 anyCollection(),
                 eq(CURRENT_WINDOW_START),
                 any(LocalDateTime.class)
-        )).thenReturn(List.of(attempt(4, 10)));
+        )).thenReturn(List.of(stat(4, 10)));
 
         double result = calculator.calculateMultiplier(members);
 
@@ -172,7 +172,7 @@ class CompositeClanScoreMultiplierCalculatorTest {
     }
 
     private void stubDailyMissionCompletionForFirstMembers(int completedCount) {
-        when(userDailyMissionRepository.countByUserIdInAndDateAssignedAndIsCompletedTrue(anyCollection(), eq(TODAY)))
+        when(completionRepository.countByUserIdInAndDateAssigned(anyCollection(), eq(TODAY)))
                 .thenAnswer(invocation -> {
                     Collection<UUID> userIds = invocation.getArgument(0);
                     return userIds.stream()
@@ -186,24 +186,24 @@ class CompositeClanScoreMultiplierCalculatorTest {
             int previousTotal,
             int currentScore,
             int currentTotal) {
-        when(quizAttemptRepository.findByUserIdInAndCreatedAtBetween(
+        when(quizStatRepository.findByUserIdInAndCompletedAtBetween(
                 anyCollection(),
                 any(LocalDateTime.class),
                 any(LocalDateTime.class)
         )).thenAnswer(invocation -> {
             LocalDateTime start = invocation.getArgument(1);
             if (CURRENT_WINDOW_START.equals(start)) {
-                return List.of(attempt(currentScore, currentTotal));
+                return List.of(stat(currentScore, currentTotal));
             }
-            return List.of(attempt(previousScore, previousTotal));
+            return List.of(stat(previousScore, previousTotal));
         });
     }
 
-    private QuizAttempt attempt(int score, int total) {
-        QuizAttempt attempt = new QuizAttempt();
-        attempt.setScore(score);
-        attempt.setTotal(total);
-        return attempt;
+    private ClanMemberQuizStat stat(int score, int total) {
+        ClanMemberQuizStat s = new ClanMemberQuizStat();
+        s.setScore(score);
+        s.setTotal(total);
+        return s;
     }
 
     private List<ClanMember> members(long count) {
