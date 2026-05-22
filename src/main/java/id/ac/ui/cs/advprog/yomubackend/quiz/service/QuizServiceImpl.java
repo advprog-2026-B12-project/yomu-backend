@@ -27,9 +27,9 @@ public class QuizServiceImpl implements QuizService {
     private final ReadingProgressService readingProgressService;
 
     public QuizServiceImpl(ReadingService readingService,
-                           QuizAttemptRepository quizAttemptRepository,
-                           QuizCompletionProcessor quizCompletionProcessor,
-                           ReadingProgressService readingProgressService) {
+            QuizAttemptRepository quizAttemptRepository,
+            QuizCompletionProcessor quizCompletionProcessor,
+            ReadingProgressService readingProgressService) {
         this.readingService = readingService;
         this.quizAttemptRepository = quizAttemptRepository;
         this.quizCompletionProcessor = quizCompletionProcessor;
@@ -63,8 +63,7 @@ public class QuizServiceImpl implements QuizService {
                 reading.getId(),
                 correctAnswers,
                 totalQuestions,
-                completedAt
-        ));
+                completedAt));
 
         return new QuizResultResponse(correctAnswers, totalQuestions);
     }

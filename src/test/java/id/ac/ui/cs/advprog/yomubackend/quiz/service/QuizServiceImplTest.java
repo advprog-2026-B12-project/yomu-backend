@@ -213,8 +213,7 @@ class QuizServiceImplTest {
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> quizService.submit(null, request)
-        );
+                () -> quizService.submit(null, request));
 
         assertEquals("User ID is required", exception.getMessage());
     }
@@ -225,8 +224,7 @@ class QuizServiceImplTest {
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> quizService.submit(userId, request)
-        );
+                () -> quizService.submit(userId, request));
 
         assertEquals("Reading ID is required", exception.getMessage());
     }
