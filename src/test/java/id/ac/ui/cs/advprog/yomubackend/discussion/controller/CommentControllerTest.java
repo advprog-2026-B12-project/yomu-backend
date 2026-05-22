@@ -13,6 +13,7 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
+import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
 import id.ac.ui.cs.advprog.yomubackend.discussion.controller.CommentController;
 import id.ac.ui.cs.advprog.yomubackend.discussion.dto.CommentRequest;
 import id.ac.ui.cs.advprog.yomubackend.discussion.dto.CommentResponse;
@@ -39,40 +40,37 @@ class CommentControllerTest {
     private CommentController commentController;
 
     private final UUID readingId = UUID.randomUUID();
-    private final String username = "reader01";
+    private final UUID userId = UUID.randomUUID();
+    private User user;
 
     @BeforeEach
-    void setUpAuthentication() {
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(username, "N/A"));
-    }
-
-    @AfterEach
-    void clearAuthentication() {
-        SecurityContextHolder.clearContext();
+    void setUp() {
+        user = new User();
+        user.setId(userId);
+        user.setUsername("reader01");
     }
 
     @Test
     void getComments_ReturnsListFromService() {
         CommentResponse resp = new CommentResponse();
         resp.setId(UUID.randomUUID());
-        when(commentService.getCommentsByReadingId(readingId, username)).thenReturn(List.of(resp));
+        when(commentService.getCommentsByReadingId(readingId, userId)).thenReturn(List.of(resp));
 
-        ResponseEntity<?> response = commentController.getCommentsByReadingId(readingId);
+        ResponseEntity<?> response = commentController.getCommentsByReadingId(readingId, user);
 
         assertEquals(HttpStatus.OK.value(), response.getStatusCode().value());
         assertNotNull(response.getBody());
-        verify(commentService, times(1)).getCommentsByReadingId(readingId, username);
+        verify(commentService, times(1)).getCommentsByReadingId(readingId, userId);
     }
 
     @Test
     void getComments_EmptyList_ReturnsOkWithEmpty() {
-        when(commentService.getCommentsByReadingId(readingId, username)).thenReturn(Collections.emptyList());
+        when(commentService.getCommentsByReadingId(readingId, userId)).thenReturn(Collections.emptyList());
 
-        ResponseEntity<?> response = commentController.getCommentsByReadingId(readingId);
+        ResponseEntity<?> response = commentController.getCommentsByReadingId(readingId, user);
 
         assertEquals(HttpStatus.OK.value(), response.getStatusCode().value());
-        verify(commentService, times(1)).getCommentsByReadingId(readingId, username);
+        verify(commentService, times(1)).getCommentsByReadingId(readingId, userId);
     }
 
     @Test
@@ -80,23 +78,23 @@ class CommentControllerTest {
         CommentRequest req = new CommentRequest();
         req.setContent("hello");
         CommentResponse resp = new CommentResponse();
-        when(commentService.createComment(eq(username), eq(readingId), any(CommentRequest.class)))
+        when(commentService.createComment(eq(userId), eq(readingId), any(CommentRequest.class)))
                 .thenReturn(resp);
 
-        ResponseEntity<?> response = commentController.createComment(readingId, req);
+        ResponseEntity<?> response = commentController.createComment(readingId, req, user);
 
         assertEquals(HttpStatus.CREATED.value(), response.getStatusCode().value());
-        verify(commentService, times(1)).createComment(eq(username), eq(readingId), any(CommentRequest.class));
+        verify(commentService, times(1)).createComment(eq(userId), eq(readingId), any(CommentRequest.class));
     }
 
     @Test
     void createComment_ServiceThrowsIllegalArg_ReturnsBadRequest() {
         CommentRequest req = new CommentRequest();
         req.setContent(" ");
-        when(commentService.createComment(eq(username), eq(readingId), any(CommentRequest.class)))
+        when(commentService.createComment(eq(userId), eq(readingId), any(CommentRequest.class)))
                 .thenThrow(new IllegalArgumentException("Isi komentar tidak boleh kosong!"));
 
-        ResponseEntity<?> response = commentController.createComment(readingId, req);
+        ResponseEntity<?> response = commentController.createComment(readingId, req, user);
 
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
         assertEquals("Isi komentar tidak boleh kosong!",
@@ -109,14 +107,14 @@ class CommentControllerTest {
         CommentRequest req = new CommentRequest();
         req.setContent("reply");
         CommentResponse resp = new CommentResponse();
-        when(commentService.replyToComment(eq(username), eq(readingId), eq(parentId), any(CommentRequest.class)))
+        when(commentService.replyToComment(eq(userId), eq(readingId), eq(parentId), any(CommentRequest.class)))
                 .thenReturn(resp);
 
-        ResponseEntity<?> response = commentController.replyToComment(readingId, parentId, req);
+        ResponseEntity<?> response = commentController.replyToComment(readingId, parentId, req, user);
 
         assertEquals(HttpStatus.CREATED.value(), response.getStatusCode().value());
         verify(commentService, times(1))
-                .replyToComment(eq(username), eq(readingId), eq(parentId), any(CommentRequest.class));
+                .replyToComment(eq(userId), eq(readingId), eq(parentId), any(CommentRequest.class));
     }
 
     @Test
@@ -124,10 +122,10 @@ class CommentControllerTest {
         UUID parentId = UUID.randomUUID();
         CommentRequest req = new CommentRequest();
         req.setContent("reply");
-        when(commentService.replyToComment(eq(username), eq(readingId), eq(parentId), any(CommentRequest.class)))
+        when(commentService.replyToComment(eq(userId), eq(readingId), eq(parentId), any(CommentRequest.class)))
                 .thenThrow(new IllegalArgumentException("Komentar induk tidak ditemukan!"));
 
-        ResponseEntity<?> response = commentController.replyToComment(readingId, parentId, req);
+        ResponseEntity<?> response = commentController.replyToComment(readingId, parentId, req, user);
 
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
     }
@@ -138,10 +136,10 @@ class CommentControllerTest {
         CommentRequest req = new CommentRequest();
         req.setContent("updated");
         CommentResponse resp = new CommentResponse();
-        when(commentService.updateComment(eq(username), eq(readingId), eq(commentId), any(CommentRequest.class)))
+        when(commentService.updateComment(eq(userId), eq(readingId), eq(commentId), any(CommentRequest.class)))
                 .thenReturn(resp);
 
-        ResponseEntity<?> response = commentController.updateComment(readingId, commentId, req);
+        ResponseEntity<?> response = commentController.updateComment(readingId, commentId, req, user);
 
         assertEquals(HttpStatus.OK.value(), response.getStatusCode().value());
     }
@@ -151,10 +149,10 @@ class CommentControllerTest {
         UUID commentId = UUID.randomUUID();
         CommentRequest req = new CommentRequest();
         req.setContent("updated");
-        when(commentService.updateComment(eq(username), eq(readingId), eq(commentId), any(CommentRequest.class)))
+        when(commentService.updateComment(eq(userId), eq(readingId), eq(commentId), any(CommentRequest.class)))
                 .thenThrow(new AccessDeniedException("Anda tidak memiliki akses untuk komentar ini!"));
 
-        ResponseEntity<?> response = commentController.updateComment(readingId, commentId, req);
+        ResponseEntity<?> response = commentController.updateComment(readingId, commentId, req, user);
 
         assertEquals(HttpStatus.FORBIDDEN.value(), response.getStatusCode().value());
     }
@@ -164,10 +162,10 @@ class CommentControllerTest {
         UUID commentId = UUID.randomUUID();
         CommentRequest req = new CommentRequest();
         req.setContent("updated");
-        when(commentService.updateComment(eq(username), eq(readingId), eq(commentId), any(CommentRequest.class)))
+        when(commentService.updateComment(eq(userId), eq(readingId), eq(commentId), any(CommentRequest.class)))
                 .thenThrow(new IllegalArgumentException("Komentar tidak ditemukan!"));
 
-        ResponseEntity<?> response = commentController.updateComment(readingId, commentId, req);
+        ResponseEntity<?> response = commentController.updateComment(readingId, commentId, req, user);
 
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
     }
@@ -175,21 +173,21 @@ class CommentControllerTest {
     @Test
     void deleteComment_Success_ReturnsNoContent() {
         UUID commentId = UUID.randomUUID();
-        doNothing().when(commentService).softDeleteComment(username, readingId, commentId);
+        doNothing().when(commentService).softDeleteComment(userId, readingId, commentId);
 
-        ResponseEntity<?> response = commentController.deleteComment(readingId, commentId);
+        ResponseEntity<?> response = commentController.deleteComment(readingId, commentId, user);
 
         assertEquals(HttpStatus.NO_CONTENT.value(), response.getStatusCode().value());
-        verify(commentService, times(1)).softDeleteComment(username, readingId, commentId);
+        verify(commentService, times(1)).softDeleteComment(userId, readingId, commentId);
     }
 
     @Test
     void deleteComment_NotAuthor_ReturnsForbidden() {
         UUID commentId = UUID.randomUUID();
         doThrow(new AccessDeniedException("Anda tidak memiliki akses untuk komentar ini!"))
-                .when(commentService).softDeleteComment(username, readingId, commentId);
+                .when(commentService).softDeleteComment(userId, readingId, commentId);
 
-        ResponseEntity<?> response = commentController.deleteComment(readingId, commentId);
+        ResponseEntity<?> response = commentController.deleteComment(readingId, commentId, user);
 
         assertEquals(HttpStatus.FORBIDDEN.value(), response.getStatusCode().value());
     }
@@ -198,9 +196,9 @@ class CommentControllerTest {
     void deleteComment_NotFound_ReturnsBadRequest() {
         UUID commentId = UUID.randomUUID();
         doThrow(new IllegalArgumentException("Komentar tidak ditemukan!"))
-                .when(commentService).softDeleteComment(username, readingId, commentId);
+                .when(commentService).softDeleteComment(userId, readingId, commentId);
 
-        ResponseEntity<?> response = commentController.deleteComment(readingId, commentId);
+        ResponseEntity<?> response = commentController.deleteComment(readingId, commentId, user);
 
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
     }
@@ -208,31 +206,30 @@ class CommentControllerTest {
     @Test
     void adminDeleteComment_Success_ReturnsNoContent() {
         UUID commentId = UUID.randomUUID();
-        doNothing().when(commentService).adminDeleteComment(username, commentId);
+        doNothing().when(commentService).adminDeleteComment(userId, commentId);
 
-        ResponseEntity<?> response = commentController.adminDeleteComment(commentId);
+        ResponseEntity<?> response = commentController.adminDeleteComment(commentId, user);
 
         assertEquals(HttpStatus.NO_CONTENT.value(), response.getStatusCode().value());
-        verify(commentService, times(1)).adminDeleteComment(username, commentId);
+        verify(commentService, times(1)).adminDeleteComment(userId, commentId);
     }
 
     @Test
     void adminDeleteComment_NotFound_ReturnsBadRequest() {
         UUID commentId = UUID.randomUUID();
         doThrow(new IllegalArgumentException("Komentar tidak ditemukan!"))
-                .when(commentService).adminDeleteComment(username, commentId);
+                .when(commentService).adminDeleteComment(userId, commentId);
 
-        ResponseEntity<?> response = commentController.adminDeleteComment(commentId);
+        ResponseEntity<?> response = commentController.adminDeleteComment(commentId, user);
 
         assertEquals(HttpStatus.BAD_REQUEST.value(), response.getStatusCode().value());
     }
 
     @Test
     void getComments_WithNullAuth_PassesNullUsernameToService() {
-        SecurityContextHolder.clearContext();
         when(commentService.getCommentsByReadingId(readingId, null)).thenReturn(Collections.emptyList());
 
-        ResponseEntity<?> response = commentController.getCommentsByReadingId(readingId);
+        ResponseEntity<?> response = commentController.getCommentsByReadingId(readingId, null);
 
         assertEquals(HttpStatus.OK.value(), response.getStatusCode().value());
         verify(commentService).getCommentsByReadingId(readingId, null);

@@ -8,11 +8,11 @@ import id.ac.ui.cs.advprog.yomubackend.discussion.entity.ReactionType;
 
 public interface CommentReactionService {
 
-    void addOrUpdateReaction(String username, UUID commentId, ReactionRequest request);
+    void addOrUpdateReaction(UUID userId, UUID commentId, ReactionRequest request);
 
-    void removeReaction(String username, UUID commentId);
+    void removeReaction(UUID userId, UUID commentId);
 
     Map<ReactionType, Integer> getReactionCounts(UUID commentId);
 
-    ReactionType getUserReaction(String username, UUID commentId);
+    ReactionType getUserReaction(UUID userId, UUID commentId);
 }

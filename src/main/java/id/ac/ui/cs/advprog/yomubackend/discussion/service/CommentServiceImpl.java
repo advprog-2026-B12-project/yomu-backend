@@ -22,39 +22,34 @@ public class CommentServiceImpl implements CommentService {
 
     private final CommentRepository commentRepository;
     private final ReadingRepository readingRepository;
-    private final UserLookup userLookup;
     private final CommentReactionService reactionService;
 
     public CommentServiceImpl(CommentRepository commentRepository,
             ReadingRepository readingRepository,
-            UserLookup userLookup,
             CommentReactionService reactionService) {
         this.commentRepository = commentRepository;
         this.readingRepository = readingRepository;
-        this.userLookup = userLookup;
         this.reactionService = reactionService;
     }
 
     @Override
     @Transactional
-    public CommentResponse createComment(String username, UUID readingId, CommentRequest request) {
+    public CommentResponse createComment(UUID userId, UUID readingId, CommentRequest request) {
         validateContent(request);
-        UUID authorId = userLookup.resolveUserId(username);
         if (!readingRepository.existsById(readingId)) {
             throw new IllegalArgumentException("Reading tidak ditemukan!");
         }
 
-        Comment comment = newBaseComment(readingId, authorId, request.getContent().trim());
+        Comment comment = newBaseComment(readingId, userId, request.getContent().trim());
         Comment saved = commentRepository.save(comment);
         return CommentResponse.fromEntity(saved, Collections.emptyList());
     }
 
     @Override
     @Transactional
-    public CommentResponse replyToComment(String username, UUID readingId, UUID parentCommentId,
+    public CommentResponse replyToComment(UUID userId, UUID readingId, UUID parentCommentId,
             CommentRequest request) {
         validateContent(request);
-        UUID authorId = userLookup.resolveUserId(username);
 
         Comment parent = commentRepository.findById(parentCommentId)
                 .orElseThrow(() -> new IllegalArgumentException("Komentar induk tidak ditemukan!"));
@@ -71,7 +66,7 @@ public class CommentServiceImpl implements CommentService {
             throw new IllegalArgumentException("Balasan komentar maksimal 3 tingkat!");
         }
 
-        Comment reply = newBaseComment(readingId, authorId, request.getContent().trim());
+        Comment reply = newBaseComment(readingId, userId, request.getContent().trim());
         reply.setParent(parent);
         Comment saved = commentRepository.save(reply);
         return CommentResponse.fromEntity(saved, Collections.emptyList());
@@ -79,12 +74,12 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional(readOnly = true)
-    public List<CommentResponse> getCommentsByReadingId(UUID readingId, String username) {
+    public List<CommentResponse> getCommentsByReadingId(UUID readingId, UUID userId) {
         List<Comment> all = commentRepository.findByReadingIdOrderByCreatedAtAsc(readingId);
-        return assembleTree(all, username);
+        return assembleTree(all, userId);
     }
 
-    private List<CommentResponse> assembleTree(List<Comment> all, String username) {
+    private List<CommentResponse> assembleTree(List<Comment> all, UUID userId) {
         Map<UUID, List<Comment>> childrenByParent = new HashMap<>();
         List<Comment> topLevel = new ArrayList<>();
         for (Comment c : all) {
@@ -100,38 +95,37 @@ public class CommentServiceImpl implements CommentService {
         for (Comment top : topLevel) {
             if (top.isDeleted())
                 continue;
-            result.add(buildNode(top, childrenByParent, username, 0));
+            result.add(buildNode(top, childrenByParent, userId, 0));
         }
         return result;
     }
 
     private CommentResponse buildNode(Comment comment, Map<UUID, List<Comment>> childrenByParent,
-            String username, int depth) {
+            UUID userId, int depth) {
         List<Comment> children = childrenByParent.getOrDefault(comment.getId(), Collections.emptyList());
         List<CommentResponse> childResponses = new ArrayList<>();
         if (depth < 2) {
             for (Comment child : children) {
                 if (child.isDeleted())
                     continue;
-                childResponses.add(buildNode(child, childrenByParent, username, depth + 1));
+                childResponses.add(buildNode(child, childrenByParent, userId, depth + 1));
             }
         }
         CommentResponse response = CommentResponse.fromEntity(comment, childResponses);
         response.setReactionCounts(reactionService.getReactionCounts(comment.getId()));
-        if (username != null) {
-            response.setMyReaction(reactionService.getUserReaction(username, comment.getId()));
+        if (userId != null) {
+            response.setMyReaction(reactionService.getUserReaction(userId, comment.getId()));
         }
         return response;
     }
 
     @Override
     @Transactional
-    public CommentResponse updateComment(String username, UUID readingId, UUID commentId,
+    public CommentResponse updateComment(UUID userId, UUID readingId, UUID commentId,
             CommentRequest request) {
         validateContent(request);
-        UUID currentUserId = userLookup.resolveUserId(username);
         Comment existing = loadActiveCommentForReading(commentId, readingId);
-        requireOwnership(existing, currentUserId);
+        requireOwnership(existing, userId);
 
         existing.setContent(request.getContent().trim());
         LocalDateTime now = LocalDateTime.now();
@@ -144,14 +138,13 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public void softDeleteComment(String username, UUID readingId, UUID commentId) {
-        UUID currentUserId = userLookup.resolveUserId(username);
+    public void softDeleteComment(UUID userId, UUID readingId, UUID commentId) {
         Comment existing = loadActiveCommentForReading(commentId, readingId);
-        requireOwnership(existing, currentUserId);
+        requireOwnership(existing, userId);
 
         LocalDateTime now = LocalDateTime.now();
         existing.setDeleted(true);
-        existing.setDeletedBy(currentUserId);
+        existing.setDeletedBy(userId);
         existing.setDeletedAt(now);
         existing.setUpdatedAt(now);
 
@@ -160,8 +153,7 @@ public class CommentServiceImpl implements CommentService {
 
     @Override
     @Transactional
-    public void adminDeleteComment(String username, UUID commentId) {
-        UUID adminId = userLookup.resolveUserId(username);
+    public void adminDeleteComment(UUID adminId, UUID commentId) {
         Comment existing = commentRepository.findById(commentId)
                 .orElseThrow(() -> new IllegalArgumentException("Komentar tidak ditemukan!"));
         if (existing.isDeleted()) {
