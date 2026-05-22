@@ -1,8 +1,8 @@
-package id.ac.ui.cs.advprog.yomubackend.achievements.listener;
+package id.ac.ui.cs.advprog.yomubackend.achievements.integration;
 
 import id.ac.ui.cs.advprog.yomubackend.achievements.constant.AchievementEvent;
 import id.ac.ui.cs.advprog.yomubackend.achievements.service.AchievementEventService;
-import id.ac.ui.cs.advprog.yomubackend.shared.events.clan.ClanPromotionEvent;
+import id.ac.ui.cs.advprog.yomubackend.clan.completion.ClanPromotion;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -11,20 +11,20 @@ import java.util.UUID;
 
 import static org.mockito.Mockito.*;
 
-class ClanPromotionEventListenerTest {
+class ClanPromotionAchievementProcessorTest {
 
     private final AchievementEventService achievementEventService = mock(AchievementEventService.class);
-    private final ClanPromotionEventListener listener =
-            new ClanPromotionEventListener(achievementEventService);
+    private final ClanPromotionAchievementProcessor processor =
+            new ClanPromotionAchievementProcessor(achievementEventService);
 
     @Test
-    void handleClanPromotion_triggersEventForEachMember() {
+    void processPromotion_triggersEventForEachMember() {
         UUID member1 = UUID.randomUUID();
         UUID member2 = UUID.randomUUID();
 
-        ClanPromotionEvent event = new ClanPromotionEvent(1L, List.of(member1, member2), "GOLD", LocalDateTime.now());
+        ClanPromotion promotion = new ClanPromotion(1L, List.of(member1, member2), "GOLD", LocalDateTime.now());
 
-        listener.handleClanPromotion(event);
+        processor.processPromotion(promotion);
 
         verify(achievementEventService).processEvent(member1, AchievementEvent.CLAN_PROMOTION);
         verify(achievementEventService).processEvent(member2, AchievementEvent.CLAN_PROMOTION);
@@ -32,10 +32,10 @@ class ClanPromotionEventListenerTest {
     }
 
     @Test
-    void handleClanPromotion_noMembers_noInteractions() {
-        ClanPromotionEvent event = new ClanPromotionEvent(1L, List.of(), "SILVER", LocalDateTime.now());
+    void processPromotion_noMembers_noInteractions() {
+        ClanPromotion promotion = new ClanPromotion(1L, List.of(), "SILVER", LocalDateTime.now());
 
-        listener.handleClanPromotion(event);
+        processor.processPromotion(promotion);
 
         verifyNoInteractions(achievementEventService);
     }

@@ -1,33 +1,34 @@
-package id.ac.ui.cs.advprog.yomubackend.achievements.listener;
+package id.ac.ui.cs.advprog.yomubackend.achievements.integration;
 
 import id.ac.ui.cs.advprog.yomubackend.achievements.constant.AchievementEvent;
 import id.ac.ui.cs.advprog.yomubackend.achievements.service.AchievementEventService;
 import id.ac.ui.cs.advprog.yomubackend.achievements.service.DailyMissionService;
-import id.ac.ui.cs.advprog.yomubackend.shared.events.quiz.QuizFinishedEvent;
+import id.ac.ui.cs.advprog.yomubackend.quiz.completion.QuizCompletion;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
 import java.util.UUID;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
-class QuizFinishedEventListenerTest {
+class QuizCompletionAchievementProcessorTest {
 
     private final AchievementEventService achievementEventService = mock(AchievementEventService.class);
     private final DailyMissionService dailyMissionService = mock(DailyMissionService.class);
-    private final QuizFinishedEventListener listener =
-            new QuizFinishedEventListener(achievementEventService, dailyMissionService);
+    private final QuizCompletionAchievementProcessor processor =
+            new QuizCompletionAchievementProcessor(achievementEventService, dailyMissionService);
 
     @Test
-    void handleQuizFinished_processesReadingAndQuizEvents() {
+    void processCompletion_processesReadingAndQuizEvents() {
         UUID userId = UUID.randomUUID();
 
-        listener.handleQuizFinished(new QuizFinishedEvent(
+        processor.processCompletion(new QuizCompletion(
                 userId,
                 UUID.randomUUID(),
                 1,
                 2,
-                false,
                 LocalDateTime.now()
         ));
 
@@ -40,15 +41,14 @@ class QuizFinishedEventListenerTest {
     }
 
     @Test
-    void handleQuizFinished_processesPerfectScoreEvent() {
+    void processCompletion_processesPerfectScoreEvent() {
         UUID userId = UUID.randomUUID();
 
-        listener.handleQuizFinished(new QuizFinishedEvent(
+        processor.processCompletion(new QuizCompletion(
                 userId,
                 UUID.randomUUID(),
                 2,
                 2,
-                true,
                 LocalDateTime.now()
         ));
 
