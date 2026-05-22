@@ -102,8 +102,6 @@ public class CommentServiceImpl implements CommentService {
         }
         List<CommentResponse> result = new ArrayList<>();
         for (Comment top : topLevel) {
-            if (top.isDeleted())
-                continue;
             result.add(buildNode(top, childrenByParent, userId, 0, bulkCounts, bulkUserReactions));
         }
         return result;
@@ -117,13 +115,14 @@ public class CommentServiceImpl implements CommentService {
         List<CommentResponse> childResponses = new ArrayList<>();
         if (depth < 2) {
             for (Comment child : children) {
-                if (child.isDeleted())
-                    continue;
                 childResponses
                         .add(buildNode(child, childrenByParent, userId, depth + 1, bulkCounts, bulkUserReactions));
             }
         }
         CommentResponse response = CommentResponse.fromEntity(comment, childResponses);
+        if (response.isDeleted()) {
+            response.setContent("Komentar telah dihapus");
+        }
         response.setReactionCounts(bulkCounts.getOrDefault(comment.getId(), Collections.emptyMap()));
         if (userId != null) {
             response.setMyReaction(bulkUserReactions.get(comment.getId()));
