@@ -27,6 +27,7 @@ class QuizFinishedEventListenerTest {
                 UUID.randomUUID(),
                 1,
                 2,
+                false,
                 LocalDateTime.now()
         ));
 
@@ -47,6 +48,7 @@ class QuizFinishedEventListenerTest {
                 UUID.randomUUID(),
                 2,
                 2,
+                true,
                 LocalDateTime.now()
         ));
 
