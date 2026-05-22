@@ -76,10 +76,19 @@ public class CommentServiceImpl implements CommentService {
     @Transactional(readOnly = true)
     public List<CommentResponse> getCommentsByReadingId(UUID readingId, UUID userId) {
         List<Comment> all = commentRepository.findByReadingIdOrderByCreatedAtAsc(readingId);
-        return assembleTree(all, userId);
+
+        List<UUID> commentIds = all.stream().map(Comment::getId).toList();
+        Map<UUID, Map<id.ac.ui.cs.advprog.yomubackend.discussion.entity.ReactionType, Integer>> bulkCounts = reactionService
+                .getBulkReactionCounts(commentIds);
+        Map<UUID, id.ac.ui.cs.advprog.yomubackend.discussion.entity.ReactionType> bulkUserReactions = reactionService
+                .getBulkUserReactions(userId, commentIds);
+
+        return assembleTree(all, userId, bulkCounts, bulkUserReactions);
     }
 
-    private List<CommentResponse> assembleTree(List<Comment> all, UUID userId) {
+    private List<CommentResponse> assembleTree(List<Comment> all, UUID userId,
+            Map<UUID, Map<id.ac.ui.cs.advprog.yomubackend.discussion.entity.ReactionType, Integer>> bulkCounts,
+            Map<UUID, id.ac.ui.cs.advprog.yomubackend.discussion.entity.ReactionType> bulkUserReactions) {
         Map<UUID, List<Comment>> childrenByParent = new HashMap<>();
         List<Comment> topLevel = new ArrayList<>();
         for (Comment c : all) {
@@ -95,26 +104,29 @@ public class CommentServiceImpl implements CommentService {
         for (Comment top : topLevel) {
             if (top.isDeleted())
                 continue;
-            result.add(buildNode(top, childrenByParent, userId, 0));
+            result.add(buildNode(top, childrenByParent, userId, 0, bulkCounts, bulkUserReactions));
         }
         return result;
     }
 
     private CommentResponse buildNode(Comment comment, Map<UUID, List<Comment>> childrenByParent,
-            UUID userId, int depth) {
+            UUID userId, int depth,
+            Map<UUID, Map<id.ac.ui.cs.advprog.yomubackend.discussion.entity.ReactionType, Integer>> bulkCounts,
+            Map<UUID, id.ac.ui.cs.advprog.yomubackend.discussion.entity.ReactionType> bulkUserReactions) {
         List<Comment> children = childrenByParent.getOrDefault(comment.getId(), Collections.emptyList());
         List<CommentResponse> childResponses = new ArrayList<>();
         if (depth < 2) {
             for (Comment child : children) {
                 if (child.isDeleted())
                     continue;
-                childResponses.add(buildNode(child, childrenByParent, userId, depth + 1));
+                childResponses
+                        .add(buildNode(child, childrenByParent, userId, depth + 1, bulkCounts, bulkUserReactions));
             }
         }
         CommentResponse response = CommentResponse.fromEntity(comment, childResponses);
-        response.setReactionCounts(reactionService.getReactionCounts(comment.getId()));
+        response.setReactionCounts(bulkCounts.getOrDefault(comment.getId(), Collections.emptyMap()));
         if (userId != null) {
-            response.setMyReaction(reactionService.getUserReaction(userId, comment.getId()));
+            response.setMyReaction(bulkUserReactions.get(comment.getId()));
         }
         return response;
     }

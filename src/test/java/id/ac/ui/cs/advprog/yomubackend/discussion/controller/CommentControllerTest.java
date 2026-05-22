@@ -1,6 +1,5 @@
 package id.ac.ui.cs.advprog.yomubackend.discussion.controller;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,11 +9,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import id.ac.ui.cs.advprog.yomubackend.auth.model.User;
-import id.ac.ui.cs.advprog.yomubackend.discussion.controller.CommentController;
 import id.ac.ui.cs.advprog.yomubackend.discussion.dto.CommentRequest;
 import id.ac.ui.cs.advprog.yomubackend.discussion.dto.CommentResponse;
 import id.ac.ui.cs.advprog.yomubackend.discussion.service.CommentService;

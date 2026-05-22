@@ -3,8 +3,6 @@ package id.ac.ui.cs.advprog.yomubackend.discussion.entity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import id.ac.ui.cs.advprog.yomubackend.discussion.entity.Comment;
-
 import java.time.LocalDateTime;
 import java.util.UUID;
 

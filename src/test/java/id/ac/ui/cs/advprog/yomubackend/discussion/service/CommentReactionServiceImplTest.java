@@ -139,6 +139,13 @@ class CommentReactionServiceImplTest {
     }
 
     @Test
+    void getReactionCounts_ReturnsEmptyMap_WhenNoReactions() {
+        when(reactionRepository.findByCommentId(commentId)).thenReturn(List.of());
+        var counts = reactionService.getReactionCounts(commentId);
+        assertTrue(counts.isEmpty());
+    }
+
+    @Test
     void getUserReaction_ReturnsTypeWhenExists() {
         CommentReaction r = new CommentReaction();
         r.setReactionType(ReactionType.FIRE);
@@ -157,5 +164,75 @@ class CommentReactionServiceImplTest {
         ReactionType result = reactionService.getUserReaction(user.getId(), commentId);
 
         assertNull(result);
+    }
+
+    @Test
+    void getBulkReactionCounts_NullOrEmptyCommentIds_ReturnsEmptyMap() {
+        assertTrue(reactionService.getBulkReactionCounts(null).isEmpty());
+        assertTrue(reactionService.getBulkReactionCounts(List.of()).isEmpty());
+    }
+
+    @Test
+    void getBulkReactionCounts_Populated_ReturnsAggregatedMap() {
+        UUID c1 = UUID.randomUUID();
+        UUID c2 = UUID.randomUUID();
+
+        Comment comment1 = new Comment();
+        comment1.setId(c1);
+        Comment comment2 = new Comment();
+        comment2.setId(c2);
+
+        CommentReaction r1 = new CommentReaction();
+        r1.setComment(comment1);
+        r1.setReactionType(ReactionType.UPVOTE);
+
+        CommentReaction r2 = new CommentReaction();
+        r2.setComment(comment1);
+        r2.setReactionType(ReactionType.UPVOTE);
+
+        CommentReaction r3 = new CommentReaction();
+        r3.setComment(comment2);
+        r3.setReactionType(ReactionType.DOWNVOTE);
+
+        when(reactionRepository.findByCommentIdIn(List.of(c1, c2))).thenReturn(List.of(r1, r2, r3));
+
+        var result = reactionService.getBulkReactionCounts(List.of(c1, c2));
+
+        assertEquals(2, result.get(c1).get(ReactionType.UPVOTE));
+        assertEquals(1, result.get(c2).get(ReactionType.DOWNVOTE));
+        assertNull(result.get(c1).get(ReactionType.DOWNVOTE));
+    }
+
+    @Test
+    void getBulkUserReactions_NullParameters_ReturnsEmptyMap() {
+        assertTrue(reactionService.getBulkUserReactions(null, List.of(UUID.randomUUID())).isEmpty());
+        assertTrue(reactionService.getBulkUserReactions(user.getId(), null).isEmpty());
+        assertTrue(reactionService.getBulkUserReactions(user.getId(), List.of()).isEmpty());
+    }
+
+    @Test
+    void getBulkUserReactions_Populated_ReturnsReactionMap() {
+        UUID c1 = UUID.randomUUID();
+        UUID c2 = UUID.randomUUID();
+
+        Comment comment1 = new Comment();
+        comment1.setId(c1);
+        Comment comment2 = new Comment();
+        comment2.setId(c2);
+
+        CommentReaction r1 = new CommentReaction();
+        r1.setComment(comment1);
+        r1.setReactionType(ReactionType.UPVOTE);
+
+        CommentReaction r2 = new CommentReaction();
+        r2.setComment(comment2);
+        r2.setReactionType(ReactionType.DOWNVOTE);
+
+        when(reactionRepository.findByUserIdAndCommentIdIn(user.getId(), List.of(c1, c2))).thenReturn(List.of(r1, r2));
+
+        var result = reactionService.getBulkUserReactions(user.getId(), List.of(c1, c2));
+
+        assertEquals(ReactionType.UPVOTE, result.get(c1));
+        assertEquals(ReactionType.DOWNVOTE, result.get(c2));
     }
 }

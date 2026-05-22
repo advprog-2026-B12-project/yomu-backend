@@ -1,8 +1,6 @@
 package id.ac.ui.cs.advprog.yomubackend.discussion.dto;
 
 import org.junit.jupiter.api.Test;
-
-import id.ac.ui.cs.advprog.yomubackend.discussion.dto.CommentResponse;
 import id.ac.ui.cs.advprog.yomubackend.discussion.entity.Comment;
 
 import java.time.LocalDateTime;
