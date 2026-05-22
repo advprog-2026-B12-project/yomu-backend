@@ -66,6 +66,11 @@ public class CommentServiceImpl implements CommentService {
             throw new IllegalArgumentException("Komentar induk bukan milik reading ini!");
         }
 
+        int parentDepth = calculateDepth(parent);
+        if (parentDepth >= 2) {
+            throw new IllegalArgumentException("Balasan komentar maksimal 3 tingkat!");
+        }
+
         Comment reply = newBaseComment(readingId, authorId, request.getContent().trim());
         reply.setParent(parent);
         Comment saved = commentRepository.save(reply);
@@ -95,18 +100,21 @@ public class CommentServiceImpl implements CommentService {
         for (Comment top : topLevel) {
             if (top.isDeleted())
                 continue;
-            result.add(buildNode(top, childrenByParent, username));
+            result.add(buildNode(top, childrenByParent, username, 0));
         }
         return result;
     }
 
-    private CommentResponse buildNode(Comment comment, Map<UUID, List<Comment>> childrenByParent, String username) {
+    private CommentResponse buildNode(Comment comment, Map<UUID, List<Comment>> childrenByParent,
+            String username, int depth) {
         List<Comment> children = childrenByParent.getOrDefault(comment.getId(), Collections.emptyList());
         List<CommentResponse> childResponses = new ArrayList<>();
-        for (Comment child : children) {
-            if (child.isDeleted())
-                continue;
-            childResponses.add(buildNode(child, childrenByParent, username));
+        if (depth < 2) {
+            for (Comment child : children) {
+                if (child.isDeleted())
+                    continue;
+                childResponses.add(buildNode(child, childrenByParent, username, depth + 1));
+            }
         }
         CommentResponse response = CommentResponse.fromEntity(comment, childResponses);
         response.setReactionCounts(reactionService.getReactionCounts(comment.getId()));
@@ -191,6 +199,16 @@ public class CommentServiceImpl implements CommentService {
         if (request == null || request.getContent() == null || request.getContent().trim().isEmpty()) {
             throw new IllegalArgumentException("Isi komentar tidak boleh kosong!");
         }
+    }
+
+    private int calculateDepth(Comment comment) {
+        int depth = 0;
+        Comment current = comment;
+        while (current.getParent() != null) {
+            depth++;
+            current = current.getParent();
+        }
+        return depth;
     }
 
     private Comment newBaseComment(UUID readingId, UUID authorId, String content) {

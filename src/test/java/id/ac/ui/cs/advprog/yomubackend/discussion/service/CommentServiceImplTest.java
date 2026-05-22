@@ -201,6 +201,26 @@ class CommentServiceImplTest {
         verify(commentRepository, never()).save(any(Comment.class));
     }
 
+    @Test
+    void replyToComment_MaxDepthExceeded_ThrowsException() {
+        UUID topId = UUID.randomUUID();
+        UUID replyId = UUID.randomUUID();
+        UUID nestedId = UUID.randomUUID();
+
+        Comment top = buildComment(topId, "top", null, false);
+        Comment reply = buildComment(replyId, "reply", top, false);
+        Comment nested = buildComment(nestedId, "nested", reply, false);
+
+        when(userLookup.resolveUserId("reader01")).thenReturn(author.getId());
+        when(commentRepository.findById(nestedId)).thenReturn(Optional.of(nested));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> commentService.replyToComment("reader01", readingId, nestedId,
+                        requestWithContent("too deep")));
+
+        verify(commentRepository, never()).save(any(Comment.class));
+    }
+
     private Comment buildComment(UUID id, String content, Comment parent, boolean deleted) {
         Comment c = new Comment();
         c.setId(id);
