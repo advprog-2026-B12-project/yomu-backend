@@ -2,6 +2,10 @@ package id.ac.ui.cs.advprog.yomubackend.quiz.service;
 
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizResultResponse;
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.QuizSubmitRequest;
+import id.ac.ui.cs.advprog.yomubackend.shared.events.quiz.QuizFinishedEvent;
+import org.springframework.context.ApplicationEventPublisher;
+import id.ac.ui.cs.advprog.yomubackend.quiz.exception.ReadingNotOpenedException;
+import id.ac.ui.cs.advprog.yomubackend.quiz.exception.QuizAlreadyCompletedException;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Option;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Question;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.QuizAttempt;
@@ -29,6 +33,10 @@ class QuizServiceImplTest {
     private ReadingService readingService;
     @Mock
     private QuizAttemptRepository quizAttemptRepository;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+    @Mock
+    private ReadingProgressService readingProgressService;
 
     @InjectMocks
     private QuizServiceImpl quizService;
@@ -71,37 +79,45 @@ class QuizServiceImplTest {
     @Test
     void submit_withCorrectAnswer_returnsScoreOne() {
         QuizSubmitRequest request = new QuizSubmitRequest();
-        request.setUserId(userId);
         request.setReadingId(readingId);
         request.setAnswers(Map.of(question.getId().toString(), correctOptionId.toString()));
 
         when(readingService.findById(readingId)).thenReturn(reading);
 
-        QuizResultResponse result = quizService.submit(request);
+        QuizResultResponse result = quizService.submit(userId, request);
 
         assertEquals(1, result.getScore());
         assertEquals(1, result.getTotal());
 
         ArgumentCaptor<QuizAttempt> captor = ArgumentCaptor.forClass(QuizAttempt.class);
         verify(quizAttemptRepository).save(captor.capture());
+        verify(readingProgressService).ensureOpened(userId, readingId);
         QuizAttempt saved = captor.getValue();
         assertEquals(userId, saved.getUserId());
         assertEquals(readingId, saved.getReadingId());
         assertEquals(1, saved.getScore());
         assertEquals(1, saved.getTotal());
         assertNotNull(saved.getCreatedAt());
+
+        ArgumentCaptor<QuizFinishedEvent> eventCaptor = ArgumentCaptor.forClass(QuizFinishedEvent.class);
+        verify(eventPublisher).publishEvent(eventCaptor.capture());
+        QuizFinishedEvent publishedEvent = eventCaptor.getValue();
+        assertEquals(userId, publishedEvent.userId());
+        assertEquals(readingId, publishedEvent.readingId());
+        assertEquals(1, publishedEvent.score());
+        assertEquals(1, publishedEvent.total());
+        assertTrue(publishedEvent.isPerfectScore());
     }
 
     @Test
     void submit_withWrongAnswer_returnsScoreZero() {
         QuizSubmitRequest request = new QuizSubmitRequest();
-        request.setUserId(userId);
         request.setReadingId(readingId);
         request.setAnswers(Map.of(question.getId().toString(), wrongOption.getId().toString()));
 
         when(readingService.findById(readingId)).thenReturn(reading);
 
-        QuizResultResponse result = quizService.submit(request);
+        QuizResultResponse result = quizService.submit(userId, request);
 
         assertEquals(0, result.getScore());
         assertEquals(1, result.getTotal());
@@ -110,13 +126,12 @@ class QuizServiceImplTest {
     @Test
     void submit_withNoAnswerProvided_returnsScoreZero() {
         QuizSubmitRequest request = new QuizSubmitRequest();
-        request.setUserId(userId);
         request.setReadingId(readingId);
         request.setAnswers(Map.of()); // no answer for the question
 
         when(readingService.findById(readingId)).thenReturn(reading);
 
-        QuizResultResponse result = quizService.submit(request);
+        QuizResultResponse result = quizService.submit(userId, request);
 
         assertEquals(0, result.getScore());
         assertEquals(1, result.getTotal());
@@ -138,15 +153,75 @@ class QuizServiceImplTest {
         r.setQuestions(List.of(q));
 
         QuizSubmitRequest request = new QuizSubmitRequest();
-        request.setUserId(userId);
         request.setReadingId(readingId);
         request.setAnswers(Map.of(q.getId().toString(), opt.getId().toString()));
 
         when(readingService.findById(readingId)).thenReturn(r);
 
-        QuizResultResponse result = quizService.submit(request);
+        QuizResultResponse result = quizService.submit(userId, request);
 
         assertEquals(0, result.getScore());
         assertEquals(1, result.getTotal());
+    }
+
+    @Test
+    void submit_withCompletedQuiz_throwsAlreadyCompletedException() {
+        QuizSubmitRequest request = new QuizSubmitRequest();
+        request.setReadingId(readingId);
+        request.setAnswers(Map.of());
+
+        when(quizAttemptRepository.existsByUserIdAndReadingId(userId, readingId)).thenReturn(true);
+
+        assertThrows(QuizAlreadyCompletedException.class, () -> quizService.submit(userId, request));
+        verify(quizAttemptRepository, never()).save(any());
+        verify(readingProgressService, never()).ensureOpened(any(), any());
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void submit_withoutOpeningReading_throwsReadingNotOpenedException() {
+        QuizSubmitRequest request = new QuizSubmitRequest();
+        request.setReadingId(readingId);
+        request.setAnswers(Map.of());
+
+        doThrow(new ReadingNotOpenedException())
+                .when(readingProgressService).ensureOpened(userId, readingId);
+
+        assertThrows(ReadingNotOpenedException.class, () -> quizService.submit(userId, request));
+        verify(readingService, never()).findById(any());
+        verify(quizAttemptRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    void hasCompleted_delegatesToRepository() {
+        when(quizAttemptRepository.existsByUserIdAndReadingId(userId, readingId)).thenReturn(true);
+
+        assertTrue(quizService.hasCompleted(userId, readingId));
+
+        verify(quizAttemptRepository).existsByUserIdAndReadingId(userId, readingId);
+    }
+
+    @Test
+    void submit_withoutUserId_throwsException() {
+        QuizSubmitRequest request = new QuizSubmitRequest();
+        request.setReadingId(readingId);
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> quizService.submit(null, request));
+
+        assertEquals("User ID is required", exception.getMessage());
+    }
+
+    @Test
+    void submit_withoutReadingId_throwsException() {
+        QuizSubmitRequest request = new QuizSubmitRequest();
+
+        IllegalArgumentException exception = assertThrows(
+                IllegalArgumentException.class,
+                () -> quizService.submit(userId, request));
+
+        assertEquals("Reading ID is required", exception.getMessage());
     }
 }

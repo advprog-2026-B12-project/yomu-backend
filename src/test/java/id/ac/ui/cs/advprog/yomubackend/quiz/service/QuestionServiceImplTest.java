@@ -1,5 +1,6 @@
 package id.ac.ui.cs.advprog.yomubackend.quiz.service;
 
+import id.ac.ui.cs.advprog.yomubackend.quiz.exception.ReadingNotFoundException;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Question;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Reading;
 import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuestionRepository;
@@ -45,7 +46,7 @@ class QuestionServiceImplTest {
 
         when(readingRepo.findById(readingId)).thenReturn(Optional.empty());
 
-        assertThrows(IllegalArgumentException.class,
+        assertThrows(ReadingNotFoundException.class,
                 () -> service.create(readingId, question));
     }
 
@@ -64,6 +65,26 @@ class QuestionServiceImplTest {
         List<Question> result = service.findByReading(readingId);
 
         assertEquals(1, result.size());
+    }
+
+    @Test
+    void testUpdateQuestion() {
+        UUID id = UUID.randomUUID();
+
+        Question existing = new Question();
+        existing.setId(id);
+        existing.setQuestionText("Old?");
+
+        Question update = new Question();
+        update.setQuestionText("New?");
+
+        when(questionRepo.findById(id)).thenReturn(Optional.of(existing));
+        when(questionRepo.save(existing)).thenReturn(existing);
+
+        Question result = service.update(id, update);
+
+        assertEquals("New?", result.getQuestionText());
+        verify(questionRepo).save(existing);
     }
 
     @Test

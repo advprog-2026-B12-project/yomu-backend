@@ -1,8 +1,10 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.service;
 
 import id.ac.ui.cs.advprog.yomubackend.clan.dto.LeaderboardEntryResponse;
+import id.ac.ui.cs.advprog.yomubackend.shared.events.clan.ClanPromotionEvent;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.Clan;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
+import id.ac.ui.cs.advprog.yomubackend.clan.exception.UserNotInClanException;
 import id.ac.ui.cs.advprog.yomubackend.clan.league.ClanScoreProvider;
 import id.ac.ui.cs.advprog.yomubackend.clan.league.ClanScoreProviderResolver;
 import id.ac.ui.cs.advprog.yomubackend.clan.league.MemberStat;
@@ -10,13 +12,16 @@ import id.ac.ui.cs.advprog.yomubackend.clan.league.MemberStatProvider;
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberRepository;
 import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.context.ApplicationEventPublisher;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -52,20 +57,24 @@ class LeagueServiceTest {
     private ClanScoreProvider diamondProvider;
 
     @Mock
-    private ClanScoreModifierService clanScoreModifierService;
+    private ClanScoreMultiplierCalculator multiplierCalculator;
 
-    private LeagueService leagueService;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    private LeagueServiceImpl leagueService;
 
     @BeforeEach
     void setUp() {
-        leagueService = new LeagueService(
+        leagueService = new LeagueServiceImpl(
                 clanRepository,
                 clanMemberRepository,
                 memberStatProvider,
                 resolver,
-                clanScoreModifierService
+                multiplierCalculator,
+                eventPublisher
         );
-        lenient().when(clanScoreModifierService.calculateMultiplier(anyList())).thenReturn(1.0);
+        lenient().when(multiplierCalculator.calculateMultiplier(anyList())).thenReturn(1.0);
     }
 
     @Test
@@ -78,8 +87,8 @@ class LeagueServiceTest {
         ClanMember betaMember1 = member(20L, clan2);
 
         when(clanRepository.findByDivision("BRONZE")).thenReturn(List.of(clan1, clan2));
-        when(clanMemberRepository.findByClan(clan1)).thenReturn(List.of(alphaMember1, alphaMember2));
-        when(clanMemberRepository.findByClan(clan2)).thenReturn(List.of(betaMember1));
+        when(clanMemberRepository.findByClanIn(List.of(clan1, clan2)))
+                .thenReturn(List.of(alphaMember1, alphaMember2, betaMember1));
         when(resolver.resolve("BRONZE")).thenReturn(bronzeProvider);
         when(bronzeProvider.calculateScore(anyList())).thenAnswer(sumTotalScore());
 
@@ -101,8 +110,7 @@ class LeagueServiceTest {
         assertEquals(10, result.get(1).getScore());
 
         verify(clanRepository).findByDivision("BRONZE");
-        verify(clanMemberRepository).findByClan(clan1);
-        verify(clanMemberRepository).findByClan(clan2);
+        verify(clanMemberRepository).findByClanIn(List.of(clan1, clan2));
         verify(resolver, times(2)).resolve("BRONZE");
         verify(bronzeProvider, times(2)).calculateScore(anyList());
     }
@@ -120,11 +128,45 @@ class LeagueServiceTest {
     }
 
     @Test
+    void getLeaderboardForUser_shouldUseUsersCurrentClanDivision() {
+        Clan clan = clan(1L, "Alpha", "SILVER");
+        ClanMember member = member(10L, clan);
+
+        when(clanMemberRepository.findByUserId(userId(10L))).thenReturn(java.util.Optional.of(member));
+        when(clanRepository.findByDivision("SILVER")).thenReturn(List.of(clan));
+        when(clanMemberRepository.findByClanIn(List.of(clan))).thenReturn(List.of(member));
+        when(resolver.resolve("SILVER")).thenReturn(silverProvider);
+        when(silverProvider.calculateScore(anyList())).thenAnswer(sumTotalScore());
+        stubStat(10L, 42);
+
+        List<LeaderboardEntryResponse> result = leagueService.getLeaderboardForUser(userId(10L));
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+        assertEquals(1L, result.get(0).getClanId());
+        assertEquals("SILVER", result.get(0).getDivision());
+        assertEquals(42, result.get(0).getScore());
+    }
+
+    @Test
+    void getLeaderboardForUser_shouldThrowUserNotInClanException_whenUserHasNoClan() {
+        when(clanMemberRepository.findByUserId(userId(10L))).thenReturn(java.util.Optional.empty());
+
+        UserNotInClanException ex = assertThrows(
+                UserNotInClanException.class,
+                () -> leagueService.getLeaderboardForUser(userId(10L))
+        );
+
+        assertEquals("User is not in any clan", ex.getMessage());
+        verify(clanRepository, never()).findByDivision(anyString());
+    }
+
+    @Test
     void getLeaderboardByDivision_shouldReturnZeroScore_whenClanHasNoMembers() {
         Clan emptyClan = clan(3L, "Lonely Clan", "GOLD");
 
         when(clanRepository.findByDivision("GOLD")).thenReturn(List.of(emptyClan));
-        when(clanMemberRepository.findByClan(emptyClan)).thenReturn(List.of());
+        when(clanMemberRepository.findByClanIn(List.of(emptyClan))).thenReturn(List.of());
         when(resolver.resolve("GOLD")).thenReturn(goldProvider);
         when(goldProvider.calculateScore(anyList())).thenAnswer(sumTotalScore());
 
@@ -146,10 +188,10 @@ class LeagueServiceTest {
         ClanMember member = member(10L, clan);
 
         when(clanRepository.findByDivision("BRONZE")).thenReturn(List.of(clan));
-        when(clanMemberRepository.findByClan(clan)).thenReturn(List.of(member));
+        when(clanMemberRepository.findByClanIn(List.of(clan))).thenReturn(List.of(member));
         when(resolver.resolve("BRONZE")).thenReturn(bronzeProvider);
         when(bronzeProvider.calculateScore(anyList())).thenAnswer(sumTotalScore());
-        when(clanScoreModifierService.calculateMultiplier(List.of(member))).thenReturn(1.2);
+        when(multiplierCalculator.calculateMultiplier(List.of(member))).thenReturn(1.2);
         stubStat(10L, 10);
 
         List<LeaderboardEntryResponse> result = leagueService.getLeaderboardByDivision("bronze");
@@ -159,8 +201,13 @@ class LeagueServiceTest {
     }
 
     @Test
-    void getLeaderboardByDivision_shouldThrowNullPointerException_whenDivisionIsNull() {
-        assertThrows(NullPointerException.class, () -> leagueService.getLeaderboardByDivision(null));
+    void getLeaderboardByDivision_shouldThrowIllegalArgumentException_whenDivisionIsNull() {
+        IllegalArgumentException ex = assertThrows(
+                IllegalArgumentException.class,
+                () -> leagueService.getLeaderboardByDivision(null)
+        );
+
+        assertEquals("Division is required", ex.getMessage());
         verifyNoInteractions(clanRepository, clanMemberRepository, resolver);
     }
 
@@ -170,7 +217,7 @@ class LeagueServiceTest {
         ClanMember member = member(10L, clan);
 
         when(clanRepository.findByDivision("BRONZE")).thenReturn(List.of(clan));
-        when(clanMemberRepository.findByClan(clan)).thenReturn(List.of(member));
+        when(clanMemberRepository.findByClanIn(List.of(clan))).thenReturn(List.of(member));
         stubStat(10L, 1);
         when(resolver.resolve("BRONZE")).thenThrow(new IllegalArgumentException("Unknown division provider"));
 
@@ -189,7 +236,7 @@ class LeagueServiceTest {
         ClanMember member = member(10L, clan);
 
         when(clanRepository.findByDivision("SILVER")).thenReturn(List.of(clan));
-        when(clanMemberRepository.findByClan(clan)).thenReturn(List.of(member));
+        when(clanMemberRepository.findByClanIn(List.of(clan))).thenReturn(List.of(member));
         stubStat(10L, 1);
         when(resolver.resolve("SILVER")).thenReturn(silverProvider);
         when(silverProvider.calculateScore(anyList())).thenThrow(new RuntimeException("Score calculation failed"));
@@ -209,7 +256,7 @@ class LeagueServiceTest {
         ClanMember member = member(99L, clan);
 
         when(clanRepository.findByDivision("DIAMOND")).thenReturn(List.of(clan));
-        when(clanMemberRepository.findByClan(clan)).thenReturn(List.of(member));
+        when(clanMemberRepository.findByClanIn(List.of(clan))).thenReturn(List.of(member));
         when(memberStatProvider.getStatForUser(userId(99L))).thenThrow(new RuntimeException("Stat lookup failed"));
 
         RuntimeException ex = assertThrows(
@@ -237,10 +284,8 @@ class LeagueServiceTest {
         when(clanRepository.findByDivision("SILVER")).thenReturn(List.of(silverTop, silverBottom));
         when(clanRepository.findByDivision("GOLD")).thenReturn(List.of(goldTop, goldBottom));
         when(clanRepository.findByDivision("DIAMOND")).thenReturn(List.of(diamondTop, diamondBottom));
-        when(clanMemberRepository.findByClan(any())).thenAnswer(invocation -> {
-            Clan clan = invocation.getArgument(0);
-            return List.of(member(clan.getId(), clan));
-        });
+        stubScoringMembersByClan();
+        stubPromotionMembersByClan();
         stubAllProviders();
         stubStat(1L, 100);
         stubStat(2L, 10);
@@ -275,10 +320,8 @@ class LeagueServiceTest {
         when(clanRepository.findByDivision("SILVER")).thenReturn(List.of(silverTop, silverBottom));
         when(clanRepository.findByDivision("GOLD")).thenReturn(List.of());
         when(clanRepository.findByDivision("DIAMOND")).thenReturn(List.of());
-        when(clanMemberRepository.findByClan(any())).thenAnswer(invocation -> {
-            Clan clan = invocation.getArgument(0);
-            return List.of(member(clan.getId(), clan));
-        });
+        stubScoringMembersByClan();
+        stubPromotionMembersByClan();
         when(resolver.resolve("BRONZE")).thenReturn(bronzeProvider);
         when(resolver.resolve("SILVER")).thenReturn(silverProvider);
         when(bronzeProvider.calculateScore(anyList())).thenAnswer(sumTotalScore());
@@ -309,10 +352,8 @@ class LeagueServiceTest {
         when(clanRepository.findByDivision("SILVER")).thenReturn(List.of());
         when(clanRepository.findByDivision("GOLD")).thenReturn(List.of());
         when(clanRepository.findByDivision("DIAMOND")).thenReturn(List.of());
-        when(clanMemberRepository.findByClan(any())).thenAnswer(invocation -> {
-            Clan clan = invocation.getArgument(0);
-            return List.of(member(clan.getId(), clan));
-        });
+        stubScoringMembersByClan();
+        stubPromotionMembersByClan();
         when(resolver.resolve("BRONZE")).thenReturn(bronzeProvider);
         when(bronzeProvider.calculateScore(anyList())).thenAnswer(sumTotalScore());
 
@@ -336,10 +377,7 @@ class LeagueServiceTest {
         when(clanRepository.findByDivision("SILVER")).thenReturn(List.of());
         when(clanRepository.findByDivision("GOLD")).thenReturn(List.of());
         when(clanRepository.findByDivision("DIAMOND")).thenReturn(List.of());
-        when(clanMemberRepository.findByClan(any())).thenAnswer(invocation -> {
-            Clan clan = invocation.getArgument(0);
-            return List.of(member(clan.getId(), clan));
-        });
+        stubScoringMembersByClan();
         when(memberStatProvider.getStatForUser(any(UUID.class)))
                 .thenReturn(new MemberStat(userId(1L), 10, 1, 1.0));
         when(resolver.resolve("BRONZE")).thenThrow(new IllegalArgumentException("No provider for BRONZE"));
@@ -353,6 +391,47 @@ class LeagueServiceTest {
         verify(clanRepository, never()).saveAll(anyList());
     }
 
+    @Test
+    void triggerSeasonReset_shouldNotifyProcessorForClanPromotedToDiamond() {
+        Clan goldTop = clan(5L, "Gold Top", "GOLD");
+        Clan goldBottom = clan(6L, "Gold Bottom", "GOLD");
+        ClanMember goldTopMember = member(5L, goldTop);
+
+        when(clanRepository.findByDivision("BRONZE")).thenReturn(List.of());
+        when(clanRepository.findByDivision("SILVER")).thenReturn(List.of());
+        when(clanRepository.findByDivision("GOLD")).thenReturn(List.of(goldTop, goldBottom));
+        when(clanRepository.findByDivision("DIAMOND")).thenReturn(List.of());
+        when(clanMemberRepository.findByClanIn(List.of(goldTop, goldBottom))).thenReturn(List.of(goldTopMember));
+        when(clanMemberRepository.findByClan(goldTop)).thenReturn(List.of(goldTopMember));
+        when(resolver.resolve("GOLD")).thenReturn(goldProvider);
+        when(goldProvider.calculateScore(anyList())).thenAnswer(sumTotalScore());
+        stubStat(5L, 100);
+
+        leagueService.triggerSeasonReset();
+
+        ArgumentCaptor<ClanPromotionEvent> captor = ArgumentCaptor.forClass(ClanPromotionEvent.class);
+        verify(eventPublisher, times(1)).publishEvent(captor.capture());
+        ClanPromotionEvent captured = captor.getValue();
+        assertEquals(5L, captured.clanId());
+        assertEquals("DIAMOND", captured.newDivision());
+        assertEquals(List.of(userId(5L)), captured.memberIds());
+    }
+
+    @Test
+    void triggerSeasonReset_shouldNotNotifyProcessorWhenNoClanIsPromoted() {
+        Clan bronzeOnly = clan(1L, "Bronze Only", "BRONZE");
+
+        when(clanRepository.findByDivision("BRONZE")).thenReturn(List.of(bronzeOnly));
+        when(clanRepository.findByDivision("SILVER")).thenReturn(List.of());
+        when(clanRepository.findByDivision("GOLD")).thenReturn(List.of());
+        when(clanRepository.findByDivision("DIAMOND")).thenReturn(List.of());
+
+        leagueService.triggerSeasonReset();
+
+        assertEquals("BRONZE", bronzeOnly.getDivision());
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
     private void stubAllProviders() {
         when(resolver.resolve("BRONZE")).thenReturn(bronzeProvider);
         when(resolver.resolve("SILVER")).thenReturn(silverProvider);
@@ -362,6 +441,22 @@ class LeagueServiceTest {
         when(silverProvider.calculateScore(anyList())).thenAnswer(sumTotalScore());
         when(goldProvider.calculateScore(anyList())).thenAnswer(sumTotalScore());
         when(diamondProvider.calculateScore(anyList())).thenAnswer(sumTotalScore());
+    }
+
+    private void stubScoringMembersByClan() {
+        when(clanMemberRepository.findByClanIn(anyCollection())).thenAnswer(invocation -> {
+            Collection<Clan> clans = invocation.getArgument(0);
+            return clans.stream()
+                    .map(clan -> member(clan.getId(), clan))
+                    .toList();
+        });
+    }
+
+    private void stubPromotionMembersByClan() {
+        when(clanMemberRepository.findByClan(any())).thenAnswer(invocation -> {
+            Clan clan = invocation.getArgument(0);
+            return List.of(member(clan.getId(), clan));
+        });
     }
 
     private void stubStat(long userId, int totalScore) {

@@ -41,7 +41,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         try {
             LoginResponse loginResponse = authService.login(request.getUsername(), request.getPassword());
             return ResponseEntity.ok(loginResponse);
@@ -51,7 +51,7 @@ public class AuthController {
     }
 
     @PostMapping("/google")
-    public ResponseEntity<?> googleLogin(@RequestBody GoogleTokenRequest request) {
+    public ResponseEntity<?> googleLogin(@Valid @RequestBody GoogleTokenRequest request) {
         try {
             GoogleSsoResult result = authService.googleLogin(request.getToken());
             if (result.isNeedsRegistration()) {

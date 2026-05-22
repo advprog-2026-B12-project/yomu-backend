@@ -148,6 +148,31 @@ class UserControllerTest {
 
     @Test
     @WithMockUser(username = "ahmadFaiq41")
+    void getUserProfile_Success() throws Exception {
+        UUID userId = updatedUser.getId();
+        when(userService.getUserById(userId)).thenReturn(updatedUser);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/users/" + userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("ahmadFaiq41"))
+                .andExpect(jsonPath("$.displayName").value("Faiq Updated"));
+    }
+
+    @Test
+    @WithMockUser(username = "ahmadFaiq41")
+    void getUserProfile_NotFound_Returns404() throws Exception {
+        UUID userId = UUID.randomUUID();
+        when(userService.getUserById(userId))
+                .thenThrow(new IllegalArgumentException("User tidak ditemukan!"));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                        .get("/api/users/" + userId))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "ahmadFaiq41")
     void updateProfile_EmptyUsernamePassesValidation() throws Exception {
         // Sending "" for username means "don't change it" — must not trigger @Pattern
         UpdateProfileRequest request = new UpdateProfileRequest();

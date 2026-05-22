@@ -1,7 +1,7 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.league;
 
-import id.ac.ui.cs.advprog.yomubackend.quiz.model.QuizAttempt;
-import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuizAttemptRepository;
+import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMemberQuizStat;
+import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberQuizStatRepository;
 import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Service;
 
@@ -12,23 +12,19 @@ import java.util.UUID;
 @Primary
 public class QuizAttemptMemberStatProvider implements MemberStatProvider {
 
-    private final QuizAttemptRepository quizAttemptRepository;
+    private final ClanMemberQuizStatRepository clanMemberQuizStatRepository;
 
-    public QuizAttemptMemberStatProvider(QuizAttemptRepository quizAttemptRepository) {
-        this.quizAttemptRepository = quizAttemptRepository;
+    public QuizAttemptMemberStatProvider(ClanMemberQuizStatRepository clanMemberQuizStatRepository) {
+        this.clanMemberQuizStatRepository = clanMemberQuizStatRepository;
     }
 
     @Override
     public MemberStat getStatForUser(UUID userId) {
-        List<QuizAttempt> attempts = quizAttemptRepository.findByUserId(userId);
+        List<ClanMemberQuizStat> stats = clanMemberQuizStatRepository.findByUserId(userId);
 
-        int totalScore = attempts.stream()
-                .mapToInt(QuizAttempt::getScore)
-                .sum();
-        int totalQuestions = attempts.stream()
-                .mapToInt(QuizAttempt::getTotal)
-                .sum();
-        int quizCount = attempts.size();
+        int totalScore = stats.stream().mapToInt(ClanMemberQuizStat::getScore).sum();
+        int totalQuestions = stats.stream().mapToInt(ClanMemberQuizStat::getTotal).sum();
+        int quizCount = stats.size();
         double accuracy = totalQuestions == 0 ? 0.0 : (double) totalScore / totalQuestions;
 
         return new MemberStat(userId, totalScore, quizCount, accuracy);

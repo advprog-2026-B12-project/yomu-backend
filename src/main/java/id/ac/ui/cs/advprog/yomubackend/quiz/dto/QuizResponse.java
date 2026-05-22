@@ -9,6 +9,6 @@ import java.util.UUID;
 public class QuizResponse {
     private UUID id;
     private String title;
-    private String content;
-    private List<QuestionResponse> questions;
+    private String category;
+    private List<QuizQuestionResponse> questions;
 }

@@ -1,0 +1,22 @@
+package id.ac.ui.cs.advprog.yomubackend.discussion.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import id.ac.ui.cs.advprog.yomubackend.discussion.entity.CommentReaction;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+public interface CommentReactionRepository extends JpaRepository<CommentReaction, UUID> {
+
+        List<CommentReaction> findByCommentId(UUID commentId);
+
+        Optional<CommentReaction> findByCommentIdAndUserId(UUID commentId, UUID userId);
+
+        List<CommentReaction> findByCommentIdIn(List<UUID> commentIds);
+
+        List<CommentReaction> findByUserIdAndCommentIdIn(UUID userId, List<UUID> commentIds);
+
+        void deleteByCommentIdAndUserId(UUID commentId, UUID userId);
+}

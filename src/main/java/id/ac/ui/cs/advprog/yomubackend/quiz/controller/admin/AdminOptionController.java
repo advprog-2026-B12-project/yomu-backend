@@ -2,6 +2,7 @@ package id.ac.ui.cs.advprog.yomubackend.quiz.controller.admin;
 
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.OptionRequest;
 import id.ac.ui.cs.advprog.yomubackend.quiz.dto.OptionResponse;
+import id.ac.ui.cs.advprog.yomubackend.quiz.mapper.QuizResponseMapper;
 import id.ac.ui.cs.advprog.yomubackend.quiz.model.Option;
 import id.ac.ui.cs.advprog.yomubackend.quiz.service.OptionService;
 import org.springframework.http.HttpStatus;
@@ -17,9 +18,11 @@ import java.util.UUID;
 public class AdminOptionController {
 
     private final OptionService optionService;
+    private final QuizResponseMapper responseMapper;
 
-    public AdminOptionController(OptionService optionService) {
+    public AdminOptionController(OptionService optionService, QuizResponseMapper responseMapper) {
         this.optionService = optionService;
+        this.responseMapper = responseMapper;
     }
 
     @PostMapping("/{questionId}")
@@ -29,24 +32,22 @@ public class AdminOptionController {
         Option option = new Option();
         option.setOptionText(request.getOptionText());
         option.setCorrect(request.isCorrect());
+        return responseMapper.toOptionResponse(optionService.create(questionId, option));
+    }
 
-        Option saved = optionService.create(questionId, option);
-
-        return OptionResponse.builder()
-                .id(saved.getId())
-                .optionText(saved.getOptionText())
-                .isCorrect(saved.isCorrect())
-                .build();
+    @PutMapping("/{optionId}")
+    public OptionResponse update(@PathVariable UUID optionId,
+                                 @RequestBody OptionRequest request) {
+        Option option = new Option();
+        option.setOptionText(request.getOptionText());
+        option.setCorrect(request.isCorrect());
+        return responseMapper.toOptionResponse(optionService.update(optionId, option));
     }
 
     @GetMapping("/question/{questionId}")
     public List<OptionResponse> getByQuestion(@PathVariable UUID questionId) {
         return optionService.findByQuestion(questionId).stream()
-                .map(o -> OptionResponse.builder()
-                        .id(o.getId())
-                        .optionText(o.getOptionText())
-                        .isCorrect(o.isCorrect())
-                        .build())
+                .map(responseMapper::toOptionResponse)
                 .toList();
     }
 

@@ -2,6 +2,8 @@ package id.ac.ui.cs.advprog.yomubackend.clan.dto;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class LeaderboardEntryResponseTest {
@@ -14,7 +16,9 @@ class LeaderboardEntryResponseTest {
                 "Warriors",
                 "GOLD",
                 25L,
-                999
+                999,
+                1.0,
+                List.of()
         );
 
         assertEquals(1, response.getRank());
@@ -33,7 +37,9 @@ class LeaderboardEntryResponseTest {
                 "Warriors",
                 "GOLD",
                 25L,
-                999
+                999,
+                1.0,
+                List.of()
         );
 
         response.setRank(2);
@@ -54,15 +60,15 @@ class LeaderboardEntryResponseTest {
     @Test
     void testEqualsAndHashCode() {
         LeaderboardEntryResponse response1 = new LeaderboardEntryResponse(
-                1, 10L, "Warriors", "GOLD", 25L, 999
+                1, 10L, "Warriors", "GOLD", 25L, 999, 1.0, List.of()
         );
 
         LeaderboardEntryResponse response2 = new LeaderboardEntryResponse(
-                1, 10L, "Warriors", "GOLD", 25L, 999
+                1, 10L, "Warriors", "GOLD", 25L, 999, 1.0, List.of()
         );
 
         LeaderboardEntryResponse response3 = new LeaderboardEntryResponse(
-                2, 20L, "Rangers", "SILVER", 15L, 500
+                2, 20L, "Rangers", "SILVER", 15L, 500, 0.8, List.of("Low Accuracy Penalty")
         );
 
         assertEquals(response1, response2);
@@ -73,7 +79,7 @@ class LeaderboardEntryResponseTest {
     @Test
     void testToString() {
         LeaderboardEntryResponse response = new LeaderboardEntryResponse(
-                1, 10L, "Warriors", "GOLD", 25L, 999
+                1, 10L, "Warriors", "GOLD", 25L, 999, 1.2, List.of("Productivity Buff")
         );
 
         String result = response.toString();
