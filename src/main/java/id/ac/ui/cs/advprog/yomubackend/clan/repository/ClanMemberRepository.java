@@ -18,4 +18,5 @@ public interface ClanMemberRepository extends JpaRepository<ClanMember, Long> {
     boolean existsByUserId(UUID userId);
     long countByClan(Clan clan);
     void deleteByClan(Clan clan);
+    void deleteByUserId(UUID userId);
 }

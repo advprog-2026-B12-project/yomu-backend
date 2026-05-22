@@ -1,8 +1,8 @@
 package id.ac.ui.cs.advprog.yomubackend.clan.service;
 
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
-import id.ac.ui.cs.advprog.yomubackend.quiz.model.QuizAttempt;
-import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuizAttemptRepository;
+import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMemberQuizStat;
+import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberQuizStatRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
@@ -19,17 +19,17 @@ public class LowAccuracyDebuffModifier implements ClanScoreModifier {
     private static final double NEUTRAL_MULTIPLIER = 1.0;
     private static final int ACCURACY_WINDOW_DAYS = 7;
 
-    private final QuizAttemptRepository quizAttemptRepository;
+    private final ClanMemberQuizStatRepository quizStatRepository;
     private final Clock clock;
 
     @Autowired
-    public LowAccuracyDebuffModifier(QuizAttemptRepository quizAttemptRepository) {
-        this(quizAttemptRepository, Clock.systemDefaultZone());
+    public LowAccuracyDebuffModifier(ClanMemberQuizStatRepository quizStatRepository) {
+        this(quizStatRepository, Clock.systemDefaultZone());
     }
 
-    LowAccuracyDebuffModifier(QuizAttemptRepository quizAttemptRepository,
+    LowAccuracyDebuffModifier(ClanMemberQuizStatRepository quizStatRepository,
                               Clock clock) {
-        this.quizAttemptRepository = quizAttemptRepository;
+        this.quizStatRepository = quizStatRepository;
         this.clock = clock;
     }
 
@@ -68,11 +68,11 @@ public class LowAccuracyDebuffModifier implements ClanScoreModifier {
                                               LocalDateTime start,
                                               LocalDateTime end) {
         List<UUID> memberIds = members.stream().map(ClanMember::getUserId).toList();
-        List<QuizAttempt> attempts = quizAttemptRepository
-                .findByUserIdInAndCreatedAtBetween(memberIds, start, end);
+        List<ClanMemberQuizStat> stats = quizStatRepository
+                .findByUserIdInAndCompletedAtBetween(memberIds, start, end);
 
-        int score = attempts.stream().mapToInt(QuizAttempt::getScore).sum();
-        int total = attempts.stream().mapToInt(QuizAttempt::getTotal).sum();
+        int score = stats.stream().mapToInt(ClanMemberQuizStat::getScore).sum();
+        int total = stats.stream().mapToInt(ClanMemberQuizStat::getTotal).sum();
         return new AccuracySummary(score, total);
     }
 

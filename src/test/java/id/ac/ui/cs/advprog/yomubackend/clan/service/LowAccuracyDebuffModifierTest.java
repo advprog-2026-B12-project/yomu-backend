@@ -2,8 +2,8 @@ package id.ac.ui.cs.advprog.yomubackend.clan.service;
 
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.Clan;
 import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMember;
-import id.ac.ui.cs.advprog.yomubackend.quiz.model.QuizAttempt;
-import id.ac.ui.cs.advprog.yomubackend.quiz.repository.QuizAttemptRepository;
+import id.ac.ui.cs.advprog.yomubackend.clan.entity.ClanMemberQuizStat;
+import id.ac.ui.cs.advprog.yomubackend.clan.repository.ClanMemberQuizStatRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,13 +29,13 @@ class LowAccuracyDebuffModifierTest {
             Instant.parse("2026-05-07T12:00:00Z"), ZoneOffset.UTC);
 
     @Mock
-    private QuizAttemptRepository quizAttemptRepository;
+    private ClanMemberQuizStatRepository quizStatRepository;
 
     private LowAccuracyDebuffModifier modifier;
 
     @BeforeEach
     void setUp() {
-        modifier = new LowAccuracyDebuffModifier(quizAttemptRepository, FIXED_CLOCK);
+        modifier = new LowAccuracyDebuffModifier(quizStatRepository, FIXED_CLOCK);
     }
 
     @Test
@@ -52,15 +52,13 @@ class LowAccuracyDebuffModifierTest {
     void calculateMultiplier_shouldReturnNeutral_whenNoPreviousData_andAccuracyGood() {
         List<ClanMember> members = List.of(member(1L));
 
-        // current window: good accuracy (9/10 = 0.9)
-        // previous window: no attempts at all
-        when(quizAttemptRepository.findByUserIdInAndCreatedAtBetween(
+        when(quizStatRepository.findByUserIdInAndCompletedAtBetween(
                 anyCollection(), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenAnswer(inv -> {
                     LocalDateTime start = inv.getArgument(1);
                     LocalDateTime currentStart = LocalDateTime.of(2026, 4, 30, 12, 0);
                     if (start.equals(currentStart)) {
-                        return List.of(attempt(9, 10));
+                        return List.of(stat(9, 10));
                     }
                     return List.of();
                 });
@@ -72,16 +70,15 @@ class LowAccuracyDebuffModifierTest {
     void calculateMultiplier_shouldReturnNeutral_whenAccuracyImproved() {
         List<ClanMember> members = List.of(member(1L));
 
-        // current: 8/10 = 0.8, previous: 6/10 = 0.6 — accuracy improved, no debuff
-        when(quizAttemptRepository.findByUserIdInAndCreatedAtBetween(
+        when(quizStatRepository.findByUserIdInAndCompletedAtBetween(
                 anyCollection(), any(LocalDateTime.class), any(LocalDateTime.class)))
                 .thenAnswer(inv -> {
                     LocalDateTime start = inv.getArgument(1);
                     LocalDateTime currentStart = LocalDateTime.of(2026, 4, 30, 12, 0);
                     if (start.equals(currentStart)) {
-                        return List.of(attempt(8, 10));
+                        return List.of(stat(8, 10));
                     }
-                    return List.of(attempt(6, 10));
+                    return List.of(stat(6, 10));
                 });
 
         assertEquals(1.0, modifier.calculateMultiplier(members));
@@ -92,11 +89,11 @@ class LowAccuracyDebuffModifierTest {
         assertEquals("Low Accuracy Penalty", modifier.getModifierName());
     }
 
-    private QuizAttempt attempt(int score, int total) {
-        QuizAttempt a = new QuizAttempt();
-        a.setScore(score);
-        a.setTotal(total);
-        return a;
+    private ClanMemberQuizStat stat(int score, int total) {
+        ClanMemberQuizStat s = new ClanMemberQuizStat();
+        s.setScore(score);
+        s.setTotal(total);
+        return s;
     }
 
     private ClanMember member(long id) {
