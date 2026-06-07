@@ -55,10 +55,12 @@ public class AchievementServiceImpl implements AchievementService {
     }
 
     @Override
+    @Transactional
     public void deleteAchievement(UUID id) {
         if (!achievementRepository.existsById(id)) {
             throw new AchievementNotFoundException(id);
         }
+        userAchievementRepository.deleteByAchievementId(id);
         achievementRepository.deleteById(id);
     }
 
