@@ -244,17 +244,18 @@ class AchievementServiceTest {
 
     @Test
     void testDeleteAchievement_ShouldDelete_WhenExists() {
-        when(achievementRepository.existsById(dummyAchievement.getId())).thenReturn(true);
+        when(achievementRepository.findById(dummyAchievement.getId())).thenReturn(Optional.of(dummyAchievement));
 
         achievementService.deleteAchievement(dummyAchievement.getId());
 
-        verify(achievementRepository).deleteById(dummyAchievement.getId());
+        verify(userAchievementRepository).deleteByAchievementId(dummyAchievement.getId());
+        verify(achievementRepository).delete(dummyAchievement);
     }
 
     @Test
     void testDeleteAchievement_ShouldThrow_WhenNotFound() {
         UUID randomId = UUID.randomUUID();
-        when(achievementRepository.existsById(randomId)).thenReturn(false);
+        when(achievementRepository.findById(randomId)).thenReturn(Optional.empty());
 
         assertThrows(
                 id.ac.ui.cs.advprog.yomubackend.achievements.exception.AchievementNotFoundException.class,
