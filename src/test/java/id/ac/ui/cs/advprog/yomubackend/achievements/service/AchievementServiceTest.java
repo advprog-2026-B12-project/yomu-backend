@@ -16,7 +16,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 
 import java.util.List;
 import java.util.Optional;
@@ -40,6 +43,9 @@ class AchievementServiceTest {
 
     @Mock
     private UserAchievementMapper userAchievementMapper;
+
+    @Spy
+    private MeterRegistry meterRegistry = new SimpleMeterRegistry();
 
     @InjectMocks
     private AchievementServiceImpl achievementService;
@@ -238,17 +244,18 @@ class AchievementServiceTest {
 
     @Test
     void testDeleteAchievement_ShouldDelete_WhenExists() {
-        when(achievementRepository.existsById(dummyAchievement.getId())).thenReturn(true);
+        when(achievementRepository.findById(dummyAchievement.getId())).thenReturn(Optional.of(dummyAchievement));
 
         achievementService.deleteAchievement(dummyAchievement.getId());
 
-        verify(achievementRepository).deleteById(dummyAchievement.getId());
+        verify(userAchievementRepository).deleteByAchievementId(dummyAchievement.getId());
+        verify(achievementRepository).delete(dummyAchievement);
     }
 
     @Test
     void testDeleteAchievement_ShouldThrow_WhenNotFound() {
         UUID randomId = UUID.randomUUID();
-        when(achievementRepository.existsById(randomId)).thenReturn(false);
+        when(achievementRepository.findById(randomId)).thenReturn(Optional.empty());
 
         assertThrows(
                 id.ac.ui.cs.advprog.yomubackend.achievements.exception.AchievementNotFoundException.class,

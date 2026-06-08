@@ -3,6 +3,9 @@ package id.ac.ui.cs.advprog.yomubackend.achievements.repository;
 import id.ac.ui.cs.advprog.yomubackend.achievements.model.UserDailyMission;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
@@ -24,4 +27,8 @@ public interface UserDailyMissionRepository extends JpaRepository<UserDailyMissi
 
     long countByUserIdInAndDateAssignedAndIsCompletedTrue(Collection<UUID> userIds, LocalDate dateAssigned);
     void deleteByUserId(UUID userId);
+    
+    @Modifying
+    @Query("DELETE FROM UserDailyMission udm WHERE udm.dailyMission.id = :dailyMissionId")
+    void deleteByDailyMissionId(@Param("dailyMissionId") UUID dailyMissionId);
 }
