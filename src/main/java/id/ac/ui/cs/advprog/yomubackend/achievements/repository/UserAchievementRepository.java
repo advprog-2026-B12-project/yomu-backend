@@ -20,4 +20,5 @@ public interface UserAchievementRepository extends JpaRepository<UserAchievement
     @EntityGraph(attributePaths = {"achievement"})
     List<UserAchievement> findByUserIdAndIsDisplayedTrue(UUID userId);
     void deleteByUserId(UUID userId);
+    void deleteByAchievementId(UUID achievementId);
 }
